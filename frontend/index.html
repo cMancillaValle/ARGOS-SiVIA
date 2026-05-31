@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARGOS - SiViA · Sistema de Visión Artificial · TransMilenio</title>
+
+<!-- SEO & Open Graph -->
+<meta name="description" content="ARGOS - SiViA: Sistema de Visión Artificial con IA para detección de evasión de torniquetes en TransMilenio. 98% de precisión, latencia menor a 45ms, 182+ cámaras monitoreadas.">
+<meta property="og:title" content="ARGOS - SiViA · Sistema de Visión Artificial">
+<meta property="og:description" content="Reducimos la evasión de torniquetes con IA. 98% de precisión, alertas en tiempo real, 182+ cámaras en TransMilenio, Bogotá.">
+<meta property="og:image" content="https://via.placeholder.com/1200x630/060A0F/E8001D?text=ARGOS+SiViA">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="robots" content="index, follow">
+
+<!-- Preconnect for performance -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Exo+2:ital,wght@0,300;0,400;0,600;1,300&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+<!-- Tailwind CSS via CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        colors: {
+          rojo: { DEFAULT: 'var(--rojo, #E8001D)', oscuro: 'var(--rojo-oscuro, #9C0012)' },
+          amarillo: 'var(--amarillo, #FFC800)',
+          verde: 'var(--verde, #00E5A0)',
+          azul: 'var(--azul, #0FA3D8)',
+          bg: { DEFAULT: 'var(--bg, #060A0F)', secondary: 'var(--bg2, #0D1520)', tertiary: 'var(--bg3, #111E2E)' },
+          panel: 'var(--panel, rgba(13,21,32,0.92))',
+          texto: { DEFAULT: 'var(--texto, #E2EAF4)', dim: 'var(--texto-dim, #7A93B2)' },
+          panelBorde: 'var(--panel-borde, rgba(232,0,29,0.18))'
+        },
+        fontFamily: {
+          exo: ['"Exo 2"', 'sans-serif'],
+          rajdhani: ['Rajdhani', 'sans-serif'],
+          mono: ['"Share Tech Mono"', 'monospace'],
+        },
+        backgroundImage: {
+          'grid-pattern': 'linear-gradient(rgba(232,0,29,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(232,0,29,0.04) 1px, transparent 1px)'
+        }
+      }
+    }
+  }
+</script>
+
+<style>
+  /* ── Light mode variables ── */
+  html.light {
+    --rojo:#C8000F; --rojo-oscuro:#8B0000; --amarillo:#D95F00;
+    --bg:#F5EFE6; --bg2:#FDFAF6; --bg3:#EDE4D8;
+    --panel:rgba(253,250,246,0.95); --panel-borde:rgba(200,0,15,0.25);
+    --texto:#1A0A00; --texto-dim:#5A3C20; --verde:#007A50;
+  }
+
+  /* ── Smooth theme transition - ELIMINADA para cambio inmediato ── */
+  /* No se aplica ninguna transición global de colores */
+
+  body { background-size: 40px 40px; }
+
+  /* ── Pulse dot ── */
+  .pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+  @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* ── Scroll reveal con delay progresivo ── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.65s ease, transform 0.65s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+  .reveal[data-delay="1"] { transition-delay: 0.1s; }
+  .reveal[data-delay="2"] { transition-delay: 0.2s; }
+  .reveal[data-delay="3"] { transition-delay: 0.3s; }
+  .reveal[data-delay="4"] { transition-delay: 0.4s; }
+  .reveal[data-delay="5"] { transition-delay: 0.5s; }
+
+  /* ── ARGOS hero: tipografía responsiva con clamp() ── */
+  .argos-hero-title {
+    font-size: clamp(3rem, 10vw + 1rem, 6.5rem);
+  }
+  .argos-bg-watermark {
+    font-size: clamp(8rem, 22vw, 22rem);
+  }
+
+  /* ── CTA principal: micro-interacción ── */
+  .cta-primary {
+    position: relative;
+    overflow: hidden;
+    transition: background-color 0.3s ease, transform 0.25s ease, box-shadow 0.3s ease;
+  }
+  .cta-primary::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.12) 50%, transparent 70%);
+    transform: translateX(-100%);
+    transition: transform 0.5s ease;
+  }
+  .cta-primary:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(232,0,29,0.5); }
+  .cta-primary:hover::after { transform: translateX(100%); }
+  .cta-primary:focus-visible {
+    outline: 2px solid var(--amarillo, #FFC800);
+    outline-offset: 3px;
+    transform: translateY(-3px);
+  }
+
+  /* ── Focus styles globales ── */
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--amarillo, #FFC800);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  /* ── Cards con hover sombra + translate ── */
+  .card-hover {
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  }
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 36px rgba(0,0,0,0.35);
+  }
+
+  /* ── Stat counter ── */
+  .stat-num { font-variant-numeric: tabular-nums; }
+
+  /* ── Hermes widget animación de escritura ── */
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  .cursor-blink { animation: blink 1s step-end infinite; }
+
+  /* ── Footer link hover ── */
+  .footer-link {
+    color: var(--texto-dim);
+    transition: color 0.2s ease;
+  }
+  .footer-link:hover { color: var(--texto); }
+
+  /* ── Hermes IA chip buttons ── */
+  .hermes-chip {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: #9bb3cc;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(122,147,178,0.25);
+    border-radius: 999px;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+    white-space: nowrap;
+  }
+  .hermes-chip:hover {
+    background: rgba(232,0,29,0.12);
+    border-color: rgba(232,0,29,0.4);
+    color: #E2EAF4;
+    transform: translateY(-1px);
+  }
+  .hermes-chip:focus-visible {
+    outline: 2px solid var(--amarillo, #FFC800);
+    outline-offset: 2px;
+  }
+</style>
+</head>
+
+<body class="font-exo bg-bg text-texto min-h-screen relative overflow-x-hidden bg-grid-pattern">
+
+<!-- Background decorative effects -->
+<div aria-hidden="true" class="fixed rounded-full w-[700px] h-[700px] -top-[200px] -right-[200px] pointer-events-none -z-10" style="background: radial-gradient(circle, rgba(232,0,29,0.06) 0%, transparent 70%);"></div>
+<div aria-hidden="true" class="fixed rounded-full w-[500px] h-[500px] -bottom-[150px] -left-[150px] pointer-events-none -z-10" style="background: radial-gradient(circle, rgba(15,163,216,0.05) 0%, transparent 70%);"></div>
+
+<!-- ════════════════════════════════════════
+     TOPBAR / HEADER
+════════════════════════════════════════ -->
+<header class="sticky top-0 left-0 right-0 z-50 h-16 bg-bg/95 border-b border-panelBorde flex items-center justify-between px-6 md:px-12 backdrop-blur-md">
+  <div class="flex items-center gap-3">
+    <div
+      class="relative bg-gradient-to-br from-rojo to-rojo-oscuro text-white font-rajdhani font-bold text-lg py-1 px-3"
+      style="clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%);"
+      aria-label="ARGOS"
+    >ARGOS</div>
+    <div class="h-7 w-px bg-panelBorde" aria-hidden="true"></div>
+    <div>
+      <div class="font-rajdhani text-lg font-semibold tracking-widest text-texto">SiV<span class="text-rojo">IA</span></div>
+      <div class="font-mono text-[8px] tracking-widest text-texto-dim uppercase">Sistema de Visión Artificial · TransMilenio</div>
+    </div>
+  </div>
+
+  <nav class="hidden md:flex items-center gap-8" aria-label="Navegación principal">
+    <a href="#como-funciona" class="font-rajdhani text-sm font-medium text-texto-dim hover:text-texto transition-colors focus-visible:outline-amarillo">Cómo funciona</a>
+    <a href="#arquitectura" class="font-rajdhani text-sm font-medium text-texto-dim hover:text-texto transition-colors">Arquitectura</a>
+    <a href="#tecnologia" class="font-rajdhani text-sm font-medium text-texto-dim hover:text-texto transition-colors">Tecnología</a>
+    <a href="#estadisticas" class="font-rajdhani text-sm font-medium text-texto-dim hover:text-texto transition-colors">Estadísticas</a>
+  </nav>
+
+  <div class="flex items-center gap-4">
+    <button
+      id="theme-toggle"
+      class="p-2 rounded hover:bg-white/5 transition-colors border border-transparent hover:border-white/10"
+      aria-label="Cambiar tema de color"
+    >
+      <span id="theme-icon" class="text-lg" aria-hidden="true">🌙</span>
+    </button>
+    <a
+      href="login.html"
+      class="cta-primary bg-rojo text-white font-rajdhani font-bold text-sm py-2 px-6 rounded-md shadow-[0_2px_12px_rgba(232,0,29,0.3)]"
+      aria-label="Iniciar sesión en ARGOS"
+    >Iniciar sesión →</a>
+  </div>
+</header>
+
+<!-- ════════════════════════════════════════
+     HERO
+════════════════════════════════════════ -->
+<section id="hero" class="relative min-h-[90vh] flex items-center overflow-hidden px-6 md:px-12 py-20">
+  <!-- Watermark background -->
+  <div
+    aria-hidden="true"
+    class="absolute -right-10 top-1/2 -translate-y-1/2 font-rajdhani font-bold argos-bg-watermark text-rojo/5 uppercase tracking-tighter select-none pointer-events-none"
+  >ARGOS</div>
+
+  <div class="relative z-10 max-w-3xl">
+    <!-- Live indicator -->
+    <div class="flex items-center gap-2 font-mono text-[10px] tracking-widest text-verde mb-5 uppercase" role="status" aria-live="polite">
+      <span class="w-1.5 h-1.5 rounded-full bg-verde shadow-[0_0_8px_#00E5A0] pulse-dot" aria-hidden="true"></span>
+      Sistema Activo · TransMilenio S.A. · Bogotá, Colombia
+    </div>
+
+    <!-- Headline -->
+    <h1 class="argos-hero-title font-rajdhani font-bold leading-none tracking-tight text-texto mb-3">
+      <span class="bg-gradient-to-br from-rojo to-[#ff4444] text-transparent bg-clip-text drop-shadow-[0_0_20px_rgba(232,0,29,0.4)]">ARGOS</span>
+      <span class="text-texto-dim font-light mx-2" aria-hidden="true">-</span>
+      SiV<span class="text-rojo">IA</span>
+    </h1>
+
+    <p class="font-rajdhani text-xl md:text-2xl font-medium text-texto-dim tracking-wide mb-4">
+      Sistema de Visión Artificial para Detección de Evasión
+    </p>
+
+    <!-- Beneficio directo destacado -->
+    <p class="inline-flex items-center gap-2 font-rajdhani text-base font-semibold text-verde mb-5 bg-verde/10 border border-verde/25 rounded-md px-4 py-2">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      Reducimos la evasión de torniquetes hasta en un 68%
+    </p>
+
+    <p class="text-sm md:text-base text-texto-dim leading-relaxed font-light max-w-xl mb-10">
+      Monitoreo inteligente de accesos mediante IA y análisis de comportamiento en tiempo real.
+      Detecta poses antinaturales y comportamientos de evasión en las estaciones de TransMilenio
+      con un modelo YOLOv8 de alta precisión.
+    </p>
+
+    <!-- CTAs -->
+    <div class="flex flex-wrap gap-4 mb-12">
+      <a
+        href="login.html"
+        class="cta-primary inline-flex items-center gap-2.5 bg-rojo text-white font-rajdhani text-sm font-bold tracking-wide py-3 px-7 rounded-md shadow-[0_4px_24px_rgba(232,0,29,0.35)] uppercase"
+        aria-label="Iniciar sesión en el panel ARGOS"
+      >
+        Iniciar Sesión
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+      <a
+        href="#como-funciona"
+        class="inline-flex items-center gap-2 border border-panelBorde hover:border-rojo hover:text-texto text-texto-dim font-rajdhani text-sm font-medium py-3 px-6 rounded-md transition-all duration-300"
+      >Ver cómo funciona</a>
+    </div>
+
+    <!-- Stats inline -->
+    <div class="flex flex-wrap bg-panel border gap-y-4 border-panelBorde rounded-lg overflow-hidden max-w-xl" role="region" aria-label="Estadísticas del sistema">
+      <div class="flex-1 min-w-[120px] p-4 text-center">
+        <div class="font-rajdhani text-2xl font-bold text-amarillo leading-tight mb-1 stat-num" id="stat-camaras" aria-label="182 o más cámaras monitoreadas">0</div>
+        <div class="font-mono text-[9px] text-texto-dim uppercase tracking-widest">Cámaras monitoreadas</div>
+      </div>
+      <div class="w-px bg-white/5" aria-hidden="true"></div>
+      <div class="flex-1 min-w-[120px] p-4 text-center">
+        <div class="font-rajdhani text-2xl font-bold text-amarillo leading-tight mb-1 stat-num" id="stat-alertas" aria-label="3500 o más alertas procesadas">0</div>
+        <div class="font-mono text-[9px] text-texto-dim uppercase tracking-widest">Alertas procesadas</div>
+      </div>
+      <div class="w-px bg-white/5" aria-hidden="true"></div>
+      <div class="flex-1 min-w-[120px] p-4 text-center">
+        <div class="font-rajdhani text-2xl font-bold text-verde leading-tight mb-1 stat-num" id="stat-precision" aria-label="98 por ciento de precisión IA">0</div>
+        <div class="font-mono text-[9px] text-texto-dim uppercase tracking-widest">Precisión IA</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     CÓMO FUNCIONA
+════════════════════════════════════════ -->
+<section id="como-funciona" class="py-24 px-6 md:px-12 relative border-t border-white/5 bg-bg-secondary/40">
+  <div class="max-w-6xl mx-auto">
+    <div class="flex items-center gap-2.5 font-mono text-[9px] tracking-[3px] text-rojo uppercase mb-3 text-center justify-center" aria-hidden="true">
+      <span class="w-5 h-px bg-rojo"></span> Flujo del sistema
+    </div>
+    <h2 class="font-rajdhani text-4xl font-bold text-texto tracking-wide mb-4 text-center border-white/5 border-b pb-4">¿Cómo funciona ARGOS?</h2>
+
+    <div class="flex flex-wrap justify-center items-start pt-10 gap-2 md:gap-4" role="list">
+
+      <!-- Paso 1 -->
+      <article class="flex-1 min-w-[140px] max-w-[180px] text-center p-6 bg-panel border border-panelBorde rounded-xl card-hover hover:border-rojo/40 reveal" data-delay="1" role="listitem">
+        <div class="text-4xl mb-3" role="img" aria-label="Cámara IP">
+          <!-- Camera icon SVG -->
+          <svg class="mx-auto w-9 h-9 text-azul" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z"/></svg>
+        </div>
+        <div class="font-rajdhani text-sm font-semibold text-texto mb-1.5">Cámaras IP</div>
+        <div class="text-[11px] text-texto-dim leading-relaxed">Stream RTSP en tiempo real desde torniquetes</div>
+      </article>
+
+      <div class="hidden md:flex items-center text-xl text-rojo font-rajdhani font-bold px-2 mt-10" aria-hidden="true">→</div>
+
+      <!-- Paso 2 -->
+      <article class="flex-1 min-w-[140px] max-w-[180px] text-center p-6 bg-panel border border-panelBorde rounded-xl card-hover hover:border-rojo/40 reveal" data-delay="2" role="listitem">
+        <div class="text-4xl mb-3" role="img" aria-label="Procesamiento de video">
+          <svg class="mx-auto w-9 h-9 text-azul" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 0 1-1.125-1.125M3.375 19.5h1.5C5.496 19.5 6 18.996 6 18.375m-3.75.125V3.375m0 0a1.125 1.125 0 0 1 1.125-1.125h11.25a1.125 1.125 0 0 1 1.125 1.125m-13.5 0v1.5c0 .621.504 1.125 1.125 1.125m0 0h11.25m-11.25 0H5.625m11.25-3.375v13.5m0-13.5h1.5a1.125 1.125 0 0 1 1.125 1.125V18.375M6 18.375v.125"/></svg>
+        </div>
+        <div class="font-rajdhani text-sm font-semibold text-texto mb-1.5">Procesamiento</div>
+        <div class="text-[11px] text-texto-dim leading-relaxed">OpenCV preprocesa el video a 640×640px</div>
+      </article>
+
+      <div class="hidden md:flex items-center text-xl text-rojo font-rajdhani font-bold px-2 mt-10" aria-hidden="true">→</div>
+
+      <!-- Paso 3 -->
+      <article class="flex-1 min-w-[140px] max-w-[180px] text-center p-6 bg-rojo/5 border border-rojo/30 rounded-xl card-hover hover:border-rojo/60 reveal" data-delay="3" role="listitem">
+        <div class="text-4xl mb-3" role="img" aria-label="Inteligencia Artificial YOLOv8">
+          <svg class="mx-auto w-9 h-9 text-rojo" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z"/></svg>
+        </div>
+        <div class="font-rajdhani text-sm font-semibold text-rojo mb-1.5">IA · YOLOv8</div>
+        <div class="text-[11px] text-texto-dim leading-relaxed">Detección de personas y estimación corporal</div>
+      </article>
+
+      <div class="hidden md:flex items-center text-xl text-rojo font-rajdhani font-bold px-2 mt-10" aria-hidden="true">→</div>
+
+      <!-- Paso 4 -->
+      <article class="flex-1 min-w-[140px] max-w-[180px] text-center p-6 bg-panel border border-panelBorde rounded-xl card-hover hover:border-rojo/40 reveal" data-delay="4" role="listitem">
+        <div class="text-4xl mb-3" role="img" aria-label="Centro de control del operador">
+          <svg class="mx-auto w-9 h-9 text-verde" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 0 1-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0 1 15 18.257V17.25m6-12V15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 15V5.25m18 0A2.25 2.25 0 0 0 18.75 3H5.25A2.25 2.25 0 0 0 3 5.25m18 0H3"/></svg>
+        </div>
+        <div class="font-rajdhani text-sm font-semibold text-texto mb-1.5">Centro de Control</div>
+        <div class="text-[11px] text-texto-dim leading-relaxed">Notifica al operador y guarda evidencia del evento</div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     ARQUITECTURA
+════════════════════════════════════════ -->
+<section id="arquitectura" class="py-24 px-6 md:px-12 relative border-t border-white/5 bg-bg">
+  <div class="max-w-6xl mx-auto">
+    <div class="flex items-center gap-2.5 font-mono text-[9px] tracking-[3px] text-rojo uppercase mb-3 justify-center" aria-hidden="true">
+      <span class="w-5 h-px bg-rojo"></span> Estructura
+    </div>
+    <h2 class="font-rajdhani text-4xl font-bold text-texto tracking-wide mb-12 text-center">Arquitectura del Sistema</h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 bg-panel p-8 rounded-xl border border-panelBorde shadow-xl overflow-hidden relative">
+      <div aria-hidden="true" class="absolute top-0 right-0 w-64 h-64 bg-rojo/5 rounded-full blur-[80px]"></div>
+
+      <div class="flex flex-col gap-3 relative z-10 border-l border-rojo/30 pl-4 card-hover reveal" data-delay="1">
+        <div class="text-rojo font-rajdhani font-bold text-2xl">01. CAPTURA</div>
+        <p class="text-texto-dim text-sm font-light">Cámaras IP y flujos RTSP ubicados en los torniquetes.</p>
+      </div>
+      <div class="flex flex-col gap-3 relative z-10 border-l border-rojo/30 pl-4 card-hover reveal" data-delay="2">
+        <div class="text-rojo font-rajdhani font-bold text-2xl">02. MOTOR IA</div>
+        <p class="text-texto-dim text-sm font-light">Servidor GPU procesando YOLOv8n-pose a +30 FPS.</p>
+      </div>
+      <div class="flex flex-col gap-3 relative z-10 border-l border-rojo/30 pl-4 card-hover reveal" data-delay="3">
+        <div class="text-rojo font-rajdhani font-bold text-2xl">03. BACKEND</div>
+        <p class="text-texto-dim text-sm font-light">API en Flask gestionando la lógica, SQLite para persistencia y logs.</p>
+      </div>
+      <div class="flex flex-col gap-3 relative z-10 border-l border-rojo/30 pl-4 card-hover reveal" data-delay="4">
+        <div class="text-rojo font-rajdhani font-bold text-2xl">04. FRONTEND</div>
+        <p class="text-texto-dim text-sm font-light">Dashboard SPA protegido por RBAC, WebSockets y reportes en tiempo real.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     TECNOLOGÍA
+════════════════════════════════════════ -->
+<section id="tecnologia" class="py-24 px-6 md:px-12 relative border-t border-white/5 bg-bg-secondary/40">
+  <div class="max-w-6xl mx-auto">
+    <div class="flex items-center justify-center gap-2.5 font-mono text-[9px] tracking-[3px] text-rojo uppercase mb-3" aria-hidden="true">
+      <span class="w-5 h-px bg-rojo"></span> Stack
+    </div>
+    <h2 class="font-rajdhani text-4xl font-bold text-texto tracking-wide mb-12 text-center">Tecnología de Vanguardia</h2>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+      <article class="bg-panel border border-white/5 p-6 shadow card-hover hover:border-rojo/30 transition-colors rounded-xl reveal" data-delay="1">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-8 h-8 rounded-md bg-rojo/10 flex items-center justify-center" aria-hidden="true">
+            <svg class="w-4 h-4 text-rojo" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+          </div>
+          <h3 class="font-rajdhani font-bold text-xl text-texto">YOLOv8 &amp; OpenCV</h3>
+        </div>
+        <p class="text-texto-dim text-sm font-light mb-4">Núcleo de inferencia utilizando PyTorch para identificar el esqueleto humano con alta precisión y bajos milisegundos de latencia.</p>
+      </article>
+
+      <article class="bg-panel border border-white/5 p-6 shadow card-hover hover:border-rojo/30 transition-colors rounded-xl reveal" data-delay="2">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-8 h-8 rounded-md bg-azul/10 flex items-center justify-center" aria-hidden="true">
+            <svg class="w-4 h-4 text-azul" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          </div>
+          <h3 class="font-rajdhani font-bold text-xl text-texto">Flask &amp; Python 3.10</h3>
+        </div>
+        <p class="text-texto-dim text-sm font-light mb-4">Framework robusto sirviendo la API REST, autenticación JWT emulada y gestión segura de eventos registrados.</p>
+      </article>
+
+      <article class="bg-panel border border-white/5 p-6 shadow card-hover hover:border-rojo/30 transition-colors rounded-xl reveal" data-delay="3">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-8 h-8 rounded-md bg-verde/10 flex items-center justify-center" aria-hidden="true">
+            <svg class="w-4 h-4 text-verde" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          </div>
+          <h3 class="font-rajdhani font-bold text-xl text-texto">Vanilla SPA &amp; Tailwind</h3>
+        </div>
+        <p class="text-texto-dim text-sm font-light mb-4">Interfaz ultraligera, router personalizado por History API, asíncrona y modular sin necesidad de dependencias pesadas en el navegador.</p>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     ESTADÍSTICAS & CHATBOT IA
+════════════════════════════════════════ -->
+<section id="estadisticas" class="py-24 px-6 md:px-12 relative border-t border-white/5 bg-bg">
+  <div class="max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-12">
+
+    <!-- Métricas -->
+    <div class="flex-1 reveal" data-delay="1">
+      <div class="flex items-center gap-2.5 font-mono text-[9px] tracking-[3px] text-rojo uppercase mb-3" aria-hidden="true">
+        <span class="w-5 h-px bg-rojo"></span> Impacto
+      </div>
+      <h2 class="font-rajdhani text-4xl font-bold text-texto tracking-wide mb-6">Métricas Operativas</h2>
+      <p class="text-texto-dim text-sm font-light leading-relaxed mb-8 max-w-lg">
+        El sistema captura los eventos para facilitar la auditoría y preclasificar las evasiones. Interactúa con
+        <strong class="text-texto">Hermes IA</strong>, el asistente interno que responde consultas sobre registros,
+        alertas y estadísticas usando lenguaje natural - sin necesidad de SQL ni reportes manuales.
+      </p>
+
+      <div class="grid grid-cols-2 gap-6" role="region" aria-label="Métricas clave">
+        <div class="reveal" data-delay="2">
+          <div class="font-rajdhani font-bold text-4xl text-rojo mb-1" aria-label="Más del 95% de precisión en detección">+95%</div>
+          <div class="font-mono text-[9px] tracking-widest text-texto-dim uppercase">Precisión Detección</div>
+        </div>
+        <div class="reveal" data-delay="3">
+          <div class="font-rajdhani font-bold text-4xl text-verde mb-1" aria-label="Latencia de inferencia menor a 45 milisegundos">&lt; 45ms</div>
+          <div class="font-mono text-[9px] tracking-widest text-texto-dim uppercase">Latencia Inferencia</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hermes IA Widget - rediseñado -->
+    <div
+      class="w-full lg:w-[420px] rounded-2xl overflow-hidden shadow-2xl reveal hermes-widget"
+      data-delay="2"
+      role="region"
+      aria-label="Widget demo de Hermes IA"
+      style="background: #131c2e; border: 1px solid rgba(232,0,29,0.18);"
+    >
+      <!-- Topbar del widget -->
+      <div class="flex items-center justify-between px-5 py-4 border-b" style="border-color: rgba(255,255,255,0.07);">
+        <div class="flex items-center gap-3">
+          <!-- Avatar circular con robot -->
+          <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style="background: linear-gradient(135deg, #1e2d4a 0%, #0d1520 100%); border: 1px solid rgba(232,0,29,0.3);">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="5" y="8" width="14" height="10" rx="2" stroke="#E8001D" stroke-width="1.5"/>
+              <path d="M9 8V6a3 3 0 0 1 6 0v2" stroke="#E8001D" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="9" cy="13" r="1.2" fill="#0FA3D8"/>
+              <circle cx="15" cy="13" r="1.2" fill="#0FA3D8"/>
+              <path d="M9.5 16.5h5" stroke="#00E5A0" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M12 8v2" stroke="#E8001D" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <div class="font-rajdhani font-bold text-sm" style="color: #E2EAF4;">Hermes IA</div>
+            <div class="font-mono text-[10px]" style="color: #7A93B2;">Asistente ARGOS · Activo</div>
+          </div>
+        </div>
+        <!-- Controles ventana -->
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-verde pulse-dot" aria-hidden="true" title="Conectado"></span>
+          <button class="p-1.5 rounded hover:bg-white/10 transition-colors" aria-label="Limpiar conversación" style="color:#7A93B2;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          </button>
+          <button class="p-1.5 rounded hover:bg-white/10 transition-colors" aria-label="Cerrar widget" style="color:#7A93B2;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Área de bienvenida / chat -->
+      <div class="flex flex-col items-center px-6 pt-8 pb-5 gap-4" style="min-height: 300px;">
+        <!-- Ícono central grande -->
+        <div class="w-16 h-16 rounded-full flex items-center justify-center mb-1" style="background: linear-gradient(135deg, #1e2d4a 0%, #0d1520 100%); border: 2px solid rgba(232,0,29,0.35); box-shadow: 0 0 24px rgba(232,0,29,0.15);">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <rect x="5" y="8" width="14" height="10" rx="2" stroke="#E8001D" stroke-width="1.5"/>
+            <path d="M9 8V6a3 3 0 0 1 6 0v2" stroke="#E8001D" stroke-width="1.5" stroke-linecap="round"/>
+            <circle cx="9" cy="13" r="1.3" fill="#0FA3D8"/>
+            <circle cx="15" cy="13" r="1.3" fill="#0FA3D8"/>
+            <path d="M9.5 16.5h5" stroke="#00E5A0" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M12 8v2" stroke="#E8001D" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+
+        <div class="text-center">
+          <h3 class="font-rajdhani font-bold text-lg mb-1" style="color:#E2EAF4;">Hola, soy Hermes</h3>
+          <p class="font-mono text-[11px] leading-relaxed text-center max-w-[280px]" style="color:#7A93B2;">
+            Tu asistente inteligente de ARGOS SiViA.<br>
+            Puedo informarte sobre el estado del sistema,<br>cámaras, alertas y más.
+          </p>
+        </div>
+
+        <!-- Chips de preguntas rápidas -->
+        <div class="flex flex-wrap justify-center gap-2 mt-1" role="list" aria-label="Preguntas sugeridas">
+          <button class="hermes-chip" onclick="hermesChipClick(this)" aria-label="Consultar: ¿Cuál es el estado del sistema?">¿Cuál es el estado del sistema?</button>
+          <button class="hermes-chip" onclick="hermesChipClick(this)" aria-label="Consultar: ¿Cuántas cámaras están offline?">¿Cuántas cámaras están offline?</button>
+          <button class="hermes-chip" onclick="hermesChipClick(this)" aria-label="Consultar: ¿Cuántas alertas hay hoy?">¿Cuántas alertas hay hoy?</button>
+          <button class="hermes-chip" onclick="hermesChipClick(this)" aria-label="Consultar: ¿Cuál es mi rol?">¿Cuál es mi rol?</button>
+        </div>
+      </div>
+
+      <!-- Input de chat -->
+      <div class="px-4 pb-4">
+        <div class="flex items-center gap-2 rounded-xl px-4 py-3" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09);">
+          <input
+            id="hermes-input"
+            type="text"
+            placeholder="Escribe tu consulta..."
+            class="flex-1 bg-transparent font-mono text-[12px] outline-none"
+            style="color: #E2EAF4;"
+            aria-label="Campo de consulta a Hermes IA"
+          />
+          <button
+            onclick="hermesSubmit()"
+            class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all hover:scale-110"
+            style="background: linear-gradient(135deg, #7C3AED, #5B21B6);"
+            aria-label="Enviar consulta a Hermes IA"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+        <p class="font-mono text-[9px] text-center mt-2" style="color: rgba(122,147,178,0.5);">
+          Enter para enviar · Shift+Enter para nueva línea<br>
+          En construcción hasta: V2.0
+        </p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     CTA FINAL
+════════════════════════════════════════ -->
+<section class="py-24 px-6 md:px-12 text-center relative bg-gradient-to-b from-transparent to-rojo/5">
+  <div class="max-w-2xl mx-auto reveal">
+    <h2 class="font-rajdhani text-4xl font-bold text-texto mb-4">Listo para monitorear</h2>
+    <p class="text-sm text-texto-dim mb-8 leading-relaxed">Accede al panel de control ARGOS - SiViA con tus credenciales de operador y empieza a reducir la evasión hoy.</p>
+    <a
+      href="login.html"
+      class="cta-primary inline-flex items-center gap-2.5 bg-rojo text-white font-rajdhani text-sm font-bold tracking-wide py-3 px-8 rounded-md shadow-lg"
+      aria-label="Iniciar sesión en el panel ARGOS SiViA"
+    >
+      Iniciar Sesión en ARGOS
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </a>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     FOOTER
+════════════════════════════════════════ -->
+<footer class="border-t border-white/5 py-10 px-6 md:px-12 bg-bg" role="contentinfo">
+  <div class="max-w-6xl mx-auto">
+
+    <!-- Fila principal -->
+    <div class="flex flex-col md:flex-row items-start justify-between gap-8 mb-8">
+
+      <!-- Brand -->
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center gap-3">
+          <div
+            class="bg-gradient-to-br from-rojo to-rojo-oscuro text-white font-rajdhani font-bold text-xs py-1 px-2"
+            style="clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%);"
+            aria-label="ARGOS"
+          >ARGOS</div>
+          <span class="font-mono text-[9px] text-texto-dim tracking-widest uppercase">SiViA · Sistema de Visión Artificial</span>
+        </div>
+        <p class="font-mono text-[9px] text-texto-dim max-w-[220px] leading-relaxed mt-1">
+          Solución de visión artificial para reducción de evasión en sistemas de transporte masivo.
+        </p>
+      </div>
+
+      <!-- Nav rápida -->
+      <nav class="flex flex-col gap-2" aria-label="Navegación rápida del footer">
+        <span class="font-rajdhani text-xs font-bold text-texto-dim uppercase tracking-widest mb-1">Secciones</span>
+        <a href="#como-funciona" class="footer-link font-mono text-[11px]">Cómo funciona</a>
+        <a href="#arquitectura" class="footer-link font-mono text-[11px]">Arquitectura</a>
+        <a href="#tecnologia" class="footer-link font-mono text-[11px]">Tecnología</a>
+        <a href="#estadisticas" class="footer-link font-mono text-[11px]">Estadísticas</a>
+      </nav>
+
+      <!-- Redes sociales (placeholders) -->
+      <div class="flex flex-col gap-2">
+        <span class="font-rajdhani text-xs font-bold text-texto-dim uppercase tracking-widest mb-1">Contacto</span>
+        <div class="flex items-center gap-3">
+          <!-- GitHub placeholder -->
+          <button onclick="showComingSoon(this)" class="social-soon footer-link p-2 border border-panelBorde rounded-md transition-colors opacity-50 cursor-not-allowed relative" aria-label="GitHub - disponible en versión 2.0">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+          </button>
+          <!-- LinkedIn placeholder -->
+          <button onclick="showComingSoon(this)" class="social-soon footer-link p-2 border border-panelBorde rounded-md transition-colors opacity-50 cursor-not-allowed relative" aria-label="LinkedIn - disponible en versión 2.0">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+          </button>
+          <!-- Email placeholder -->
+          <button onclick="showComingSoon(this)" class="social-soon footer-link p-2 border border-panelBorde rounded-md transition-colors opacity-50 cursor-not-allowed relative" aria-label="Correo - disponible en versión 2.0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"/></svg>
+          </button>
+        </div>
+        <!-- Toast mensaje -->
+        <div id="social-toast" class="hidden font-mono text-[10px] text-texto-dim border border-panelBorde bg-bg-secondary rounded-md px-3 py-1.5 mt-1 flex items-center gap-1.5" role="status" aria-live="polite">
+          <span class="text-amarillo" aria-hidden="true">🔒</span> No disponible hasta versión 2.0
+        </div>
+      </div>
+    </div>
+
+    <!-- Divider + copyright -->
+    <div class="border-t border-white/5 pt-6 flex flex-col md:flex-row items-center justify-between gap-2">
+      <div class="font-mono text-[9px] text-white/40 tracking-widest uppercase">V1.7.5 · 2026 · Prototipo académico</div>
+      <div class="font-mono text-[9px] text-white/30 tracking-widest uppercase">Desarrollado para TransMilenio S.A. · Bogotá, Colombia</div>
+    </div>
+  </div>
+</footer>
+
+<!-- ════════════════════════════════════════
+     SCRIPTS
+════════════════════════════════════════ -->
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+  // ── Scroll Reveal con delay progresivo ──────────────────────────────────
+  const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        revealObserver.unobserve(e.target); // Solo una vez
+      }
+    });
+  }, { threshold: 0.12 });
+
+  document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+  // ── Contador animado de estadísticas ────────────────────────────────────
+  function animateCounter(el, target, suffix, duration = 1800) {
+    const start = performance.now();
+    function update(now) {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      // easeOutCubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(eased * target);
+      el.textContent = current + suffix;
+      if (progress < 1) requestAnimationFrame(update);
+    }
+    requestAnimationFrame(update);
+  }
+
+  // Observar la sección hero para disparar contadores cuando sea visible
+  const statsSection = document.querySelector('#hero');
+  let countersStarted = false;
+  const statsObserver = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting && !countersStarted) {
+      countersStarted = true;
+      setTimeout(() => {
+        animateCounter(document.getElementById('stat-camaras'), 182, '+');
+        animateCounter(document.getElementById('stat-alertas'), 3500, '+');
+        animateCounter(document.getElementById('stat-precision'), 98, '%');
+      }, 400);
+    }
+  }, { threshold: 0.3 });
+  if (statsSection) statsObserver.observe(statsSection);
+
+  // ── Theme Switcher - sincronizado con 'argos-theme' ──────────────────────
+  const THEME_KEY   = 'argos-theme';
+  const themeToggle = document.getElementById('theme-toggle');
+  const themeIcon   = document.getElementById('theme-icon');
+  const htmlEl      = document.documentElement;
+
+  function applyThemeIndex(theme) {
+    htmlEl.classList.toggle('light', theme === 'light');
+    if (themeIcon) themeIcon.textContent = theme === 'light' ? '☀️' : '🌙';
+    if (themeToggle) themeToggle.setAttribute('aria-label', theme === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro');
+  }
+
+  // Aplicar al cargar - inmediato, sin transición
+  applyThemeIndex(localStorage.getItem(THEME_KEY) || 'dark');
+
+  if (themeToggle) {
+    themeToggle.addEventListener('click', () => {
+      const next = htmlEl.classList.contains('light') ? 'dark' : 'light';
+      localStorage.setItem(THEME_KEY, next);
+      applyThemeIndex(next);
+    });
+  }
+
+  // ── Hermes chip / input interactividad básica ────────────────────────────
+  function hermesChipClick(btn) {
+    const input = document.getElementById('hermes-input');
+    if (input) { input.value = btn.textContent.trim(); input.focus(); }
+  }
+  function hermesSubmit() {
+    const input = document.getElementById('hermes-input');
+    if (input && input.value.trim()) { input.value = ''; }
+  }
+  document.getElementById('hermes-input')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); hermesSubmit(); }
+  });
+
+  // ── Social buttons: "no disponible hasta v2.0" ───────────────────────────
+  let toastTimer = null;
+  function showComingSoon() {
+    const toast = document.getElementById('social-toast');
+    if (!toast) return;
+    toast.classList.remove('hidden');
+    toast.classList.add('flex');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toast.classList.add('hidden');
+      toast.classList.remove('flex');
+    }, 2800);
+  }
+</script>
+</body>
+</html>

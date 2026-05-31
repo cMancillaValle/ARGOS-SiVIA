@@ -1,0 +1,190 @@
+<!-- frontend/views/auditoria.html -->
+<div class="fade-in">
+  <div class="font-mono text-xs text-texto-dim mb-5 tracking-wide flex items-center gap-2">
+    <button data-nav-module="home"
+      class="text-texto-dim hover:text-rojo transition-colors cursor-pointer">Dashboard</button>
+    <span class="text-rojo">/</span><span>Auditoría del Sistema</span>
+  </div>
+
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h1 class="font-rajdhani text-2xl font-bold text-texto">Log de Auditoría</h1>
+      <div class="text-xs text-texto-dim mt-1">Trazabilidad completa en tiempo real · <span id="aud-live-dot"
+          class="text-verde font-mono">● Live</span></div>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="audRefresh()"
+        class="bg-panel border border-panelBorde text-texto-dim text-xs font-bold px-3 py-1.5 rounded hover:text-texto transition-colors">↻
+        Actualizar</button>
+      <button onclick="ARGOS.Auditoria.exportCSV()" 
+        class="inline-flex items-center gap-2 bg-panel border border-panelBorde hover:border-rojo text-texto-dim text-xs font-rajdhani font-bold py-2 px-4 rounded transition-all focus:outline-none focus:ring-1 focus:ring-rojo">
+        ↓ Export CSV
+      </button>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="flex flex-wrap gap-2 mb-4">
+    <input id="aud-q" placeholder="Buscar acción, usuario o IP..." oninput="audRefresh()"
+      class="bg-panel border border-panelBorde rounded px-3 py-1.5 text-xs text-texto placeholder-texto-dim/50 w-56">
+    <input id="aud-fecha" type="date" onchange="audRefresh()"
+      class="bg-panel border border-panelBorde rounded px-3 py-1.5 text-xs text-texto">
+    <select id="aud-usuario" onchange="audRefresh()"
+      class="bg-panel border border-panelBorde rounded px-3 py-1.5 text-xs text-texto">
+      <option value="">Todos los usuarios</option>
+    </select>
+    <button onclick="audLimpiarFiltros()" class="text-xs text-texto-dim hover:text-rojo transition-colors px-2">✕
+      Limpiar</button>
+  </div>
+
+  <!-- Stats bar -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" id="aud-stats">
+    <div class="bg-panel border border-panelBorde rounded-lg px-4 py-3">
+      <div class="font-rajdhani text-2xl font-bold text-texto" id="aud-stat-total">-</div>
+      <div class="text-[10px] text-texto-dim uppercase tracking-widest font-mono">Total entradas</div>
+    </div>
+    <div class="bg-panel border border-panelBorde rounded-lg px-4 py-3">
+      <div class="font-rajdhani text-2xl font-bold text-verde" id="aud-stat-logins">-</div>
+      <div class="text-[10px] text-texto-dim uppercase tracking-widest font-mono">Inicios de sesión</div>
+    </div>
+    <div class="bg-panel border border-panelBorde rounded-lg px-4 py-3">
+      <div class="font-rajdhani text-2xl font-bold text-rojo" id="aud-stat-errores">-</div>
+      <div class="text-[10px] text-texto-dim uppercase tracking-widest font-mono">Errores / Fallos</div>
+    </div>
+    <div class="bg-panel border border-panelBorde rounded-lg px-4 py-3">
+      <div class="font-rajdhani text-2xl font-bold text-amarillo" id="aud-stat-cambios">-</div>
+      <div class="text-[10px] text-texto-dim uppercase tracking-widest font-mono">Cambios sistema</div>
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="bg-panel border border-panelBorde rounded-xl overflow-hidden">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-panelBorde text-texto-dim">
+          <th class="text-left px-4 py-3 font-mono text-[9px] tracking-widest uppercase">#</th>
+          <th class="text-left px-4 py-3 font-mono text-[9px] tracking-widest uppercase">Fecha / Hora</th>
+          <th class="text-left px-4 py-3 font-mono text-[9px] tracking-widest uppercase">Usuario</th>
+          <th class="text-left px-4 py-3 font-mono text-[9px] tracking-widest uppercase">Acción</th>
+          <th class="text-left px-4 py-3 font-mono text-[9px] tracking-widest uppercase hidden lg:table-cell">Detalle
+          </th>
+          <th class="text-left px-4 py-3 font-mono text-[9px] tracking-widest uppercase hidden md:table-cell">IP</th>
+        </tr>
+      </thead>
+      <tbody id="aud-tbody">
+        <tr>
+          <td colspan="6" class="text-center py-10 text-texto-dim text-xs">Cargando logs...</td>
+        </tr>
+      </tbody>
+    </table>
+    <!-- Paginación -->
+    <div class="px-4 py-3 border-t border-panelBorde flex items-center justify-between">
+      <div class="text-xs text-texto-dim" id="aud-pag-info">-</div>
+      <div class="flex gap-2">
+        <button onclick="audPagina(-1)" id="aud-prev"
+          class="px-3 py-1 text-xs border border-panelBorde rounded hover:border-rojo text-texto-dim hover:text-rojo transition-colors disabled:opacity-30">←
+          Ant</button>
+        <button onclick="audPagina(1)" id="aud-next"
+          class="px-3 py-1 text-xs border border-panelBorde rounded hover:border-rojo text-texto-dim hover:text-rojo transition-colors disabled:opacity-30">Sig
+          →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const token = () => sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token');
+    let _pagina = 1;
+    const LIMITE = 30;
+    let _autoRefresh;
+
+    const ACCION_STYLE = {
+      'login': { cls: 'bg-verde/10 text-verde border-verde/30', icon: '🔓' },
+      'logout': { cls: 'bg-texto-dim/10 text-texto-dim border-white/10', icon: '🔒' },
+      'login_fail': { cls: 'bg-rojo/10 text-rojo border-rojo/30', icon: '🚫' },
+      'crear': { cls: 'bg-azul/10 text-azul border-azul/30', icon: '➕' },
+      'editar': { cls: 'bg-amarillo/10 text-amarillo border-amarillo/30', icon: '✏️' },
+      'eliminar': { cls: 'bg-rojo/10 text-rojo border-rojo/30', icon: '🗑️' },
+      'default': { cls: 'bg-panel border-panelBorde text-texto-dim', icon: '📋' },
+    };
+
+    function getStyle(accion) {
+      const k = Object.keys(ACCION_STYLE).find(k => accion?.toLowerCase().includes(k)) || 'default';
+      return ACCION_STYLE[k];
+    }
+
+    async function audRefresh() {
+      const q = document.getElementById('aud-q')?.value || '';
+      const fecha = document.getElementById('aud-fecha')?.value || '';
+      const usuario = document.getElementById('aud-usuario')?.value || '';
+      const params = new URLSearchParams({ q, fecha, usuario, limite: LIMITE, pagina: _pagina });
+      try {
+        const r = await fetch(`/api/auditoria?${params}`, { headers: { 'X-Token': token() } });
+        if (!r.ok) throw new Error(`API ${r.status}`);
+        const d = await r.json();
+        renderLogs(d);
+      } catch (e) {
+        document.getElementById('aud-tbody').innerHTML =
+          `<tr><td colspan="6" class="text-center py-8 text-rojo text-xs">${e.message}</td></tr>`;
+      }
+    }
+
+    function renderLogs(d) {
+      const logs = d.logs || d.registros || d.auditoria || [];
+      const total = d.total || logs.length;
+
+      // Stats
+      document.getElementById('aud-stat-total').textContent = total;
+      document.getElementById('aud-stat-logins').textContent = logs.filter(l => l.accion?.toLowerCase().includes('login') && !l.accion?.toLowerCase().includes('fail')).length;
+      document.getElementById('aud-stat-errores').textContent = logs.filter(l => l.accion?.toLowerCase().includes('fail') || l.accion?.toLowerCase().includes('error')).length;
+      document.getElementById('aud-stat-cambios').textContent = logs.filter(l => ['crear', 'editar', 'eliminar'].some(k => l.accion?.toLowerCase().includes(k))).length;
+
+      // Tabla
+      const tb = document.getElementById('aud-tbody');
+      tb.innerHTML = logs.map(l => {
+        const s = getStyle(l.accion);
+        const fecha = l.fecha
+          ? new Date(new Date(l.fecha + 'Z').getTime() - 5 * 3600 * 1000)
+            .toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'medium' })
+          : '-';
+
+        return `<tr class="border-b border-panelBorde/40 hover:bg-white/3 transition-colors">
+        <td class="px-4 py-2.5 font-mono text-xs text-texto-dim">#${l.id}</td>
+        <td class="px-4 py-2.5 font-mono text-xs text-texto-dim whitespace-nowrap">${fecha}</td>
+        <td class="px-4 py-2.5 text-sm text-texto font-medium">${l.username || l.usuario || '-'}</td>
+        <td class="px-4 py-2.5">
+          <span class="text-[10px] font-bold border px-2 py-0.5 rounded-full whitespace-nowrap ${s.cls}">${s.icon} ${l.accion}</span>
+        </td>
+        <td class="px-4 py-2.5 text-xs text-texto-dim hidden lg:table-cell max-w-xs truncate" title="${l.detalle || ''}">${l.detalle || '-'}</td>
+        <td class="px-4 py-2.5 font-mono text-[10px] text-texto-dim hidden md:table-cell">${l.ip_origen || '-'}</td>
+      </tr>`;
+      }).join('') || '<tr><td colspan="6" class="text-center py-8 text-texto-dim text-xs">Sin resultados para los filtros aplicados</td></tr>';
+
+      // Paginación
+      document.getElementById('aud-pag-info').textContent = `Mostrando ${logs.length} de ${total} registros · Página ${_pagina}`;
+      document.getElementById('aud-prev').disabled = _pagina <= 1;
+      document.getElementById('aud-next').disabled = logs.length < LIMITE;
+
+      // Rellenar selector de usuarios
+      const usrSel = document.getElementById('aud-usuario');
+      if (usrSel.options.length <= 1 && logs.length) {
+        const users = [...new Set(logs.map(l => l.username || l.usuario).filter(Boolean))].sort();
+        users.forEach(u => { const o = document.createElement('option'); o.value = o.textContent = u; usrSel.appendChild(o); });
+      }
+    }
+
+    window.audRefresh = audRefresh;
+    window.audPagina = function (dir) { _pagina = Math.max(1, _pagina + dir); audRefresh(); };
+    window.audLimpiarFiltros = function () {
+      ['aud-q', 'aud-fecha', 'aud-usuario'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+      _pagina = 1;
+      audRefresh();
+    };
+
+    audRefresh();
+    // Auto-refresh cada 30s
+    _autoRefresh = setInterval(audRefresh, 30000);
+    document.addEventListener('argos:navaway', () => clearInterval(_autoRefresh), { once: true });
+  })();
+</script>

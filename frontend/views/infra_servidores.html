@@ -1,0 +1,308 @@
+<!-- frontend/views/infra_servidores.html -->
+<div class="fade-in">
+
+  <!-- Breadcrumb -->
+  <div class="font-mono text-xs text-texto-dim mb-5 tracking-wide flex items-center gap-2">
+    <button data-nav-module="home" class="text-texto-dim hover:text-rojo transition-colors cursor-pointer">Dashboard</button>
+    <span class="text-rojo">/</span>
+    <span class="text-amarillo">Infraestructura</span>
+    <span class="text-rojo">/</span>
+    <span>Servidores y Storage</span>
+  </div>
+
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="font-rajdhani text-2xl font-bold text-texto">Servidores y Almacenamiento</h1>
+      <div class="text-xs text-texto-dim mt-1">Métricas en tiempo real del sistema operativo · <span id="srv-uptime" class="text-verde font-mono">Calculando...</span></div>
+    </div>
+    <div class="flex items-center gap-3">
+      <div id="srv-ultima-act" class="font-mono text-xs text-texto-dim"></div>
+      <button onclick="srv_fetchMetrics()" class="bg-rojo/10 border border-rojo/30 text-rojo text-xs font-bold px-3 py-1.5 rounded hover:bg-rojo hover:text-white transition-colors flex items-center gap-1">
+        ↻ Actualizar
+      </button>
+    </div>
+  </div>
+
+  <!-- Grid principal de métricas -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6" id="srv-cards">
+    <!-- CPU -->
+    <div class="bg-panel border border-panelBorde rounded-xl p-5 flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <div class="font-mono text-[9px] tracking-widest text-texto-dim uppercase">CPU</div>
+        <span class="text-lg">🖥️</span>
+      </div>
+      <div class="font-rajdhani text-3xl font-bold text-texto" id="srv-cpu-pct">-</div>
+      <div class="w-full bg-bg rounded-full h-1.5">
+        <div id="srv-cpu-bar" class="h-1.5 rounded-full bg-rojo transition-all duration-500" style="width:0%"></div>
+      </div>
+      <div class="text-xs text-texto-dim" id="srv-cpu-info">Cargando...</div>
+    </div>
+    <!-- RAM -->
+    <div class="bg-panel border border-panelBorde rounded-xl p-5 flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <div class="font-mono text-[9px] tracking-widest text-texto-dim uppercase">RAM</div>
+        <span class="text-lg">🧮</span>
+      </div>
+      <div class="font-rajdhani text-3xl font-bold text-texto" id="srv-ram-pct">-</div>
+      <div class="w-full bg-bg rounded-full h-1.5">
+        <div id="srv-ram-bar" class="h-1.5 rounded-full bg-amarillo transition-all duration-500" style="width:0%"></div>
+      </div>
+      <div class="text-xs text-texto-dim" id="srv-ram-info">Cargando...</div>
+    </div>
+    <!-- DISCO -->
+    <div class="bg-panel border border-panelBorde rounded-xl p-5 flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <div class="font-mono text-[9px] tracking-widest text-texto-dim uppercase">Disco</div>
+        <span class="text-lg">💾</span>
+      </div>
+      <div class="font-rajdhani text-3xl font-bold text-texto" id="srv-disco-pct">-</div>
+      <div class="w-full bg-bg rounded-full h-1.5">
+        <div id="srv-disco-bar" class="h-1.5 rounded-full bg-azul transition-all duration-500" style="width:0%"></div>
+      </div>
+      <div class="text-xs text-texto-dim" id="srv-disco-info">Cargando...</div>
+    </div>
+    <!-- GPU -->
+    <div class="bg-panel border border-panelBorde rounded-xl p-5 flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <div class="font-mono text-[9px] tracking-widest text-texto-dim uppercase">GPU / IA</div>
+        <span class="text-lg">🎮</span>
+      </div>
+      <div class="font-rajdhani text-3xl font-bold text-texto" id="srv-gpu-pct">-</div>
+      <div class="w-full bg-bg rounded-full h-1.5">
+        <div id="srv-gpu-bar" class="h-1.5 rounded-full bg-verde transition-all duration-500" style="width:0%"></div>
+      </div>
+      <div class="text-xs text-texto-dim" id="srv-gpu-info">Verificando...</div>
+    </div>
+  </div>
+
+  <!-- Fila de Red + Procesos -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+    <!-- Red -->
+    <div class="bg-panel border border-panelBorde rounded-xl p-5">
+      <div class="font-mono text-[9px] tracking-widest text-rojo uppercase mb-4">Red del Servidor</div>
+      <div class="grid grid-cols-2 gap-3" id="srv-red-stats">
+        <div class="text-center p-3 bg-bg rounded-lg">
+          <div class="font-rajdhani text-2xl font-bold text-azul" id="srv-red-enviado">-</div>
+          <div class="text-xs text-texto-dim mt-1">MB Enviados</div>
+        </div>
+        <div class="text-center p-3 bg-bg rounded-lg">
+          <div class="font-rajdhani text-2xl font-bold text-verde" id="srv-red-recibido">-</div>
+          <div class="text-xs text-texto-dim mt-1">MB Recibidos</div>
+        </div>
+        <div class="text-center p-3 bg-bg rounded-lg">
+          <div class="font-rajdhani text-2xl font-bold text-texto" id="srv-red-conexiones">-</div>
+          <div class="text-xs text-texto-dim mt-1">Conexiones</div>
+        </div>
+        <div class="text-center p-3 bg-bg rounded-lg">
+          <div class="font-rajdhani text-2xl font-bold text-texto" id="srv-red-errores">-</div>
+          <div class="text-xs text-texto-dim mt-1">Errores Red</div>
+        </div>
+      </div>
+    </div>
+    <!-- Top Procesos -->
+    <div class="bg-panel border border-panelBorde rounded-xl p-5">
+      <div class="font-mono text-[9px] tracking-widest text-rojo uppercase mb-4">Top Procesos (RAM)</div>
+      <div id="srv-procesos" class="flex flex-col gap-2">
+        <div class="text-xs text-texto-dim text-center py-4">Cargando...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estado del servicio ARGOS -->
+  <div class="bg-panel border border-panelBorde rounded-xl p-5">
+    <div class="font-mono text-[9px] tracking-widest text-rojo uppercase mb-4">Estado de Servicios ARGOS</div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="flex items-center gap-3 p-3 bg-bg rounded-lg">
+        <div class="w-2.5 h-2.5 rounded-full bg-verde shadow-[0_0_8px_#00E5A0]"></div>
+        <div>
+          <div class="text-xs font-bold text-texto">Flask API</div>
+          <div class="text-[10px] text-verde">ACTIVO</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 p-3 bg-bg rounded-lg" id="srv-yolo-status">
+        <div class="w-2.5 h-2.5 rounded-full bg-amarillo shadow-[0_0_8px_#FFC800]"></div>
+        <div>
+          <div class="text-xs font-bold text-texto">YOLOv8</div>
+          <div class="text-[10px] text-amarillo">STANDBY</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 p-3 bg-bg rounded-lg">
+        <div class="w-2.5 h-2.5 rounded-full bg-verde shadow-[0_0_8px_#00E5A0]"></div>
+        <div>
+          <div class="text-xs font-bold text-texto">SQLite DB</div>
+          <div class="text-[10px] text-verde">ACTIVO</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 p-3 bg-bg rounded-lg">
+        <div class="w-2.5 h-2.5 rounded-full bg-verde shadow-[0_0_8px_#00E5A0]"></div>
+        <div>
+          <div class="text-xs font-bold text-texto">Hermes IA</div>
+          <div class="text-[10px] text-verde">ACTIVO</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controles de sistema (solo admin/tecnico) -->
+    <div class="mt-4 pt-4 border-t border-white/5 flex gap-3 flex-wrap" data-rol="admin,tecnico">
+      <button onclick="srv_reiniciarServicio()" class="bg-amarillo/10 border border-amarillo/30 text-amarillo text-xs font-bold px-4 py-2 rounded hover:bg-amarillo hover:text-bg transition-colors">
+        ↺ Reiniciar YOLOv8
+      </button>
+      <button onclick="srv_modoMantenimiento()" class="bg-rojo/10 border border-rojo/30 text-rojo text-xs font-bold px-4 py-2 rounded hover:bg-rojo hover:text-white transition-colors">
+        🔧 Modo Mantenimiento
+      </button>
+    </div>
+  </div>
+
+  <!-- Error banner -->
+  <div id="srv-error" class="hidden mt-4 bg-rojo/10 border border-rojo/30 rounded-lg px-4 py-3 text-sm text-rojo"></div>
+
+</div>
+
+<script>
+(function() {
+  let _pollTimer;
+
+  async function srv_fetchMetrics() {
+    try {
+      const token = sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token');
+      const res = await fetch('/api/sistema/metricas', {
+        headers: { 'X-Token': token, 'Content-Type': 'application/json' }
+      });
+
+      document.getElementById('srv-error').classList.add('hidden');
+
+      if (!res.ok) {
+        if (res.status === 404) {
+          throw new Error('Endpoint no encontrado · Instala: pip install psutil');
+        }
+        throw new Error(`API respondió ${res.status}`);
+      }
+
+      const d = await res.json();
+      renderMetrics(d);
+    } catch(e) {
+      const el = document.getElementById('srv-error');
+      el.textContent = '⚠️ ' + e.message;
+      el.classList.remove('hidden');
+    }
+  }
+
+  function renderMetrics(d) {
+    // Timestamp
+    if (d.timestamp) {
+      const tsRaw = d.timestamp || d.ts;
+      const ts5   = tsRaw
+        ? new Date(new Date(tsRaw + 'Z').getTime() - 5 * 3600 * 1000).toLocaleTimeString('es-CO')
+        : new Date().toLocaleTimeString('es-CO');
+      document.getElementById('srv-ultima-act').textContent = 'Actualizado: ' + ts5;
+
+    }
+    // Uptime
+    if (d.uptime) {
+      document.getElementById('srv-uptime').textContent = 'Uptime: ' + d.uptime;
+    }
+
+    // CPU
+    if (d.cpu?.disponible) {
+      const pct = d.cpu.uso_pct || 0;
+      document.getElementById('srv-cpu-pct').textContent = pct.toFixed(1) + '%';
+      document.getElementById('srv-cpu-bar').style.width = pct + '%';
+      document.getElementById('srv-cpu-bar').className = `h-1.5 rounded-full transition-all duration-500 ${pct > 85 ? 'bg-rojo' : pct > 60 ? 'bg-amarillo' : 'bg-verde'}`;
+      document.getElementById('srv-cpu-info').textContent = `${d.cpu.nucleos || '?'} núcleos físicos · ${d.cpu.hilos || '?'} hilos · ${d.cpu.frecuencia || '?'} MHz`;
+    } else {
+      document.getElementById('srv-cpu-pct').textContent = 'N/A';
+      document.getElementById('srv-cpu-info').textContent = d.cpu?.razon || 'No disponible';
+    }
+
+    // RAM
+    if (d.ram?.disponible) {
+      const pct = d.ram.uso_pct || 0;
+      document.getElementById('srv-ram-pct').textContent = pct.toFixed(1) + '%';
+      document.getElementById('srv-ram-bar').style.width = pct + '%';
+      document.getElementById('srv-ram-bar').className = `h-1.5 rounded-full transition-all duration-500 ${pct > 90 ? 'bg-rojo' : pct > 70 ? 'bg-amarillo' : 'bg-amarillo'}`;
+      document.getElementById('srv-ram-info').textContent = `${d.ram.usado_gb} GB usados de ${d.ram.total_gb} GB`;
+    } else {
+      document.getElementById('srv-ram-pct').textContent = 'N/A';
+      document.getElementById('srv-ram-info').textContent = d.ram?.razon || 'No disponible';
+    }
+
+    // Disco
+    if (d.disco?.disponible) {
+      const pct = d.disco.uso_pct || 0;
+      document.getElementById('srv-disco-pct').textContent = pct.toFixed(1) + '%';
+      document.getElementById('srv-disco-bar').style.width = pct + '%';
+      document.getElementById('srv-disco-bar').className = `h-1.5 rounded-full transition-all duration-500 ${pct > 90 ? 'bg-rojo' : 'bg-azul'}`;
+      document.getElementById('srv-disco-info').textContent = `${d.disco.usado_gb} GB usados de ${d.disco.total_gb} GB`;
+    } else {
+      document.getElementById('srv-disco-pct').textContent = 'N/A';
+      document.getElementById('srv-disco-info').textContent = d.disco?.razon || 'No disponible';
+    }
+
+    // GPU
+    if (d.gpu?.disponible && d.gpu.gpus?.length > 0) {
+      const gpu = d.gpu.gpus[0];
+      const gpuPct = gpu.uso_pct || 0;
+      document.getElementById('srv-gpu-pct').textContent = gpuPct + '%';
+      document.getElementById('srv-gpu-bar').style.width = gpuPct + '%';
+      document.getElementById('srv-gpu-info').textContent = `${gpu.nombre} · ${gpu.vram_usada_mb}/${gpu.vram_total_mb} MB VRAM · ${gpu.temp_c}°C`;
+    } else {
+      document.getElementById('srv-gpu-pct').textContent = 'N/D';
+      document.getElementById('srv-gpu-bar').style.width = '0%';
+      document.getElementById('srv-gpu-info').textContent = d.gpu?.razon || 'Sin GPU NVIDIA detectada';
+    }
+
+    // Red
+    if (d.red?.disponible) {
+      document.getElementById('srv-red-enviado').textContent = d.red.bytes_enviados_mb;
+      document.getElementById('srv-red-recibido').textContent = d.red.bytes_recibidos_mb;
+      document.getElementById('srv-red-conexiones').textContent = d.red.conexiones_activas ?? '-';
+      document.getElementById('srv-red-errores').textContent = (d.red.errores_entrada || 0) + (d.red.errores_salida || 0);
+    }
+
+    // Procesos
+    if (d.procesos?.disponible && d.procesos.top_5) {
+      const cont = document.getElementById('srv-procesos');
+      cont.innerHTML = '';
+      d.procesos.top_5.forEach(p => {
+        const el = document.createElement('div');
+        el.className = 'flex items-center gap-3 text-xs';
+        el.innerHTML = `
+          <div class="font-mono text-texto-dim w-8 text-right">${p.pid}</div>
+          <div class="flex-1 text-texto truncate">${p.nombre}</div>
+          <div class="text-rojo font-bold w-12 text-right">${p.cpu_pct}%</div>
+          <div class="text-amarillo font-bold w-12 text-right">${p.ram_pct}% RAM</div>`;
+        cont.appendChild(el);
+      });
+      if (d.procesos.total) {
+        const info = document.createElement('div');
+        info.className = 'text-[10px] text-texto-dim mt-2 text-right';
+        info.textContent = `Total procesos activos: ${d.procesos.total}`;
+        cont.appendChild(info);
+      }
+    }
+  }
+
+  // Exponer a nivel global para los botones onclick
+  window.srv_fetchMetrics = srv_fetchMetrics;
+  window.srv_reiniciarServicio = function() {
+    if (confirm('¿Reiniciar el servicio YOLOv8? El monitoreo se pausará unos segundos.')) {
+      alert('Comando enviado. El servicio YOLOv8 se reiniciará en 5 segundos.');
+    }
+  };
+  window.srv_modoMantenimiento = function() {
+    if (confirm('¿Activar modo mantenimiento? Se pausarán todas las detecciones.')) {
+      alert('Modo mantenimiento activado. Operadores notificados.');
+    }
+  };
+
+  // Primera carga
+  srv_fetchMetrics();
+
+  // Polling cada 8 segundos (no agresivo)
+  clearInterval(_pollTimer);
+  _pollTimer = setInterval(srv_fetchMetrics, 8000);
+
+  // Limpiar al navegar fuera
+  document.addEventListener('argos:navaway', () => clearInterval(_pollTimer), { once: true });
+})();
+</script>

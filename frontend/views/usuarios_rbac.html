@@ -1,0 +1,298 @@
+<!-- frontend/views/usuarios_rbac.html -->
+<div class="fade-in">
+  <div class="font-mono text-xs text-texto-dim mb-5 tracking-wide flex items-center gap-2">
+    <button data-nav-module="home"
+      class="text-texto-dim hover:text-rojo transition-colors cursor-pointer">Dashboard</button>
+    <span class="text-rojo">/</span><span>Usuarios y Roles</span>
+  </div>
+
+  <!-- Sección 1: Gestión de Usuarios -->
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h1 class="font-rajdhani text-2xl font-bold text-texto">Gestión de Usuarios</h1>
+      <div class="text-xs text-texto-dim mt-1" id="usr-summary">Cargando usuarios...</div>
+    </div>
+    <button onclick="usrOpenModal(null)"
+      class="bg-rojo text-white font-rajdhani font-bold text-sm px-4 py-1.5 rounded hover:bg-rojo-oscuro transition-colors flex items-center gap-2">
+      + Nuevo Usuario
+    </button>
+  </div>
+
+  <div class="bg-panel border border-panelBorde rounded-xl overflow-hidden mb-8">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-panelBorde text-texto-dim">
+          <th class="text-left px-4 py-3 font-mono text-[9px] tracking-widest uppercase">Usuario</th>
+          <th class="text-left px-4 py-3 font-mono text-[9px] tracking-widest uppercase">Nombre</th>
+          <th class="text-left px-4 py-3 font-mono text-[9px] tracking-widest uppercase hidden md:table-cell">Email</th>
+          <th class="text-left px-4 py-3 font-mono text-[9px] tracking-widest uppercase">Rol</th>
+          <th class="text-left px-4 py-3 font-mono text-[9px] tracking-widest uppercase">Estado</th>
+          <th class="text-right px-4 py-3 font-mono text-[9px] tracking-widest uppercase">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="usr-tbody">
+        <tr>
+          <td colspan="6" class="text-center py-10 text-texto-dim text-xs">Cargando...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Separador -->
+  <div class="flex items-center gap-4 mb-6">
+    <div class="flex-1 h-px bg-panelBorde"></div>
+    <div class="font-mono text-[9px] tracking-widest text-rojo uppercase">Matriz de Permisos y Accesos</div>
+    <div class="flex-1 h-px bg-panelBorde"></div>
+  </div>
+
+  <!-- Sección 2: Matriz RBAC -->
+  <div class="bg-panel border border-panelBorde rounded-xl overflow-x-auto mb-4">
+    <table class="w-full text-xs min-w-[800px]">
+      <thead>
+        <tr class="border-b border-panelBorde">
+          <th class="text-left px-4 py-3 font-mono text-[9px] tracking-widest uppercase text-texto-dim w-48">Módulo /
+            Acción</th>
+          <th class="text-center px-3 py-3 font-mono text-[9px] tracking-widest uppercase text-rojo">Admin</th>
+          <th class="text-center px-3 py-3 font-mono text-[9px] tracking-widest uppercase text-amarillo">Supervisor</th>
+          <th class="text-center px-3 py-3 font-mono text-[9px] tracking-widest uppercase text-verde">Operador</th>
+          <th class="text-center px-3 py-3 font-mono text-[9px] tracking-widest uppercase text-azul">Analista</th>
+          <th class="text-center px-3 py-3 font-mono text-[9px] tracking-widest uppercase text-[#A855F7]">Técnico</th>
+          <th class="text-center px-3 py-3 font-mono text-[9px] tracking-widest uppercase text-texto-dim">Auditor</th>
+        </tr>
+      </thead>
+      <tbody id="rbac-matrix-tbody">
+        <tr>
+          <td colspan="7" class="text-center py-6 text-texto-dim">Cargando matriz...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal Crear/Editar Usuario -->
+  <div id="usr-modal" class="fixed inset-0 z-[200] flex items-center justify-center hidden">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" onclick="usrCloseModal()"></div>
+    <div class="relative bg-[#0a101a] border border-panelBorde rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl">
+      <h3 class="font-rajdhani text-xl font-bold mb-5" id="usr-modal-title">Nuevo Usuario</h3>
+      <input type="hidden" id="usr-modal-id">
+      <div class="flex flex-col gap-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-[10px] text-texto-dim uppercase tracking-widest font-mono">Username</label>
+            <input id="usr-modal-username" type="text" placeholder="nombre.apellido"
+              class="w-full mt-1 bg-bg border border-white/10 rounded px-3 py-2 text-sm text-texto focus:outline-none focus:border-rojo">
+          </div>
+          <div>
+            <label class="text-[10px] text-texto-dim uppercase tracking-widest font-mono">Rol</label>
+            <select id="usr-modal-rol"
+              class="w-full mt-1 bg-bg border border-white/10 rounded px-3 py-2 text-sm text-texto focus:outline-none focus:border-rojo">
+              <option value="operador">Operador</option>
+              <option value="supervisor">Supervisor</option>
+              <option value="analista">Analista</option>
+              <option value="tecnico">Técnico</option>
+              <option value="auditor">Auditor</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="text-[10px] text-texto-dim uppercase tracking-widest font-mono">Nombre completo</label>
+          <input id="usr-modal-nombre" type="text" placeholder="Nombre Apellido"
+            class="w-full mt-1 bg-bg border border-white/10 rounded px-3 py-2 text-sm text-texto focus:outline-none focus:border-rojo">
+        </div>
+        <div>
+          <label class="text-[10px] text-texto-dim uppercase tracking-widest font-mono">Email</label>
+          <input id="usr-modal-email" type="email" placeholder="usuario@transmilenio.gov.co"
+            class="w-full mt-1 bg-bg border border-white/10 rounded px-3 py-2 text-sm text-texto focus:outline-none focus:border-rojo">
+        </div>
+        <div id="usr-modal-pass-grp">
+          <label class="text-[10px] text-texto-dim uppercase tracking-widest font-mono">Contraseña</label>
+          <div class="relative">
+            <input id="usr-modal-password" type="password" placeholder="Mín 8 · 1 mayús · 1 núm · 1 símb"
+              class="w-full mt-1 bg-bg border border-white/10 rounded px-3 py-2 text-sm text-texto focus:outline-none focus:border-rojo pr-10">
+            <button type="button" class="absolute right-3 top-1/2 mt-0.5 -translate-y-1/2 text-gray-500 hover:text-gray-300 focus:outline-none" onclick="togglePasswordVisibility(this, 'usr-modal-password')" title="Mostrar/Ocultar contraseña">
+              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            </button>
+          </div>
+        </div>
+        <div id="usr-modal-estado-grp" class="hidden">
+          <label class="text-[10px] text-texto-dim uppercase tracking-widest font-mono">Estado</label>
+          <select id="usr-modal-activo"
+            class="w-full mt-1 bg-bg border border-white/10 rounded px-3 py-2 text-sm text-texto">
+            <option value="1">Activo</option>
+            <option value="0">Inactivo</option>
+          </select>
+        </div>
+      </div>
+      <div id="usr-modal-err" class="hidden mt-3 text-xs text-rojo bg-rojo/10 border border-rojo/20 rounded px-3 py-2">
+      </div>
+      <div class="flex justify-end gap-2 mt-5">
+        <button onclick="usrCloseModal()"
+          class="px-4 py-2 border border-white/10 rounded text-sm text-texto-dim hover:texto hover:border-white/30 transition-colors">Cancelar</button>
+        <button onclick="usrGuardar()"
+          class="bg-rojo text-white font-rajdhani font-bold px-5 py-2 rounded hover:bg-rojo-oscuro transition-colors">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    let _users = [];
+    const token = () => sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token');
+
+    const ROL_COLORS = {
+      admin: 'text-rojo', supervisor: 'text-amarillo', operador: 'text-verde',
+      analista: 'text-azul', tecnico: 'text-[#A855F7]', auditor: 'text-texto-dim'
+    };
+    const ROL_ICONS = {
+      admin: '👑', supervisor: '👁️', operador: '🎮', analista: '📊', tecnico: '🔧', auditor: '🔍'
+    };
+
+    async function usrRefresh() {
+      try {
+        const r = await fetch('/api/usuarios', { headers: { 'X-Token': token() } });
+        const d = await r.json();
+        _users = d.usuarios || [];
+        document.getElementById('usr-summary').textContent =
+          `${_users.length} usuarios · ${_users.filter(u => u.activo).length} activos · ${_users.filter(u => !u.activo).length} inactivos`;
+        renderTable(_users);
+      } catch (e) {
+        document.getElementById('usr-tbody').innerHTML = `<tr><td colspan="6" class="text-center py-8 text-rojo text-xs">Error: ${e.message}</td></tr>`;
+      }
+    }
+
+    function renderTable(users) {
+      const tb = document.getElementById('usr-tbody');
+      tb.innerHTML = users.map(u => `
+      <tr class="border-b border-panelBorde/50 hover:bg-white/3 transition-colors">
+        <td class="px-4 py-3 font-mono text-xs text-texto-dim">${u.username}</td>
+        <td class="px-4 py-3 text-sm font-medium text-texto">${u.nombre}</td>
+        <td class="px-4 py-3 text-xs text-texto-dim hidden md:table-cell">${u.email || '-'}</td>
+        <td class="px-4 py-3">
+          <span class="font-mono text-xs font-bold ${ROL_COLORS[u.rol] || 'text-texto-dim'}">
+            ${ROL_ICONS[u.rol] || ''} ${u.rol}
+          </span>
+        </td>
+        <td class="px-4 py-3">
+          <span class="text-[10px] font-bold border px-2 py-0.5 rounded-full ${u.activo ? 'bg-verde/10 text-verde border-verde/30' : 'bg-rojo/10 text-rojo border-rojo/30'}">
+            ${u.activo ? '● Activo' : '○ Inactivo'}
+          </span>
+        </td>
+        <td class="px-4 py-3 text-right">
+          <div class="flex justify-end gap-1">
+            <button onclick="usrOpenModal(${u.id})" title="Editar" class="p-1.5 rounded hover:bg-amarillo/10 text-texto-dim hover:text-amarillo transition-colors text-xs">✏️</button>
+            <button onclick="usrToggleEstado(${u.id},${u.activo},'${u.username}')" title="${u.activo ? 'Desactivar' : 'Activar'}"
+                    class="p-1.5 rounded hover:bg-rojo/10 text-texto-dim hover:text-rojo transition-colors text-xs">${u.activo ? '🔒' : '🔓'}</button>
+          </div>
+        </td>
+      </tr>`).join('') || '<tr><td colspan="6" class="text-center py-8 text-texto-dim text-xs">Sin usuarios</td></tr>';
+    }
+
+    // Cargar y renderizar la Matriz RBAC desde API
+    async function loadMatrix() {
+      try {
+        const r = await fetch('/api/rbac/matriz', { headers: { 'X-Token': token() } });
+        if (!r.ok) { document.getElementById('rbac-matrix-tbody').innerHTML = '<tr><td colspan="7" class="text-center py-4 text-texto-dim text-xs">Solo visible para Admin</td></tr>'; return; }
+        const d = await r.json();
+        const roles = ['admin', 'supervisor', 'operador', 'analista', 'tecnico', 'auditor'];
+        // Agrupar permisos por módulo
+        const modulos = {};
+        Object.entries(d.permisos_disponibles || {}).forEach(([key, desc]) => {
+          const [mod] = key.split(':');
+          if (!modulos[mod]) modulos[mod] = [];
+          modulos[mod].push({ key, desc });
+        });
+        const matriz = d.matriz || {};
+        const tbody = document.getElementById('rbac-matrix-tbody');
+        let html = '';
+        Object.entries(modulos).forEach(([mod, perms]) => {
+          html += `<tr class="border-b border-panelBorde/30"><td colspan="7" class="px-4 py-1.5 font-mono text-[9px] tracking-widest text-rojo uppercase bg-rojo/5">${mod}</td></tr>`;
+          perms.forEach(({ key, desc }) => {
+            const tds = roles.map(rol => {
+              const tiene = (matriz[rol] || []).includes(key);
+              return `<td class="text-center px-3 py-2">${tiene ? '<span class="text-verde text-base">✓</span>' : '<span class="text-texto-dim/30 text-base">-</span>'}</td>`;
+            }).join('');
+            html += `<tr class="border-b border-panelBorde/20 hover:bg-white/2 transition-colors">
+            <td class="px-4 py-2 text-texto-dim">${desc || key}</td>${tds}
+          </tr>`;
+          });
+        });
+        tbody.innerHTML = html || '<tr><td colspan="7" class="text-center py-4 text-texto-dim">Sin datos</td></tr>';
+      } catch (e) { console.warn('matrix:', e); }
+    }
+
+    window.usrOpenModal = function (id) {
+      document.getElementById('usr-modal-err').classList.add('hidden');
+      const isEdit = id !== null;
+      document.getElementById('usr-modal-title').textContent = isEdit ? 'Editar Usuario' : 'Nuevo Usuario';
+      document.getElementById('usr-modal-pass-grp').style.display = isEdit ? 'none' : '';
+      document.getElementById('usr-modal-estado-grp').classList.toggle('hidden', !isEdit);
+      if (isEdit) {
+        const u = _users.find(x => x.id === id);
+        if (!u) return;
+        document.getElementById('usr-modal-id').value = id;
+        document.getElementById('usr-modal-username').value = u.username;
+        document.getElementById('usr-modal-nombre').value = u.nombre;
+        document.getElementById('usr-modal-email').value = u.email || '';
+        document.getElementById('usr-modal-rol').value = u.rol;
+        document.getElementById('usr-modal-activo').value = u.activo ? '1' : '0';
+      } else {
+        document.getElementById('usr-modal-id').value = '';
+        ['username', 'nombre', 'email', 'password'].forEach(f => {
+          const el = document.getElementById(`usr-modal-${f}`);
+          if (el) el.value = '';
+        });
+        document.getElementById('usr-modal-rol').value = 'operador';
+      }
+      document.getElementById('usr-modal').classList.remove('hidden');
+    };
+
+    window.usrCloseModal = function () { document.getElementById('usr-modal').classList.add('hidden'); };
+
+    window.usrGuardar = async function () {
+      const id = document.getElementById('usr-modal-id').value;
+      const err = document.getElementById('usr-modal-err');
+      const body = {
+        nombre: document.getElementById('usr-modal-nombre').value.trim(),
+        email: document.getElementById('usr-modal-email').value.trim(),
+        rol: document.getElementById('usr-modal-rol').value,
+      };
+      if (!id) {
+        body.username = document.getElementById('usr-modal-username').value.trim();
+        body.password = document.getElementById('usr-modal-password').value;
+        if (!body.username || !body.password) { err.textContent = 'Username y contraseña son obligatorios.'; err.classList.remove('hidden'); return; }
+      } else {
+        body.activo = document.getElementById('usr-modal-activo').value === '1';
+      }
+      try {
+        const url = id ? `/api/usuarios/${id}` : '/api/usuarios';
+        const r = await fetch(url, {
+          method: id ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Token': token() },
+          body: JSON.stringify(body),
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || `Error ${r.status}`);
+        usrCloseModal();
+        usrRefresh();
+      } catch (e) { err.textContent = e.message; err.classList.remove('hidden'); }
+    };
+
+    window.usrToggleEstado = async function (id, activo, username) {
+      const msg = activo ? `¿Desactivar al usuario "${username}"?` : `¿Reactivar al usuario "${username}"?`;
+      if (!confirm(msg)) return;
+      try {
+        const r = await fetch(`/api/usuarios/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'X-Token': token() },
+          body: JSON.stringify({ activo: !activo }),
+        });
+        if (!r.ok) { const d = await r.json(); throw new Error(d.error || 'Error'); }
+        usrRefresh();
+      } catch (e) { alert(e.message); }
+    };
+
+    usrRefresh();
+    loadMatrix();
+  })();
+</script>

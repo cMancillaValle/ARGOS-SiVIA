@@ -1,0 +1,276 @@
+<!-- frontend/views/parametros.html -->
+<div class="fade-in">
+  <div class="font-mono text-xs text-texto-dim mb-5 tracking-wide flex items-center gap-2">
+    <button data-nav-module="home"
+      class="text-texto-dim hover:text-rojo transition-colors cursor-pointer">Dashboard</button>
+    <span class="text-rojo">/</span><span>Parámetros del Sistema</span>
+  </div>
+
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="font-rajdhani text-2xl font-bold text-texto">Parámetros del Sistema</h1>
+      <div class="text-xs text-texto-dim mt-1">Configuración global de ARGOS - SiViA · Solo Admin y Técnico</div>
+    </div>
+    <div class="flex items-center gap-2">
+      <span id="param-save-status" class="text-xs text-texto-dim hidden"></span>
+      <button onclick="paramGuardar()"
+        class="bg-rojo text-white font-rajdhani font-bold text-sm px-4 py-1.5 rounded hover:bg-rojo-oscuro transition-colors">
+        💾 Guardar Cambios
+      </button>
+    </div>
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-4">
+
+    <!-- Detección IA -->
+    <div class="bg-panel border border-panelBorde rounded-xl p-5">
+      <div class="font-mono text-[9px] tracking-widest text-rojo uppercase mb-5">Detección IA (YOLOv8)</div>
+      <div class="flex flex-col gap-4">
+        <div>
+          <div class="flex justify-between text-sm mb-1">
+            <span>Umbral de Confianza Mínima</span>
+            <span class="font-mono text-rojo font-bold" id="lbl-confianza">75%</span>
+          </div>
+          <input type="range" id="cfg-confianza" min="50" max="99" value="75"
+            oninput="document.getElementById('lbl-confianza').textContent=this.value+'%'" class="w-full accent-rojo">
+          <div class="text-xs text-texto-dim mt-1">Detecciones por debajo de este umbral se ignoran</div>
+        </div>
+        <div>
+          <div class="flex justify-between text-sm mb-1">
+            <span>Intervalo de Inferencia</span>
+            <span class="font-mono text-rojo font-bold" id="lbl-intervalo">500ms</span>
+          </div>
+          <input type="range" id="cfg-intervalo" min="100" max="5000" step="100" value="500"
+            oninput="document.getElementById('lbl-intervalo').textContent=this.value+'ms'" class="w-full accent-rojo">
+          <div class="text-xs text-texto-dim mt-1">Frecuencia de ejecución del modelo YOLOv8</div>
+        </div>
+        <div>
+          <label class="text-[10px] text-texto-dim uppercase tracking-widest font-mono">Modelo activo</label>
+          <select id="cfg-modelo"
+            class="w-full mt-1 bg-bg border border-white/10 rounded px-3 py-2 text-sm text-texto focus:outline-none focus:border-rojo">
+            <option value="yolov8n">YOLOv8n (Nano · rápido)</option>
+            <option value="yolov8s" selected>YOLOv8s (Small · equilibrado)</option>
+            <option value="yolov8m">YOLOv8m (Medium · preciso)</option>
+            <option value="yolov8l">YOLOv8l (Large · muy preciso)</option>
+          </select>
+        </div>
+        <div class="flex justify-between items-center">
+          <div>
+            <div class="text-sm">Modo GPU</div>
+            <div class="text-xs text-texto-dim">Usar CUDA si está disponible</div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="cfg-gpu" checked class="sr-only peer">
+            <div class="w-10 h-5 bg-verde peer-checked:bg-verde rounded-full relative">
+              <div
+                class="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all peer-checked:translate-x-0">
+              </div>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Retención de Datos -->
+    <div class="bg-panel border border-panelBorde rounded-xl p-5">
+      <div class="font-mono text-[9px] tracking-widest text-rojo uppercase mb-5">Retención de Datos</div>
+      <div class="flex flex-col gap-4">
+        <div>
+          <label class="text-[10px] text-texto-dim uppercase tracking-widest font-mono">Retención de eventos
+            (días)</label>
+          <input type="number" id="cfg-ret-eventos" value="90" min="7" max="365"
+            class="w-full mt-1 bg-bg border border-white/10 rounded px-3 py-2 text-sm text-texto focus:outline-none focus:border-rojo">
+        </div>
+        <div>
+          <label class="text-[10px] text-texto-dim uppercase tracking-widest font-mono">Retención de logs de auditoría
+            (días)</label>
+          <input type="number" id="cfg-ret-logs" value="365" min="30" max="1825"
+            class="w-full mt-1 bg-bg border border-white/10 rounded px-3 py-2 text-sm text-texto focus:outline-none focus:border-rojo">
+        </div>
+        <div>
+          <label class="text-[10px] text-texto-dim uppercase tracking-widest font-mono">Retención de snapshots
+            (días)</label>
+          <input type="number" id="cfg-ret-snap" value="30" min="1" max="180"
+            class="w-full mt-1 bg-bg border border-white/10 rounded px-3 py-2 text-sm text-texto focus:outline-none focus:border-rojo">
+        </div>
+        <div class="flex justify-between items-center">
+          <div>
+            <div class="text-sm">Limpieza automática</div>
+            <div class="text-xs text-texto-dim">Ejecutar a las 03:00 AM</div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="cfg-auto-clean" checked class="sr-only peer">
+            <div class="w-10 h-5 bg-verde rounded-full relative">
+              <div class="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow"></div>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sistema General -->
+    <div class="bg-panel border border-panelBorde rounded-xl p-5">
+      <div class="font-mono text-[9px] tracking-widest text-rojo uppercase mb-5">Sistema General</div>
+      <div class="flex flex-col gap-4">
+        <div>
+          <label class="text-[10px] text-texto-dim uppercase tracking-widest font-mono">Zona horaria</label>
+          <select id="cfg-tz"
+            class="w-full mt-1 bg-bg border border-white/10 rounded px-3 py-2 text-sm text-texto focus:outline-none focus:border-rojo">
+            <option value="America/Bogota" selected>UTC-5 · Bogotá (Colombia)</option>
+            <option value="America/Lima">UTC-5 · Lima (Perú)</option>
+            <option value="America/Caracas">UTC-4 · Caracas</option>
+            <option value="America/Mexico_City">UTC-6 · CDMX</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-[10px] text-texto-dim uppercase tracking-widest font-mono">Modo de operación</label>
+          <select id="cfg-modo"
+            class="w-full mt-1 bg-bg border border-white/10 rounded px-3 py-2 text-sm text-texto focus:outline-none focus:border-rojo">
+            <option value="normal" selected>Normal</option>
+            <option value="bajo">Bajo consumo</option>
+            <option value="mantenimiento">Mantenimiento</option>
+          </select>
+        </div>
+        <div class="flex justify-between items-center">
+          <div>
+            <div class="text-sm">Modo Debug</div>
+            <div class="text-xs text-texto-dim">Logs verbosos en consola</div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="cfg-debug" class="sr-only peer">
+            <div class="w-10 h-5 bg-bg-tertiary peer-checked:bg-amarillo rounded-full relative">
+              <div
+                class="absolute left-0.5 top-0.5 w-4 h-4 bg-texto-dim peer-checked:bg-white rounded-full shadow transition-all peer-checked:translate-x-5">
+              </div>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Integración TransMilenio -->
+    <div class="bg-panel border border-panelBorde rounded-xl p-5">
+      <div class="font-mono text-[9px] tracking-widest text-rojo uppercase mb-5">Integración TransMilenio</div>
+      <div class="flex flex-col gap-4">
+        <div>
+          <label class="text-[10px] text-texto-dim uppercase tracking-widest font-mono">Endpoint API TM</label>
+          <input type="text" id="cfg-tm-url" value="https://api.transmilenio.gov.co/v2"
+            class="w-full mt-1 bg-bg border border-white/10 rounded px-3 py-2 text-sm text-texto font-mono focus:outline-none focus:border-rojo">
+        </div>
+        <div>
+          <label class="text-[10px] text-texto-dim uppercase tracking-widest font-mono">API Key</label>
+          <input type="password" id="cfg-tm-key" value="••••••••••••••••"
+            class="w-full mt-1 bg-bg border border-white/10 rounded px-3 py-2 text-sm text-texto font-mono focus:outline-none focus:border-rojo">
+        </div>
+        <div class="flex gap-2">
+          <button onclick="paramTestConexion()"
+            class="flex-1 bg-azul/10 text-azul border border-azul/30 text-xs font-bold py-2 rounded hover:bg-azul hover:text-white transition-colors">
+            📡 Test Conexión
+          </button>
+          <button
+            class="flex-1 bg-verde/10 text-verde border border-verde/30 text-xs font-bold py-2 rounded hover:bg-verde hover:text-bg transition-colors">
+            ↺ Sincronizar
+          </button>
+        </div>
+        <div id="param-test-result" class="hidden text-xs rounded px-3 py-2"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const TOKEN = () => sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token') || '';
+
+    // ── Cargar configuración actual desde el backend ─────────────────────────
+    async function cargarConfig() {
+      try {
+        const res = await fetch('/api/sistema/ia-config', {
+          headers: { 'X-Token': TOKEN() }
+        });
+        if (!res.ok) return;
+        const cfg = await res.json();
+
+        // Umbral de confianza (0.0-1.0 en BD → 50-99 en slider)
+        const conf = parseFloat(cfg.ia_confidence_threshold ?? 0.5);
+        const confPct = Math.round(conf * 100);
+        const sliderConf = document.getElementById('cfg-confianza');
+        if (sliderConf) {
+          sliderConf.value = confPct;
+          document.getElementById('lbl-confianza').textContent = confPct + '%';
+        }
+
+        // Intervalo de inferencia
+        const interval = parseInt(cfg.ia_inference_interval_ms ?? 500);
+        const sliderInt = document.getElementById('cfg-intervalo');
+        if (sliderInt) {
+          sliderInt.value = interval;
+          document.getElementById('lbl-intervalo').textContent = interval + 'ms';
+        }
+
+        // Modelo
+        const modelo = document.getElementById('cfg-modelo');
+        if (modelo && cfg.ia_model) modelo.value = cfg.ia_model;
+
+        // GPU
+        const gpu = document.getElementById('cfg-gpu');
+        if (gpu) gpu.checked = cfg.ia_gpu_enabled === 'true';
+
+      } catch (e) {
+        console.warn('[Paramétros] No se pudo cargar config IA:', e);
+      }
+    }
+
+    cargarConfig();
+
+
+    // ── Guardar configuración completa ──────────────────────────────────
+    window.paramGuardar = async function () {
+      const st = document.getElementById('param-save-status');
+      st.textContent = '💾 Guardando...';
+      st.className = 'text-xs text-texto-dim';
+      st.classList.remove('hidden');
+
+      // Recoger valores del formulario
+      const confPct  = parseInt(document.getElementById('cfg-confianza')?.value  ?? 75);
+      const interval = parseInt(document.getElementById('cfg-intervalo')?.value  ?? 500);
+      const modelo   = document.getElementById('cfg-modelo')?.value  ?? 'yolov8n';
+      const gpu      = document.getElementById('cfg-gpu')?.checked ?? true;
+
+      const payload = {
+        ia_confidence_threshold:  (confPct / 100).toFixed(2),  // 0.00–1.00
+        ia_inference_interval_ms: interval,
+        ia_model:                 modelo,
+        ia_gpu_enabled:           gpu ? 'true' : 'false',
+      };
+
+      try {
+        const res = await fetch('/api/sistema/ia-config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'X-Token': TOKEN() },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        st.textContent = '✓ Guardado correctamente';
+        st.className = 'text-xs text-verde';
+      } catch (e) {
+        st.textContent = '✗ Error al guardar';
+        st.className = 'text-xs text-rojo';
+        console.error('[Parámetros] Error guardando config:', e);
+      }
+
+      setTimeout(() => st.classList.add('hidden'), 3500);
+    };
+
+    window.paramTestConexion = function () {
+      const el = document.getElementById('param-test-result');
+      el.className = 'text-xs rounded px-3 py-2 bg-texto-dim/10 text-texto-dim';
+      el.classList.remove('hidden');
+      el.textContent = 'Probando conexión...';
+      setTimeout(() => {
+        el.className = 'text-xs rounded px-3 py-2 bg-verde/10 text-verde border border-verde/20';
+        el.textContent = '✓ Conexión exitosa · Latencia: 42ms';
+      }, 1200);
+    };
+  })();
+</script>

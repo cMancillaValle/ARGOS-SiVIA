@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="es" id="html-root">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ARGOS - SiViA · Iniciar Sesión</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Exo+2:wght@300;400;600&family=Share+Tech+Mono&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="css/argos-design.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: { rojo: '#E8001D', amarillo: '#FFC800', verde: '#00E5A0', azul: '#0FA3D8' },
+          fontFamily: { rajdhani: ['Rajdhani', 'sans-serif'], mono: ['"Share Tech Mono"', 'monospace'] }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Exo 2', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+      background-color: var(--bg);
+      color: var(--texto);
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: linear-gradient(rgba(232, 0, 29, 0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(232, 0, 29, 0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .bg-blob-1 {
+      position: fixed;
+      width: 700px;
+      height: 700px;
+      top: -200px;
+      right: -200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(232, 0, 29, 0.06), transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .bg-blob-2 {
+      position: fixed;
+      width: 500px;
+      height: 500px;
+      bottom: -150px;
+      left: -150px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(15, 163, 216, 0.05), transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .bg-word {
+      position: fixed;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 280px;
+      font-weight: 700;
+      color: rgba(232, 0, 29, 0.03);
+      right: -40px;
+      bottom: -40px;
+      line-height: 1;
+      pointer-events: none;
+      user-select: none;
+      z-index: 0;
+    }
+
+    .login-card {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 460px;
+      background: var(--bg2);
+      border: 1px solid var(--borde);
+      border-radius: 20px;
+      padding: 36px 32px 28px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+      animation: argos-slideUp 0.35s ease;
+    }
+
+    /* Avatar preview en registro */
+    #reg-avatar-preview {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      object-fit: cover;
+      display: none;
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .login-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 15px;
+      background: linear-gradient(90deg, var(--rojo-osc), var(--rojo), var(--amarillo), var(--rojo));
+      border-radius: 20px 20px 0 0;
+    }
+
+    @keyframes argos-slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(14px)
+      }
+
+      to {
+        opacity: 1;
+        transform: none
+      }
+    }
+
+    .api-badge {
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg2);
+      border: 1px solid var(--borde);
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 1px;
+      color: var(--dim);
+    }
+
+    .api-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .api-dot.on {
+      background: var(--verde);
+      box-shadow: 0 0 5px var(--verde);
+      animation: argos-pulse 2s infinite;
+    }
+
+    .api-dot.off {
+      background: var(--rojo);
+    }
+
+    .login-theme-btn {
+      position: fixed;
+      top: 14px;
+      right: 170px;
+      z-index: 20;
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      border: 1px solid var(--borde);
+      background: var(--bg2);
+      color: var(--dim);
+      font-size: 15px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .login-theme-btn:hover {
+      border-color: var(--rojo);
+      transform: rotate(15deg);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="bg-blob-1"></div>
+  <div class="bg-blob-2"></div>
+  <div class="bg-word">ARGOS</div>
+
+  <button class="login-theme-btn" onclick="loginToggleTheme()" title="Cambiar tema">
+    <span id="login-theme-icon">☀️</span>
+  </button>
+
+  <div class="api-badge">
+    <div class="api-dot" id="api-dot"></div>
+    <span id="api-label">Verificando...</span>
+  </div>
+
+  <!-- ══════════════ CARD ══════════════ -->
+  <div class="login-card">
+
+    <a href="index.html" class="font-mono inline-flex items-center gap-1 mb-5 transition-colors hover:underline"
+      style="font-size:9px;letter-spacing:2px;color:var(--dim)">← Volver al inicio</a>
+
+    <!-- Branding -->
+    <div class="flex items-center gap-3 mb-5">
+      <div class="font-rajdhani font-bold text-xl py-1.5 px-4 text-white flex-shrink-0" style="background:linear-gradient(135deg,var(--rojo-osc),var(--rojo));
+                clip-path:polygon(0 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,0 100%);
+                letter-spacing:4px;box-shadow:0 0 24px rgba(232,0,29,0.4)">ARGOS</div>
+      <div>
+        <div class="font-rajdhani text-xl font-bold tracking-wide" style="color:var(--texto)">
+          SiV<span style="color:var(--rojo)">IA</span>
+        </div>
+        <div class="font-mono uppercase" style="font-size:8px;letter-spacing:2px;color:var(--dim)">Sistema de Visión
+          Artificial · TransMilenio</div>
+      </div>
+    </div>
+    <div class="h-px mb-5" style="background:rgba(232,0,29,0.12)"></div>
+
+    <!-- ── PANEL: LOGIN ── -->
+    <div id="panel-login">
+      <div class="font-rajdhani text-lg font-bold mb-1" style="color:var(--texto)">Acceso al Sistema</div>
+      <div class="text-xs mb-4" style="color:var(--dim)">Ingrese sus credenciales de operador</div>
+
+      <div class="mb-3">
+        <label class="argos-label" for="inp-user">Usuario</label>
+        <input class="argos-input" id="inp-user" type="text" placeholder="nombre.usuario" autocomplete="username">
+      </div>
+      <div class="mb-1">
+        <label class="argos-label" for="inp-pass">Contraseña</label>
+        <div class="relative">
+          <input class="argos-input pr-10" id="inp-pass" type="password" placeholder="••••••••"
+            autocomplete="current-password">
+          <button type="button"
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 focus:outline-none"
+            onclick="togglePasswordVisibility(this, 'inp-pass')" title="Mostrar/Ocultar contraseña">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="text-right mb-4">
+        <button onclick="showForgotPanel()" class="font-mono transition-colors hover:underline"
+          style="font-size:10px;color:var(--dim)">
+          ¿Olvidaste tu contraseña?
+        </button>
+      </div>
+
+      <div class="text-xs px-3 py-2 rounded-lg border mb-3 hidden" id="err-msg"
+        style="background:rgba(232,0,29,0.08);border-color:rgba(232,0,29,0.3);color:var(--rojo)"></div>
+
+      <button class="btn btn-primary w-full justify-center font-rajdhani font-bold tracking-widest" id="btn-login"
+        onclick="doLogin()">
+        <div class="btn-spinner hidden" id="spinner"></div>
+        <span id="btn-text">Ingresar →</span>
+      </button>
+
+      <div class="mt-5 text-center" style="color:rgba(122,147,178,0.55);font-size:10px">
+        <span
+          style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;letter-spacing:2px;color:#A855F7">CERBERUS
+          Auth (2FA)</span>
+        <div class="mt-1 leading-snug" style="font-size:9px;max-width:280px;margin:4px auto 0">
+          Compatible con apps de autenticación como Google Authenticator, Authy, Microsoft Authenticator
+        </div>
+      </div>
+
+      <div class="mt-4 flex items-center justify-between font-mono" style="font-size:9px;color:var(--dim)">
+        <div><span class="w-2 h-2 rounded-full inline-block mr-1.5 pulse-dot"
+            style="background:var(--verde)"></span>TransMilenio S.A. · Sistema activo</div>
+        <div style="opacity:0.35">V1.7.5 · 2026</div>
+      </div>
+      <!-- botón registro al pie del panel login -->
+      <div class="mt-4 text-center" style="font-size:11px;color:var(--dim)">
+        ¿No tienes cuenta?
+        <button onclick="showPanel('panel-registro')" class="font-semibold hover:underline transition-colors ml-1"
+          style="color:var(--azul)">Solicitar acceso</button>
+      </div>
+    </div>
+
+    <!-- ── PANEL: REGISTRO ── (oculto por defecto) -->
+    <div id="panel-registro" style="display:none">
+      <div class="font-rajdhani text-lg font-bold mb-1" style="color:var(--texto)">Solicitar Acceso</div>
+      <div class="text-xs mb-4" style="color:var(--dim)">Tu cuenta quedará pendiente de aprobación por un administrador.
+      </div>
+
+      <!-- Avatar -->
+      <div class="flex items-center gap-4 mb-4">
+        <div
+          class="relative w-14 h-14 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 cursor-pointer"
+          style="background:linear-gradient(135deg,var(--rojo-osc),var(--rojo))"
+          onclick="document.getElementById('reg-avatar-input').click()" title="Elegir foto">
+          <span id="reg-avatar-letter" class="font-rajdhani font-bold text-xl text-white">?</span>
+          <img id="reg-avatar-preview" src="" alt=""
+            style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+        </div>
+        <div>
+          <button onclick="document.getElementById('reg-avatar-input').click()" class="btn btn-ghost btn-sm">
+            📸 Foto de perfil
+          </button>
+          <div class="text-[9px] mt-1" style="color:var(--muted)">Opcional · JPG/PNG · Máx 300 KB</div>
+        </div>
+        <input type="file" id="reg-avatar-input" accept="image/*" class="hidden" onchange="previewRegAvatar(event)">
+      </div>
+
+      <!-- Campos -->
+      <div class="grid grid-cols-2 gap-3 mb-3">
+        <div>
+          <label class="argos-label">Nombre completo</label>
+          <input id="reg-nombre" type="text" placeholder="Tu nombre" class="argos-input">
+        </div>
+        <div>
+          <label class="argos-label">Usuario</label>
+          <input id="reg-username" type="text" placeholder="sin.espacios" class="argos-input">
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="argos-label">Email</label>
+        <input id="reg-email" type="email" placeholder="correo@ejemplo.com" class="argos-input">
+      </div>
+      <div class="mb-3">
+        <label class="argos-label">Contraseña</label>
+        <div class="relative">
+          <input id="reg-password" type="password" placeholder="Mín 8 · 1 mayús · 1 núm · 1 símb"
+            class="argos-input pr-10">
+          <button type="button"
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 focus:outline-none"
+            onclick="togglePasswordVisibility(this, 'reg-password')" title="Mostrar/Ocultar contraseña">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="mb-4">
+        <label class="argos-label">Rol solicitado</label>
+        <select id="reg-rol" class="argos-input">
+          <option value="">Selecciona un rol...</option>
+          <option value="operador">Operador - Monitoreo en tiempo real</option>
+          <option value="supervisor">Supervisor - Supervisión y reportes</option>
+          <option value="analista">Analista - Análisis e informes</option>
+          <option value="tecnico">Técnico - Infraestructura y configuración</option>
+          <option value="auditor">Auditor - Auditoría y seguimiento</option>
+        </select>
+      </div>
+
+      <div class="text-xs px-3 py-2 rounded-lg border mb-3 hidden" id="err-reg"
+        style="background:rgba(232,0,29,0.08);border-color:rgba(232,0,29,0.3);color:var(--rojo)"></div>
+      <div class="text-xs px-3 py-2 rounded-lg border mb-3 hidden" id="ok-reg"
+        style="background:rgba(0,229,160,0.08);border-color:rgba(0,229,160,0.3);color:var(--verde)"></div>
+
+      <button class="btn btn-primary w-full justify-center font-rajdhani font-bold tracking-widest" id="btn-reg"
+        onclick="doRegistro()">
+        <div class="btn-spinner hidden" id="spinner-reg"></div>
+        <span id="btn-reg-text">Enviar solicitud →</span>
+      </button>
+
+      <button onclick="backToLogin()" class="w-full mt-3 font-mono text-center transition-colors hover:underline"
+        style="font-size:10px;color:var(--dim)">
+        ← Volver al inicio de sesión
+      </button>
+    </div>
+    <div id="panel-2fa" style="display:none">
+      <div class="text-center mb-5">
+        <div class="w-14 h-14 rounded-full flex items-center justify-center text-3xl mx-auto mb-3 border"
+          style="background:rgba(232,0,29,0.08);border-color:rgba(232,0,29,0.25)">🛡️</div>
+        <div class="font-rajdhani text-lg font-bold mb-1" style="color:var(--texto)">Verificación 2FA</div>
+        <div class="text-xs" style="color:var(--dim)">Ingresa el código de tu app TOTP<br>o un código de respaldo</div>
+      </div>
+      <div class="mb-4">
+        <label class="argos-label">Código de autenticación</label>
+        <input id="inp-2fa-code" type="text" maxlength="8" placeholder="000000"
+          class="argos-input font-mono text-center" style="font-size:22px;letter-spacing:8px">
+      </div>
+      <div class="text-xs px-3 py-2 rounded-lg border mb-3 hidden" id="err-2fa"
+        style="background:rgba(232,0,29,0.08);border-color:rgba(232,0,29,0.3);color:var(--rojo)"></div>
+      <button class="btn btn-primary w-full justify-center font-rajdhani font-bold tracking-widest" id="btn-2fa"
+        onclick="do2FA()">
+        <div class="btn-spinner hidden" id="spinner-2fa"></div>
+        <span id="btn-2fa-text">Verificar →</span>
+      </button>
+      <button onclick="backToLogin()" class="w-full mt-3 font-mono text-center transition-colors hover:underline"
+        style="font-size:10px;color:var(--dim)">
+        ← Volver al inicio de sesión
+      </button>
+    </div>
+
+    <!-- ── PANEL: OLVIDÉ CONTRASEÑA ── (oculto por defecto) -->
+    <div id="panel-forgot" style="display:none">
+
+      <!-- Paso 1: pedir identificador -->
+      <div id="forgot-step-1">
+        <div class="font-rajdhani text-lg font-bold mb-1" style="color:var(--texto)">Restablecer Contraseña</div>
+        <div class="text-xs mb-4" style="color:var(--dim)">Ingresa tu usuario o email. Recibirás un código de
+          verificación.</div>
+        <div class="mb-3">
+          <label class="argos-label">Usuario o Email</label>
+          <input id="forgot-ident" type="text" placeholder="usuario o email@..." class="argos-input">
+        </div>
+        <div class="text-xs px-3 py-2 rounded-lg border mb-3 hidden" id="err-forgot"
+          style="background:rgba(232,0,29,0.08);border-color:rgba(232,0,29,0.3);color:var(--rojo)"></div>
+        <button id="btn-forgot-enviar" class="btn btn-primary w-full justify-center font-rajdhani font-bold"
+          onclick="forgotSolicitar()">
+          Enviar código →
+        </button>
+      </div>
+
+      <!-- Paso 2: código + nueva contraseña -->
+      <div id="forgot-step-2" style="display:none">
+        <div class="font-rajdhani text-lg font-bold mb-1" style="color:var(--texto)">Ingresa el Código</div>
+        <div class="text-xs mb-4" style="color:var(--dim)">Revisa tu correo. El código expira en 10 minutos.</div>
+        <div class="mb-3">
+          <label class="argos-label">Código de verificación</label>
+          <input id="forgot-codigo" type="text" maxlength="6" placeholder="123456"
+            class="argos-input font-mono text-center" style="font-size:20px;letter-spacing:6px">
+        </div>
+        <div class="mb-3">
+          <label class="argos-label">Nueva contraseña</label>
+          <div class="relative">
+            <input id="forgot-nueva" type="password" placeholder="Mín 8 · 1 mayús · 1 núm · 1 símb"
+              class="argos-input pr-10">
+            <button type="button"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 focus:outline-none"
+              onclick="togglePasswordVisibility(this, 'forgot-nueva')" title="Mostrar/Ocultar contraseña">
+              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="text-xs px-3 py-2 rounded-lg border mb-3 hidden" id="err-forgot-2"
+          style="background:rgba(232,0,29,0.08);border-color:rgba(232,0,29,0.3);color:var(--rojo)"></div>
+        <button class="btn btn-primary w-full justify-center font-rajdhani font-bold" onclick="forgotConfirmar()">
+          Restablecer contraseña ✓
+        </button>
+      </div>
+
+      <button onclick="backToLogin()" class="w-full mt-4 font-mono text-center transition-colors hover:underline"
+        style="font-size:10px;color:var(--dim)">
+        ← Volver al inicio de sesión
+      </button>
+    </div>
+
+  </div><!-- /card -->
+
+  <script src="js/api.js"></script>
+  <script>
+    // ── Tema ──────────────────────────────────────────────────────────────────────
+    const THEME_KEY = 'argos-theme';
+    function applyThemeLogin(t) {
+      document.getElementById('html-root').classList.toggle('light', t === 'light');
+      const icon = document.getElementById('login-theme-icon');
+      if (icon) icon.textContent = t === 'light' ? '🌙' : '☀️';
+    }
+    function loginToggleTheme() {
+      const isLight = document.getElementById('html-root').classList.contains('light');
+      const next = isLight ? 'dark' : 'light';
+      localStorage.setItem(THEME_KEY, next);
+      applyThemeLogin(next);
+    }
+    applyThemeLogin(localStorage.getItem(THEME_KEY) || 'dark');
+
+    // ── Ya autenticado ────────────────────────────────────────────────────────────
+    if (sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token')) {
+      window.location.replace('dashboard.html');
+    }
+
+    // ── Estado API ────────────────────────────────────────────────────────────────
+    (async function () {
+      const dot = document.getElementById('api-dot');
+      const lbl = document.getElementById('api-label');
+      try {
+        const r = await fetch('/api', { signal: AbortSignal.timeout(3000), cache: 'no-store' });
+        dot.className = r.ok ? 'api-dot on' : 'api-dot off';
+        lbl.textContent = r.ok ? 'API ONLINE' : 'API ERROR ' + r.status;
+      } catch {
+        dot.className = 'api-dot off'; lbl.textContent = 'API OFFLINE';
+      }
+    })();
+
+    // ── Panel switcher (un solo panel visible a la vez) ───────────────────────────
+    let _tokenTemp = '', _usernameReset = '';
+
+    function showPanel(id) {
+      ['panel-login', 'panel-2fa', 'panel-forgot', 'panel-registro'].forEach(p => {
+        const el = document.getElementById(p);
+        if (el) el.style.display = (p === id) ? 'block' : 'none';
+      });
+    }
+    function showForgotPanel() { showPanel('panel-forgot'); }
+    function backToLogin() {
+      showPanel('panel-login');
+      document.getElementById('forgot-step-1').style.display = 'block';
+      document.getElementById('forgot-step-2').style.display = 'none';
+      // Limpiar registro
+      ['reg-nombre', 'reg-username', 'reg-email', 'reg-password'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = '';
+      });
+      const regRol = document.getElementById('reg-rol'); if (regRol) regRol.value = '';
+      const errReg = document.getElementById('err-reg'); if (errReg) errReg.classList.add('hidden');
+      const okReg = document.getElementById('ok-reg'); if (okReg) okReg.classList.add('hidden');
+    }
+
+    // ── Login principal ───────────────────────────────────────────────────────────
+    async function doLogin() {
+      const user = document.getElementById('inp-user').value.trim();
+      const pass = document.getElementById('inp-pass').value;
+      const err = document.getElementById('err-msg');
+      const btn = document.getElementById('btn-login');
+      const spin = document.getElementById('spinner');
+      const txt = document.getElementById('btn-text');
+      err.classList.add('hidden');
+      if (!user || !pass) {
+        err.textContent = 'Usuario y contraseña son obligatorios.';
+        err.classList.remove('hidden'); return;
+      }
+      btn.disabled = true; spin.classList.remove('hidden'); txt.textContent = 'Verificando...';
+      try {
+        const r = await fetch('/api/auth/login', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ usuario: user, password: pass }),
+        });
+        const d = await r.json();
+        btn.disabled = false; spin.classList.add('hidden');
+
+        if (r.ok) {
+          if (d['2fa_requerido']) {
+            _tokenTemp = d.token_temp;
+            txt.textContent = 'Ingresar →';
+            showPanel('panel-2fa');
+            setTimeout(() => document.getElementById('inp-2fa-code')?.focus(), 200);
+            return;
+          }
+          if (d.token) {
+            sessionStorage.setItem('argos_token', d.token);
+            sessionStorage.setItem('argos_user', JSON.stringify(d.usuario || {}));
+            txt.textContent = '✓ Acceso concedido';
+            setTimeout(() => window.location.replace('dashboard.html'), 400);
+            return;
+          }
+        }
+        txt.textContent = 'Ingresar →';
+        err.textContent = d.error || 'Credenciales incorrectas.';
+        err.classList.remove('hidden');
+      } catch {
+        btn.disabled = false; spin.classList.add('hidden'); txt.textContent = 'Ingresar →';
+        err.textContent = 'Error de conexión. ¿Está Flask corriendo?';
+        err.classList.remove('hidden');
+      }
+    }
+
+    // ── 2FA ───────────────────────────────────────────────────────────────────────
+    async function do2FA() {
+      const code = document.getElementById('inp-2fa-code').value.trim();
+      const err = document.getElementById('err-2fa');
+      const btn = document.getElementById('btn-2fa');
+      const spin = document.getElementById('spinner-2fa');
+      const txt = document.getElementById('btn-2fa-text');
+      err.classList.add('hidden');
+      if (!code) { err.textContent = 'Ingresa el código.'; err.classList.remove('hidden'); return; }
+      btn.disabled = true; spin.classList.remove('hidden'); txt.textContent = 'Verificando...';
+      try {
+        const r = await fetch('/api/auth/login-2fa', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token_temp: _tokenTemp, codigo: code }),
+        });
+        const d = await r.json();
+        if (r.ok && d.token) {
+          sessionStorage.setItem('argos_token', d.token);
+          sessionStorage.setItem('argos_user', JSON.stringify(d.usuario || {}));
+          txt.textContent = '✓ Acceso concedido';
+          setTimeout(() => window.location.replace('dashboard.html'), 400);
+        } else {
+          btn.disabled = false; spin.classList.add('hidden'); txt.textContent = 'Verificar →';
+          err.textContent = d.error || 'Código incorrecto.'; err.classList.remove('hidden');
+        }
+      } catch {
+        btn.disabled = false; spin.classList.add('hidden'); txt.textContent = 'Verificar →';
+        err.textContent = 'Error de conexión.'; err.classList.remove('hidden');
+      }
+    }
+
+    // ── Olvidé contraseña: Paso 1 ─────────────────────────────────────────────────
+    let _forgotCooldownTimer = null;
+
+    async function forgotSolicitar() {
+      const ident = document.getElementById('forgot-ident').value.trim();
+      const err = document.getElementById('err-forgot');
+      const btn = document.getElementById('btn-forgot-enviar');
+
+      err.classList.add('hidden');
+      if (!ident) { err.textContent = 'Ingresa tu usuario o email.'; err.classList.remove('hidden'); return; }
+
+      // Aplicar estado de carga inicial
+      btn.disabled = true;
+      btn.textContent = 'Enviando...';
+
+      try {
+        const r = await fetch('/api/auth/reset-password/solicitar', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identificador: ident }),
+        });
+        const d = await r.json();
+
+        if (r.ok) {
+          _usernameReset = d.username || ident;
+          document.getElementById('forgot-step-1').style.display = 'none';
+          document.getElementById('forgot-step-2').style.display = 'block';
+          if (d.dev_code) {
+            const note = document.getElementById('err-forgot-2');
+            note.style.background = 'rgba(15,163,216,0.08)';
+            note.style.borderColor = 'rgba(15,163,216,0.3)';
+            note.style.color = 'var(--azul)';
+            note.textContent = `⚙️ Modo dev - Código: ${d.dev_code}`;
+            note.classList.remove('hidden');
+          }
+          // Iniciar cooldown timer preventivo (60s) en background por si el usuario vuelve
+          startForgotCooldown(60);
+        } else {
+          err.textContent = d.error || 'Error de solicitud.';
+          err.classList.remove('hidden');
+          // Error no esperado (Rate limit, usuario no válido, etc.): bloqueo breve o según convenga
+          if (r.status === 429) {
+            startForgotCooldown(60);
+          } else {
+            btn.disabled = false;
+            btn.textContent = 'Enviar código →';
+          }
+        }
+      } catch {
+        err.textContent = 'Error de conexión.'; err.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Enviar código →';
+      }
+    }
+
+    function startForgotCooldown(seconds) {
+      const btn = document.getElementById('btn-forgot-enviar');
+      if (!btn) return;
+      btn.disabled = true;
+      let left = seconds;
+
+      if (_forgotCooldownTimer) clearInterval(_forgotCooldownTimer);
+
+      _forgotCooldownTimer = setInterval(() => {
+        left--;
+        if (left <= 0) {
+          clearInterval(_forgotCooldownTimer);
+          btn.disabled = false;
+          btn.textContent = 'Enviar código →';
+        } else {
+          btn.textContent = `Reenviar en ${left}s`;
+        }
+      }, 1000);
+    }
+
+    // ── Olvidé contraseña: Paso 2 ─────────────────────────────────────────────────
+    async function forgotConfirmar() {
+      const codigo = document.getElementById('forgot-codigo').value.trim();
+      const nueva = document.getElementById('forgot-nueva').value;
+      const err = document.getElementById('err-forgot-2');
+      try {
+        const r = await fetch('/api/auth/reset-password/confirmar', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: _usernameReset, codigo, nueva_password: nueva }),
+        });
+        const d = await r.json();
+        if (r.ok) {
+          showPanel('panel-login');
+          const msgEl = document.getElementById('err-msg');
+          msgEl.textContent = '✓ Contraseña restablecida. Ya puedes iniciar sesión.';
+          msgEl.style.background = 'rgba(0,229,160,0.08)';
+          msgEl.style.borderColor = 'rgba(0,229,160,0.3)';
+          msgEl.style.color = 'var(--verde)';
+          msgEl.classList.remove('hidden');
+        } else {
+          err.textContent = d.error; err.classList.remove('hidden');
+        }
+      } catch {
+        err.textContent = 'Error de conexión.'; err.classList.remove('hidden');
+      }
+    }
+
+    // ── Enter en inputs ───────────────────────────────────────────────────────────
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return;
+      const id = document.activeElement?.id;
+      if (['inp-user', 'inp-pass'].includes(id)) doLogin();
+      if (id === 'inp-2fa-code') do2FA();
+      if (id === 'forgot-ident') forgotSolicitar();
+      if (['forgot-codigo', 'forgot-nueva'].includes(id)) forgotConfirmar();
+      if (['reg-nombre', 'reg-username', 'reg-email', 'reg-password'].includes(id)) doRegistro();
+    });
+
+    // ── Preview avatar en registro ────────────────────────────────────────────────
+    function previewRegAvatar(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      if (file.size > 400000) { alert('Imagen demasiado grande. Máx 300 KB.'); return; }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const prev = document.getElementById('reg-avatar-preview');
+        const let_ = document.getElementById('reg-avatar-letter');
+        prev.src = e.target.result;
+        prev.style.display = 'block';
+        if (let_) let_.style.display = 'none';
+        // Guardar temporalmente en window para usarlo en doRegistro()
+        window._regAvatarDataUrl = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // ── Registro público ──────────────────────────────────────────────────────────
+    async function doRegistro() {
+      const nombre = document.getElementById('reg-nombre').value.trim();
+      const username = document.getElementById('reg-username').value.trim().replace(/\s+/g, '_').toLowerCase();
+      const email = document.getElementById('reg-email').value.trim();
+      const password = document.getElementById('reg-password').value;
+      const rol = document.getElementById('reg-rol').value;
+      const avatar = window._regAvatarDataUrl || '';
+
+      const errEl = document.getElementById('err-reg');
+      const okEl = document.getElementById('ok-reg');
+      const btn = document.getElementById('btn-reg');
+      const spin = document.getElementById('spinner-reg');
+      const txt = document.getElementById('btn-reg-text');
+
+      errEl.classList.add('hidden');
+      okEl.classList.add('hidden');
+
+      // Validaciones client-side
+      if (!nombre || !username || !password || !rol) {
+        errEl.textContent = 'Completa todos los campos obligatorios (nombre, usuario, contraseña y rol).';
+        errEl.classList.remove('hidden'); return;
+      }
+      if (password.length < 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password) || !/[^a-zA-Z0-9]/.test(password)) {
+        errEl.textContent = 'La contraseña debe tener mín 8 caracteres, 1 mayúscula, 1 número y 1 símbolo.';
+        errEl.classList.remove('hidden'); return;
+      }
+      if (username.length < 3) {
+        errEl.textContent = 'El nombre de usuario debe tener al menos 3 caracteres.';
+        errEl.classList.remove('hidden'); return;
+      }
+
+      btn.disabled = true; spin.classList.remove('hidden'); txt.textContent = 'Enviando...';
+
+      try {
+        const r = await fetch('/api/auth/registro', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nombre, username, email, password, rol, avatar_url: avatar }),
+        });
+        const d = await r.json();
+
+        btn.disabled = false; spin.classList.add('hidden'); txt.textContent = 'Enviar solicitud →';
+
+        if (r.ok) {
+          // Éxito: mostrar mensaje y limpiar formulario
+          okEl.innerHTML = `<strong>✓ Solicitud enviada.</strong><br>${d.mensaje || 'Un administrador revisará tu cuenta y la activará pronto.'}`;
+          okEl.classList.remove('hidden');
+          // Limpiar campos
+          ['reg-nombre', 'reg-username', 'reg-email', 'reg-password'].forEach(id => {
+            document.getElementById(id).value = '';
+          });
+          document.getElementById('reg-rol').value = '';
+          document.getElementById('reg-avatar-preview').style.display = 'none';
+          document.getElementById('reg-avatar-letter').style.display = '';
+          window._regAvatarDataUrl = null;
+          // Redirigir al login tras 4s
+          setTimeout(() => backToLogin(), 4000);
+        } else {
+          errEl.textContent = d.error || 'Error al crear la cuenta.';
+          errEl.classList.remove('hidden');
+        }
+      } catch {
+        btn.disabled = false; spin.classList.add('hidden'); txt.textContent = 'Enviar solicitud →';
+        errEl.textContent = 'Error de conexión. Verifica que el servidor esté activo.';
+        errEl.classList.remove('hidden');
+      }
+    }
+  </script>
+</body>
+
+</html>

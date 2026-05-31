@@ -1,0 +1,84 @@
+# ═══════════════════════════════════════════════════════════════
+#  ARGOS SiViA — Control de Versiones (.gitignore)
+# ═══════════════════════════════════════════════════════════════
+
+# ── Python y Entornos Virtuales ──────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+vision_env/
+backend_env/
+build/
+dist/
+*.egg-info/
+
+# ── Archivos de Entorno y Configuración Sensible ─────────────────────────────
+# (¡NUNCA SUBIR AL REPOSITORIO!)
+.env
+.env.*.local
+.ngrok_token
+.ngrok_url_actual
+
+# ── Modelos de Inteligencia Artificial (Pesos Binarios Pesados) ──────────────
+# Descargar con: pip install ultralytics && yolo download
+*.pt
+*.pth
+*.onnx
+*.weights
+*.caffemodel
+*.tflite
+
+# ── Datos de Entrenamiento y Ejecuciones YOLO ────────────────────────────────
+# Las carpetas de dataset y runs se generan localmente
+runs/
+backend/core_ia/athena/dataset/images/
+backend/core_ia/athena/dataset/labels/
+
+# ── Bases de Datos Locales ───────────────────────────────────────────────────
+*.db
+*.sqlite3
+
+# ── Dependencias Node.js y Builds de Frontend ────────────────────────────────
+node_modules/
+frontend-hermes/dist/
+frontend-hermes/.vite/
+dist/
+dist-ssr/
+*.local
+
+# ── Carpetas ignoradas del proyecto ─────────────────────────────────────────
+# Scripts de instalación (solo para distribución, no para desarrollo)
+installer/
+# Modelos y prototipos experimentales
+modelos_nuevos/
+# Tests locales (no hacen parte del repositorio académico principal)
+tests/
+
+# ── Logs y Archivos Temporales de Ejecución ──────────────────────────────────
+logs/
+*.log
+athena_worker.log
+
+# ── Editor e IDEs ────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ── Sistema Operativo ────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Backups y Archivos Temporales ────────────────────────────────────────────
+*.bak
+*.tmp
+*.temp

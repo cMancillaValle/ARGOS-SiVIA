@@ -1,0 +1,969 @@
+/*
+ * ARGOS SiViA - Sistema de Diseño Global v1.5.0
+ * ================================================
+ * Combina la paleta ARGOS (rojo, amarillo, verde, azul) con
+ * el sistema de layout CSS del modelo nuevo (Syne + IBM Plex Mono).
+ *
+ * Uso: Incluir en dashboard.html, login.html, index.html.
+ *      Tailwind config debe tener darkMode: 'class'.
+ *
+ * Tema: Cambiar html.light en <html> via JS.
+ *       localStorage key: 'argos-theme'
+ */
+
+/* ═══════════════════════════════════════════════════════════════
+   1. VARIABLES DE COLOR (Modo Oscuro por defecto)
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  /* Fondos */
+  --bg: #060A0F;
+  --bg2: #0D1520;
+  --bg3: #111E2E;
+  --bg4: #162032;
+  --surface: #111E2E;
+  --panel: #0d1520;
+
+  /* Texto */
+  --texto: #E2EAF4;
+  --dim: #7A93B2;
+  --muted: #3A5070;
+
+  /* Bordes */
+  --borde: rgba(232, 0, 29, 0.20);
+  --borde2: rgba(255, 255, 255, 0.06);
+  --borde3: rgba(255, 255, 255, 0.10);
+
+  /* Paleta ARGOS */
+  --rojo: #E8001D;
+  --rojo-osc: #9C0012;
+  --amarillo: #FFC800;
+  --verde: #00E5A0;
+  --azul: #0FA3D8;
+
+  /* Sombras */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* ── Modo Claro ──────────────────────────────────────────────── */
+html.light {
+  --bg: #F0F4F8;
+  --bg2: #FFFFFF;
+  --bg3: #E8EDF4;
+  --bg4: #DDE4EF;
+  --surface: #EEF2F8;
+  --panel: #FFFFFF;
+
+  --texto: #1A2035;
+  --dim: #5A6A8A;
+  --muted: #94A3B8;
+
+  --borde: rgba(232, 0, 29, 0.15);
+  --borde2: rgba(0, 0, 0, 0.07);
+  --borde3: rgba(0, 0, 0, 0.12);
+
+  --rojo-osc: #B8000E;
+  --amarillo: #D97706;
+  --verde: #059669;
+  --azul: #0284C7;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.10);
+  --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.12);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   2. RESET Y BASE
+   ═══════════════════════════════════════════════════════════════ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Exo 2', 'Syne', sans-serif;
+  background-color: var(--bg);
+  color: var(--texto);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(232, 0, 29, 0.25);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(232, 0, 29, 0.45);
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   3. TIPOGRAFÍA Y FUENTES
+   ═══════════════════════════════════════════════════════════════ */
+.font-display {
+  font-family: 'Syne', 'Rajdhani', sans-serif;
+}
+
+.font-mono {
+  font-family: 'IBM Plex Mono', 'Share Tech Mono', monospace;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   4. SIDEBAR - Sistema del modelo nuevo (con ARGOS colors)
+   ═══════════════════════════════════════════════════════════════ */
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg3) transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+  width: 3px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--borde2);
+  border-radius: 999px;
+}
+
+/* Nav items - base */
+.nav-item {
+  color: var(--dim);
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  text-align: left;
+  transition: color 0.18s ease, background 0.18s ease;
+}
+
+.nav-icon {
+  color: var(--muted);
+  background: transparent;
+  transition: color 0.18s ease, background 0.18s ease;
+}
+
+/* Nav items - hover */
+.nav-item:hover {
+  color: var(--texto);
+  background-color: var(--borde2);
+}
+
+.nav-item:hover .nav-icon {
+  background-color: rgba(232, 0, 29, 0.08);
+  color: var(--rojo);
+}
+
+/* Nav items - activo */
+.nav-item.is-active {
+  color: var(--rojo);
+  background-color: rgba(232, 0, 29, 0.08);
+}
+
+.nav-item.is-active .nav-icon {
+  background-color: rgba(232, 0, 29, 0.15);
+  color: var(--rojo);
+}
+
+.nav-item.is-active .nav-label {
+  color: var(--rojo);
+}
+
+/* Nav items - expandido (padre de submenú abierto) */
+.nav-item.is-expanded {
+  color: var(--texto);
+  background-color: var(--borde2);
+}
+
+.nav-item.is-expanded .nav-icon {
+  background-color: rgba(232, 0, 29, 0.08);
+  color: var(--rojo);
+}
+
+.nav-item.is-expanded .nav-chevron {
+  transform: rotate(180deg);
+  color: var(--rojo);
+}
+
+/* Sublinks */
+.nav-sublink {
+  display: block;
+  padding: 7px 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dim);
+  text-decoration: none;
+  transition: color 0.18s ease, background 0.18s ease, padding-left 0.18s ease;
+  font-family: 'Exo 2', 'Syne', sans-serif;
+}
+
+.nav-sublink:hover {
+  color: var(--texto);
+  background-color: var(--borde2);
+  padding-left: 14px;
+}
+
+.nav-sublink.is-active {
+  color: var(--rojo);
+  background-color: rgba(232, 0, 29, 0.08);
+  padding-left: 14px;
+}
+
+/* Accordions - animación */
+.submenu {
+  transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.submenu.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Chevron */
+.nav-chevron {
+  transition: transform 0.3s ease, color 0.18s ease;
+}
+
+/* Focus visible */
+.nav-item:focus-visible,
+.nav-sublink:focus-visible {
+  outline: 2px solid var(--rojo);
+  outline-offset: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   5. SISTEMA DE BOTONES ARGOS (del argos_button_system.html)
+   ═══════════════════════════════════════════════════════════════ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Syne', 'Exo 2', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0 16px;
+  height: 38px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  white-space: nowrap;
+  text-decoration: none;
+  user-select: none;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn svg {
+  flex-shrink: 0;
+}
+
+/* Crear / Acción primaria (rojo ARGOS) */
+.btn-primary,
+.btn-create {
+  background: var(--rojo);
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(232, 0, 29, 0.3);
+}
+
+.btn-primary:hover,
+.btn-create:hover {
+  background: var(--rojo-osc);
+  box-shadow: 0 0 0 3px rgba(232, 0, 29, 0.2);
+}
+
+/* Editar / Secundario */
+.btn-edit {
+  background: rgba(232, 0, 29, 0.08);
+  color: var(--rojo);
+  border: 1px solid rgba(232, 0, 29, 0.3);
+}
+
+.btn-edit:hover {
+  background: rgba(232, 0, 29, 0.14);
+  border-color: rgba(232, 0, 29, 0.6);
+}
+
+/* Activar */
+.btn-activate {
+  background: rgba(0, 229, 160, 0.10);
+  color: var(--verde);
+  border: 1px solid rgba(0, 229, 160, 0.25);
+}
+
+.btn-activate:hover {
+  background: rgba(0, 229, 160, 0.18);
+  border-color: rgba(0, 229, 160, 0.5);
+}
+
+/* Desactivar */
+.btn-deactivate {
+  background: rgba(248, 113, 113, 0.10);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.25);
+}
+
+.btn-deactivate:hover {
+  background: rgba(248, 113, 113, 0.18);
+  border-color: rgba(248, 113, 113, 0.5);
+}
+
+/* Peligro / Eliminar */
+.btn-danger {
+  background: rgba(248, 113, 113, 0.08);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.20);
+}
+
+.btn-danger:hover {
+  background: rgba(248, 113, 113, 0.16);
+  border-color: rgba(248, 113, 113, 0.45);
+}
+
+/* Ghost / Cancelar */
+.btn-ghost {
+  background: var(--borde2);
+  color: var(--dim);
+  border: 1px solid var(--borde2);
+}
+
+.btn-ghost:hover {
+  background: var(--borde3);
+  color: var(--texto);
+  border-color: var(--borde3);
+}
+
+/* Info / Ver detalles */
+.btn-info {
+  background: rgba(15, 163, 216, 0.08);
+  color: var(--azul);
+  border: 1px solid rgba(15, 163, 216, 0.20);
+}
+
+.btn-info:hover {
+  background: rgba(15, 163, 216, 0.15);
+  border-color: rgba(15, 163, 216, 0.45);
+}
+
+/* Amarillo / Confirmación */
+.btn-warning {
+  background: rgba(255, 200, 0, 0.10);
+  color: var(--amarillo);
+  border: 1px solid rgba(255, 200, 0, 0.25);
+}
+
+.btn-warning:hover {
+  background: rgba(255, 200, 0, 0.18);
+  border-color: rgba(255, 200, 0, 0.5);
+}
+
+/* Tamaños */
+.btn-sm {
+  height: 30px;
+  padding: 0 12px;
+  font-size: 12px;
+  border-radius: 10px;
+  gap: 6px;
+}
+
+.btn-lg {
+  height: 46px;
+  padding: 0 22px;
+  font-size: 14px;
+  border-radius: 14px;
+}
+
+/* Solo ícono */
+.btn-icon {
+  width: 38px;
+  padding: 0;
+  justify-content: center;
+}
+
+.btn-icon-sm {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 10px;
+  justify-content: center;
+}
+
+/* Disabled */
+.btn:disabled,
+.btn[disabled] {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Loading */
+.btn-loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.btn-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: argos-spin 0.7s linear infinite;
+}
+
+@keyframes argos-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Grupo de botones */
+.btn-group {
+  display: inline-flex;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--borde2);
+}
+
+.btn-group .btn {
+  border-radius: 0;
+  border: none;
+  border-right: 1px solid var(--borde2);
+}
+
+.btn-group .btn:last-child {
+  border-right: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   6. BADGES DE ESTADO
+   ═══════════════════════════════════════════════════════════════ */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'IBM Plex Mono', 'Share Tech Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.badge-active {
+  background: rgba(0, 229, 160, 0.12);
+  color: var(--verde);
+  border: 1px solid rgba(0, 229, 160, 0.25);
+}
+
+.badge-active .status-dot {
+  background: var(--verde);
+  animation: argos-pulse 1.5s infinite;
+}
+
+.badge-inactive {
+  background: rgba(248, 113, 113, 0.10);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.20);
+}
+
+.badge-inactive .status-dot {
+  background: #f87171;
+}
+
+.badge-pending {
+  background: rgba(255, 200, 0, 0.10);
+  color: var(--amarillo);
+  border: 1px solid rgba(255, 200, 0, 0.25);
+}
+
+.badge-pending .status-dot {
+  background: var(--amarillo);
+}
+
+.badge-warning {
+  background: rgba(251, 146, 60, 0.10);
+  color: #fb923c;
+  border: 1px solid rgba(251, 146, 60, 0.25);
+}
+
+.badge-critical {
+  background: rgba(232, 0, 29, 0.10);
+  color: var(--rojo);
+  border: 1px solid rgba(232, 0, 29, 0.25);
+}
+
+.badge-info {
+  background: rgba(15, 163, 216, 0.10);
+  color: var(--azul);
+  border: 1px solid rgba(15, 163, 216, 0.25);
+}
+
+@keyframes argos-pulse {
+
+  0%,
+  100% {
+    opacity: 1
+  }
+
+  50% {
+    opacity: .4
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   7. TOGGLE SWITCH
+   ═══════════════════════════════════════════════════════════════ */
+.toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toggle {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  cursor: pointer;
+}
+
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.toggle-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: var(--borde2);
+  border: 1px solid var(--borde3);
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--dim);
+  transition: transform 0.2s ease, background 0.2s;
+}
+
+.toggle input:checked~.toggle-track {
+  background: rgba(232, 0, 29, 0.20);
+  border-color: rgba(232, 0, 29, 0.50);
+}
+
+.toggle input:checked~.toggle-thumb {
+  transform: translateX(18px);
+  background: var(--rojo);
+}
+
+.toggle-label {
+  font-size: 13px;
+  color: var(--dim);
+  font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   8. INPUTS Y FORMULARIOS
+   ═══════════════════════════════════════════════════════════════ */
+.argos-input {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--borde);
+  color: var(--texto);
+  font-family: 'Exo 2', sans-serif;
+  font-size: 13px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+
+.argos-input:focus {
+  border-color: var(--rojo);
+  background: rgba(232, 0, 29, 0.04);
+  box-shadow: 0 0 0 3px rgba(232, 0, 29, 0.08);
+}
+
+.argos-input::placeholder {
+  color: var(--dim);
+  opacity: 0.5;
+}
+
+.argos-label {
+  display: block;
+  font-family: 'IBM Plex Mono', 'Share Tech Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--rojo);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+/* ── Fix GLOBAL: todos los inputs nativos se adaptan al tema ─────────────── */
+input,
+textarea,
+select {
+  background-color: var(--bg3);
+  color: var(--texto);
+  border: 1px solid var(--borde2);
+  border-radius: 8px;
+  font-family: 'Exo 2', sans-serif;
+  font-size: 13px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--rojo);
+  box-shadow: 0 0 0 3px rgba(232, 0, 29, 0.08);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--dim);
+  opacity: 0.6;
+}
+
+/* Select: quitar fondo blanco del menú desplegable en dark */
+select option {
+  background-color: var(--bg2);
+  color: var(--texto);
+}
+
+/* Date input: color del ícono y texto de fecha */
+input[type="date"],
+input[type="time"],
+input[type="number"] {
+  color-scheme: dark;
+}
+
+html.light input[type="date"],
+html.light input[type="time"],
+html.light input[type="number"] {
+  color-scheme: light;
+}
+
+/* Range: acent-color para todos los sliders */
+input[type="range"] {
+  accent-color: var(--rojo);
+  background: transparent;
+  border: none;
+}
+
+input[type="range"]:focus {
+  box-shadow: none;
+}
+
+/* Checkbox / radio base */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--rojo);
+  background: var(--bg3);
+  width: auto;
+  height: auto;
+  border-radius: 4px;
+}
+
+/* Mode claro: inputs limpios sin fondo oscuro */
+html.light input,
+html.light textarea,
+html.light select {
+  background-color: var(--bg2);
+  border-color: var(--borde3);
+  color: var(--texto);
+}
+
+html.light select option {
+  background-color: #fff;
+  color: var(--texto);
+}
+
+
+
+/* ═══════════════════════════════════════════════════════════════
+   9. PANELES / CARDS
+   ═══════════════════════════════════════════════════════════════ */
+.argos-panel {
+  background: var(--bg2);
+  border: 1px solid var(--borde2);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.argos-panel-sm {
+  background: var(--bg3);
+  border: 1px solid var(--borde2);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+/* Panel con borde rojo */
+.argos-panel-accent {
+  background: var(--bg2);
+  border: 1px solid var(--borde);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   10. TABLAS
+   ═══════════════════════════════════════════════════════════════ */
+.argos-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.argos-table thead tr {
+  border-bottom: 1px solid var(--borde2);
+}
+
+.argos-table th {
+  text-align: left;
+  padding: 10px 14px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--dim);
+  font-weight: 500;
+}
+
+.argos-table td {
+  padding: 12px 14px;
+  font-size: 13px;
+  color: var(--texto);
+  border-bottom: 1px solid var(--borde2);
+}
+
+.argos-table tbody tr:hover {
+  background: var(--borde2);
+}
+
+.argos-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   11. MODALES
+   ═══════════════════════════════════════════════════════════════ */
+.argos-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.argos-modal {
+  background: var(--bg2);
+  border: 1px solid var(--borde);
+  border-radius: 20px;
+  padding: 28px 32px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+}
+
+.argos-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.argos-modal-title {
+  font-family: 'Rajdhani', 'Syne', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--texto);
+}
+
+.argos-modal-close {
+  background: none;
+  border: none;
+  color: var(--dim);
+  font-size: 22px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 4px;
+  transition: color 0.18s;
+}
+
+.argos-modal-close:hover {
+  color: var(--rojo);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   12. ANIMACIONES GLOBALES
+   ═══════════════════════════════════════════════════════════════ */
+.fade-in {
+  animation: argos-fadeIn 0.3s ease-out;
+}
+
+.slide-up {
+  animation: argos-slideUp 0.35s ease-out;
+}
+
+@keyframes argos-fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes argos-slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pulse-dot {
+  animation: argos-pulse 2s ease-in-out infinite;
+}
+
+/* Reveal on scroll */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Delays escalonados */
+.reveal-d1 {
+  transition-delay: 0.05s;
+}
+
+.reveal-d2 {
+  transition-delay: 0.12s;
+}
+
+.reveal-d3 {
+  transition-delay: 0.20s;
+}
+
+.reveal-d4 {
+  transition-delay: 0.28s;
+}
+
+.reveal-d5 {
+  transition-delay: 0.36s;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   13. MÓVIL (sidebar overlay)
+   ═══════════════════════════════════════════════════════════════ */
+#sidebar-overlay {
+  transition: opacity 0.3s ease;
+}
+
+#sidebar-overlay.is-visible {
+  opacity: 1 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   14. MODO CLARO - Overrides específicos de componentes
+   ═══════════════════════════════════════════════════════════════ */
+html.light .argos-panel,
+html.light .argos-panel-accent {
+  border-color: var(--borde2);
+}
+
+html.light .argos-table th {
+  color: var(--dim);
+}
+
+html.light .argos-table tbody tr:hover {
+  background: var(--bg3);
+}
+
+html.light .btn-ghost {
+  background: var(--bg3);
+  color: var(--dim);
+  border-color: var(--borde2);
+}
+
+html.light .btn-ghost:hover {
+  background: var(--bg4);
+  color: var(--texto);
+}
+
+html.light .toggle-track {
+  background: var(--bg3);
+  border-color: var(--borde3);
+}
+
+html.light .toggle-thumb {
+  background: var(--muted);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   13. SIDEBAR TRAY / COLLAPSE
+   ═══════════════════════════════════════════════════════════════ */
+@media (min-width: 768px) {
+  body.sidebar-collapsed #sidebar {
+    transform: translateX(-100%) !important;
+  }
+  body.sidebar-collapsed #main-content {
+    margin-left: 0 !important;
+  }
+}

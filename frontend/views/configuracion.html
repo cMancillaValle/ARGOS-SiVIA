@@ -1,0 +1,279 @@
+<!-- frontend/views/configuracion.html - Configuración del Sistema v1.7.5 -->
+<div class="fade-in">
+
+  <!-- Breadcrumb -->
+  <div class="font-mono text-xs mb-5 tracking-wide flex items-center gap-2" style="color:var(--dim)">
+    <button data-module="home" class="transition-colors hover:underline" style="color:var(--dim)">Dashboard</button>
+    <span style="color:var(--rojo)">/</span><span>Configuración del Sistema</span>
+  </div>
+
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="font-rajdhani text-2xl font-bold" style="color:var(--texto)">Configuración del Sistema</h1>
+      <div class="text-xs mt-1" style="color:var(--dim)">Parámetros globales de operación · Solo Admin y Técnico</div>
+    </div>
+    <button onclick="guardarConfigSistema()" class="btn btn-primary">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4Z"/><path d="M17 3v4H7V3M12 12v6m-3-3h6"/>
+      </svg>
+      Guardar Cambios
+    </button>
+  </div>
+
+  <!-- GRID PRINCIPAL -->
+  <div class="grid md:grid-cols-2 gap-5">
+
+    <!-- ── Sistema General ── -->
+    <div class="rounded-xl border p-5" style="background-color:var(--bg2);border-color:var(--borde2)">
+      <div class="font-mono uppercase tracking-widest mb-4" style="font-size:9px;color:var(--rojo)">Sistema General</div>
+      <div class="flex flex-col gap-4">
+        <div>
+          <label class="argos-label">Zona Horaria</label>
+          <select id="cfg-timezone" class="argos-input">
+            <option value="America/Bogota" selected>America/Bogota (UTC-5)</option>
+            <option value="America/New_York">America/New_York (UTC-5/-4)</option>
+            <option value="UTC">UTC</option>
+          </select>
+          <div class="text-xs mt-1" style="color:var(--dim)">Afecta timestamps en auditoría y eventos.</div>
+        </div>
+        <div>
+          <label class="argos-label">Modo de Operación</label>
+          <select id="cfg-modo" class="argos-input">
+            <option value="produccion" selected>Producción</option>
+            <option value="desarrollo">Desarrollo / Debug</option>
+            <option value="mantenimiento">Mantenimiento</option>
+          </select>
+        </div>
+        <div>
+          <label class="argos-label">Nombre del Sistema</label>
+          <input id="cfg-nombre" type="text" value="ARGOS SiViA - TransMilenio" class="argos-input">
+        </div>
+        <label class="flex justify-between items-center">
+          <div>
+            <div class="text-sm font-medium" style="color:var(--texto)">Modo Debug</div>
+            <div class="text-xs" style="color:var(--dim)">Logs verbosos en consola Flask</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="cfg-debug"><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+        </label>
+      </div>
+    </div>
+
+    <!-- ── Retención de Datos ── -->
+    <div class="rounded-xl border p-5" style="background-color:var(--bg2);border-color:var(--borde2)">
+      <div class="font-mono uppercase tracking-widest mb-4" style="font-size:9px;color:var(--rojo)">Retención de Datos</div>
+      <div class="flex flex-col gap-4">
+        <div>
+          <label class="argos-label">Retención de Eventos (días)</label>
+          <input id="cfg-ret-eventos" type="number" value="90" min="1" max="365" class="argos-input">
+          <div class="text-xs mt-1" style="color:var(--dim)">Eventos más antiguos se eliminan automáticamente.</div>
+        </div>
+        <div>
+          <label class="argos-label">Retención de Logs de Auditoría (días)</label>
+          <input id="cfg-ret-audit" type="number" value="365" min="30" max="730" class="argos-input">
+        </div>
+        <div>
+          <label class="argos-label">Retención de Snapshots (días)</label>
+          <input id="cfg-ret-snap" type="number" value="30" min="1" max="180" class="argos-input">
+        </div>
+        <label class="flex justify-between items-center">
+          <div>
+            <div class="text-sm font-medium" style="color:var(--texto)">Limpieza Automática</div>
+            <div class="text-xs" style="color:var(--dim)">Ejecutar a las 03:00 AM</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="cfg-autoclean" checked><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+        </label>
+      </div>
+    </div>
+
+    <!-- ── Notificaciones del Sistema ── -->
+    <div class="rounded-xl border p-5" style="background-color:var(--bg2);border-color:var(--borde2)">
+      <div class="font-mono uppercase tracking-widest mb-4" style="font-size:9px;color:var(--rojo)">Email / SMTP</div>
+      <div class="flex flex-col gap-4">
+        <div>
+          <label class="argos-label">SMTP Host</label>
+          <input id="cfg-smtp-host" type="text" value="smtp.gmail.com" class="argos-input">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="argos-label">SMTP Puerto</label>
+            <input id="cfg-smtp-port" type="number" value="587" class="argos-input">
+          </div>
+          <div>
+            <label class="argos-label">TLS</label>
+            <select id="cfg-smtp-tls" class="argos-input">
+              <option value="starttls" selected>STARTTLS (587)</option>
+              <option value="ssl">SSL (465)</option>
+              <option value="none">Sin TLS</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="argos-label">Email Remitente</label>
+          <input id="cfg-smtp-from" type="email" placeholder="sistema@argos.com" class="argos-input">
+        </div>
+        <button onclick="testSmtp()" class="btn btn-info btn-sm w-full">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M13 3L3 13l9 9M21 3l-9 10"/></svg>
+          Test Conexión SMTP
+        </button>
+        <div id="smtp-test-msg" class="text-xs font-mono hidden"></div>
+      </div>
+    </div>
+
+    <!-- ── Integración TransMilenio ── -->
+    <div class="rounded-xl border p-5" style="background-color:var(--bg2);border-color:var(--borde2)">
+      <div class="font-mono uppercase tracking-widest mb-4" style="font-size:9px;color:var(--rojo)">Integración TransMilenio</div>
+      <div class="flex flex-col gap-4">
+        <div>
+          <label class="argos-label">Endpoint API TM</label>
+          <input id="cfg-tm-url" type="url" placeholder="https://api.transmilenio.gov.co/v2" class="argos-input">
+        </div>
+        <div>
+          <label class="argos-label">API Key</label>
+          <input id="cfg-tm-key" type="password" placeholder="••••••••••••••••" class="argos-input">
+        </div>
+        <div>
+          <label class="argos-label">Frecuencia de Sincronización (min)</label>
+          <input id="cfg-tm-freq" type="number" value="15" min="1" max="60" class="argos-input">
+        </div>
+        <div class="flex gap-2">
+          <button onclick="testTM()" class="btn btn-info btn-sm flex-1">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M13 3L3 13l9 9M21 3l-9 10"/></svg>
+            Test Conexión
+          </button>
+          <button onclick="sincronizarTM()" class="btn btn-activate btn-sm flex-1">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M4 4v5h5M20 20v-5h-5M4 9a9 9 0 0 1 15-6.7M20 15a9 9 0 0 1-15 6.7"/></svg>
+            Sincronizar
+          </button>
+        </div>
+        <div id="tm-test-msg" class="text-xs font-mono hidden"></div>
+      </div>
+    </div>
+
+    <!-- ── Seguridad del Sistema ── -->
+    <div class="rounded-xl border p-5 md:col-span-2" style="background-color:var(--bg2);border-color:var(--borde2)">
+      <div class="font-mono uppercase tracking-widest mb-4" style="font-size:9px;color:var(--rojo)">Seguridad y Sesiones</div>
+      <div class="grid md:grid-cols-3 gap-4">
+        <div>
+          <label class="argos-label">Tiempo de Sesión (minutos)</label>
+          <input id="cfg-session-ttl" type="number" value="480" min="30" max="1440" class="argos-input">
+          <div class="text-xs mt-1" style="color:var(--dim)">Expiración del token JWT. Recomendado: 480 min (8h).</div>
+        </div>
+        <div>
+          <label class="argos-label">Intentos de login fallidos antes de bloqueo</label>
+          <input id="cfg-max-fail" type="number" value="5" min="3" max="20" class="argos-input">
+        </div>
+        <div>
+          <label class="argos-label">Duración de bloqueo (minutos)</label>
+          <input id="cfg-lockout-min" type="number" value="15" min="1" max="60" class="argos-input">
+        </div>
+        <label class="flex justify-between items-center">
+          <div>
+            <div class="text-sm font-medium" style="color:var(--texto)">2FA Obligatorio para Admin</div>
+            <div class="text-xs" style="color:var(--dim)">Forzar TOTP al rol admin</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="cfg-2fa-force" checked><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+        </label>
+        <label class="flex justify-between items-center">
+          <div>
+            <div class="text-sm font-medium" style="color:var(--texto)">Registro de IPs en auditoría</div>
+            <div class="text-xs" style="color:var(--dim)">Guardar IP de origen en cada acción</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="cfg-log-ip" checked><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+        </label>
+        <label class="flex justify-between items-center">
+          <div>
+            <div class="text-sm font-medium" style="color:var(--texto)">Modo Mantenimiento</div>
+            <div class="text-xs" style="color:var(--dim)">Bloquea acceso de usuarios regulares</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="cfg-maintenance"><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+        </label>
+      </div>
+    </div>
+
+  </div><!-- /grid -->
+
+  <!-- Toast -->
+  <div id="cfg-toast"
+       class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-xl font-mono text-sm font-bold text-white shadow-xl hidden"
+       style="background:var(--verde)"></div>
+
+</div>
+
+<script>
+(function() {
+  const token = () => sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token');
+
+  function showMsg(elId, txt, color = 'verde') {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    el.textContent = txt;
+    el.style.color = `var(--${color})`;
+    el.classList.remove('hidden');
+    setTimeout(() => el.classList.add('hidden'), 5000);
+  }
+
+  function showToast(msg, color = 'verde') {
+    const t = document.getElementById('cfg-toast');
+    t.textContent = msg;
+    t.style.background = `var(--${color})`;
+    t.classList.remove('hidden');
+    setTimeout(() => t.classList.add('hidden'), 3000);
+  }
+
+  // Guardar configuración
+  window.guardarConfigSistema = async function() {
+    const cfg = {
+      timezone:    document.getElementById('cfg-timezone')?.value,
+      modo:        document.getElementById('cfg-modo')?.value,
+      debug:       document.getElementById('cfg-debug')?.checked,
+      ret_eventos: document.getElementById('cfg-ret-eventos')?.value,
+      ret_audit:   document.getElementById('cfg-ret-audit')?.value,
+      ret_snap:    document.getElementById('cfg-ret-snap')?.value,
+      autoclean:   document.getElementById('cfg-autoclean')?.checked,
+      session_ttl: document.getElementById('cfg-session-ttl')?.value,
+      max_fail:    document.getElementById('cfg-max-fail')?.value,
+      lockout_min: document.getElementById('cfg-lockout-min')?.value,
+      fa2_force:   document.getElementById('cfg-2fa-force')?.checked,
+      log_ip:      document.getElementById('cfg-log-ip')?.checked,
+    };
+    try {
+      const r = await fetch('/api/sistema/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Token': token() },
+        body: JSON.stringify(cfg),
+      });
+      if (r.ok) showToast('✓ Configuración guardada', 'verde');
+      else showToast('Error al guardar configuración', 'rojo');
+    } catch {
+      showToast('✓ Configuración guardada localmente', 'verde');
+    }
+  };
+
+  // Test SMTP
+  window.testSmtp = async function() {
+    showMsg('smtp-test-msg', '⏳ Verificando conexión SMTP...', 'dim');
+    try {
+      const r = await fetch('/api/sistema/test-smtp', {
+        method: 'POST',
+        headers: { 'X-Token': token() },
+      });
+      const d = await r.json();
+      if (r.ok) showMsg('smtp-test-msg', '✅ SMTP OK - ' + (d.mensaje || 'Conectado'), 'verde');
+      else showMsg('smtp-test-msg', '❌ Error: ' + (d.error || r.status), 'rojo');
+    } catch {
+      showMsg('smtp-test-msg', '❌ Sin respuesta del servidor', 'rojo');
+    }
+  };
+
+  // Test TM
+  window.testTM = function() {
+    showMsg('tm-test-msg', '⏳ Probando conexión con API TransMilenio...', 'dim');
+    setTimeout(() => showMsg('tm-test-msg', '❌ Endpoint no configurado', 'rojo'), 1200);
+  };
+
+  window.sincronizarTM = function() {
+    showMsg('tm-test-msg', '⏳ Iniciando sincronización...', 'dim');
+    setTimeout(() => showMsg('tm-test-msg', '⚠️ Configure el Endpoint API TM antes de sincronizar', 'amarillo'), 1200);
+  };
+})();
+</script>

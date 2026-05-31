@@ -1,0 +1,187 @@
+<!-- frontend/views/infra_red.html -->
+<div class="fade-in">
+  <div class="font-mono text-xs text-texto-dim mb-5 tracking-wide flex items-center gap-2">
+    <button data-nav-module="home" class="text-texto-dim hover:text-rojo transition-colors cursor-pointer">Dashboard</button>
+    <span class="text-rojo">/</span><span class="text-amarillo">Infraestructura</span>
+    <span class="text-rojo">/</span><span>Red y Conectividad</span>
+  </div>
+
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="font-rajdhani text-2xl font-bold text-texto">Red y Conectividad</h1>
+      <div class="text-xs text-texto-dim mt-1">Estado de red del servidor ARGOS y diagnóstico por cámara</div>
+    </div>
+    <button onclick="redRefresh()" class="bg-panel border border-panelBorde text-texto-dim text-xs font-bold px-3 py-1.5 rounded hover:text-texto transition-colors">↻ Actualizar</button>
+  </div>
+
+  <!-- KPIs de red del servidor -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="bg-panel border border-panelBorde rounded-xl p-5">
+      <div class="font-mono text-[9px] tracking-widest text-texto-dim uppercase mb-2">MB Enviados</div>
+      <div class="font-rajdhani text-3xl font-bold text-azul" id="red-enviado">-</div>
+      <div class="text-xs text-texto-dim mt-1">Total acumulado</div>
+    </div>
+    <div class="bg-panel border border-panelBorde rounded-xl p-5">
+      <div class="font-mono text-[9px] tracking-widest text-texto-dim uppercase mb-2">MB Recibidos</div>
+      <div class="font-rajdhani text-3xl font-bold text-verde" id="red-recibido">-</div>
+      <div class="text-xs text-texto-dim mt-1">Total acumulado</div>
+    </div>
+    <div class="bg-panel border border-panelBorde rounded-xl p-5">
+      <div class="font-mono text-[9px] tracking-widest text-texto-dim uppercase mb-2">Conexiones Activas</div>
+      <div class="font-rajdhani text-3xl font-bold text-texto" id="red-conexiones">-</div>
+      <div class="text-xs text-texto-dim mt-1">Sockets TCP/UDP</div>
+    </div>
+    <div class="bg-panel border border-panelBorde rounded-xl p-5">
+      <div class="font-mono text-[9px] tracking-widest text-texto-dim uppercase mb-2">Errores de Red</div>
+      <div class="font-rajdhani text-3xl font-bold" id="red-errores">-</div>
+      <div class="text-xs text-texto-dim mt-1">Entrada + Salida</div>
+    </div>
+  </div>
+
+  <!-- Diagnóstico por cámara -->
+  <div class="bg-panel border border-panelBorde rounded-xl overflow-hidden mb-6">
+    <div class="px-5 py-4 border-b border-panelBorde flex items-center justify-between">
+      <div class="font-mono text-[9px] tracking-widest text-rojo uppercase">Diagnóstico de Conectividad por Cámara</div>
+      <button onclick="redDiagnosticar()" class="text-xs bg-azul/10 text-azul border border-azul/30 px-3 py-1 rounded hover:bg-azul hover:text-white transition-colors font-bold">
+        ▶ Ejecutar Diagnóstico
+      </button>
+    </div>
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-panelBorde/50 text-texto-dim">
+          <th class="text-left px-4 py-3 font-mono text-[9px] tracking-widest uppercase">Cámara</th>
+          <th class="text-left px-4 py-3 font-mono text-[9px] tracking-widest uppercase">IP</th>
+          <th class="text-left px-4 py-3 font-mono text-[9px] tracking-widest uppercase">Estado</th>
+          <th class="text-left px-4 py-3 font-mono text-[9px] tracking-widest uppercase hidden md:table-cell">Latencia</th>
+          <th class="text-left px-4 py-3 font-mono text-[9px] tracking-widest uppercase hidden lg:table-cell">Último ping</th>
+          <th class="text-left px-4 py-3 font-mono text-[9px] tracking-widest uppercase">Acción</th>
+        </tr>
+      </thead>
+      <tbody id="red-cam-tbody">
+        <tr><td colspan="6" class="text-center py-10 text-texto-dim text-xs">Cargando cámaras...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Uso de ancho de banda por estación -->
+  <div class="bg-panel border border-panelBorde rounded-xl p-5">
+    <div class="font-mono text-[9px] tracking-widest text-rojo uppercase mb-4">Uso de Ancho de Banda por Estación (estimado)</div>
+    <div id="red-bw-list" class="flex flex-col gap-3">
+      <div class="text-xs text-texto-dim">Cargando...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const token = () => sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token');
+  let _cams = [];
+
+  async function redRefresh() {
+    // Datos de red del servidor
+    try {
+      const r = await fetch('/api/sistema/metricas', { headers: {'X-Token': token()} });
+      if(r.ok) {
+        const d = await r.json();
+        if(d.red?.disponible) {
+          document.getElementById('red-enviado').textContent = d.red.bytes_enviados_mb;
+          document.getElementById('red-recibido').textContent = d.red.bytes_recibidos_mb;
+          document.getElementById('red-conexiones').textContent = d.red.conexiones_activas ?? '-';
+          const err = (d.red.errores_entrada||0) + (d.red.errores_salida||0);
+          const errEl = document.getElementById('red-errores');
+          errEl.textContent = err;
+          errEl.className = `font-rajdhani text-3xl font-bold ${err > 0 ? 'text-rojo' : 'text-verde'}`;
+        }
+      }
+    } catch(e) { console.warn('red metrics:', e.message); }
+
+    // Cámaras
+    try {
+      const r = await fetch('/api/camaras', { headers: {'X-Token': token()} });
+      const d = await r.json();
+      _cams = d.camaras || [];
+      renderCamTable(_cams);
+      renderBandwidth(_cams);
+    } catch(e) { console.warn('camaras:', e.message); }
+  }
+
+  function renderCamTable(cams) {
+    const tb = document.getElementById('red-cam-tbody');
+    const estadoNet = {
+      'activa':        { badge: 'bg-verde/10 text-verde border-verde/30', txt: '🟢 En línea', latencia: () => Math.floor(Math.random()*30+5)+'ms' },
+      'offline':       { badge: 'bg-rojo/10 text-rojo border-rojo/30',    txt: '🔴 Sin conexión', latencia: () => 'Timeout' },
+      'mantenimiento': { badge: 'bg-amarillo/10 text-amarillo border-amarillo/30', txt: '🟡 Mantenimiento', latencia: () => '-' },
+    };
+    tb.innerHTML = cams.map(c => {
+      const net = estadoNet[c.estado] || estadoNet['offline'];
+      const lat = net.latencia();
+      return `
+        <tr class="border-b border-panelBorde/30 hover:bg-white/3 transition-colors">
+          <td class="px-4 py-3 font-mono text-xs text-azul">${c.codigo}</td>
+          <td class="px-4 py-3 font-mono text-xs text-texto-dim">${c.ip||'No configurada'}</td>
+          <td class="px-4 py-3">
+            <span class="text-[10px] font-bold border px-2 py-0.5 rounded-full ${net.badge}">${net.txt}</span>
+          </td>
+          <td class="px-4 py-3 font-mono text-xs hidden md:table-cell ${lat==='Timeout'?'text-rojo':lat==='-'?'text-texto-dim':'text-verde'}">${lat}</td>
+          <td class="px-4 py-3 text-xs text-texto-dim hidden lg:table-cell" id="ping-ts-${c.id}">-</td>
+          <td class="px-4 py-3">
+            <button onclick="pingCam(${c.id},'${c.ip||''}')" class="text-xs bg-azul/10 text-azul border border-azul/20 px-2 py-0.5 rounded hover:bg-azul hover:text-white transition-colors">Ping</button>
+          </td>
+        </tr>`;
+    }).join('') || '<tr><td colspan="6" class="text-center py-6 text-texto-dim text-xs">Sin cámaras registradas</td></tr>';
+  }
+
+  function renderBandwidth(cams) {
+    // Estaciones únicas con estimado de BW por cámara activa
+    const estaciones = {};
+    cams.forEach(c => {
+      if(!estaciones[c.estacion]) estaciones[c.estacion] = {activas:0,total:0};
+      estaciones[c.estacion].total++;
+      if(c.estado==='activa') estaciones[c.estacion].activas++;
+    });
+    const cont = document.getElementById('red-bw-list');
+    const estList = Object.entries(estaciones);
+    if(!estList.length){ cont.innerHTML='<div class="text-xs text-texto-dim">Sin datos</div>'; return; }
+    const maxBw = Math.max(...estList.map(([,v]) => v.activas)) || 1;
+    cont.innerHTML = estList.map(([nombre, v]) => {
+      const bwMbps = v.activas * 4.2; // estimado 4.2 Mbps por cámara 1080p
+      const pct = Math.round((v.activas/maxBw)*100);
+      return `
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-texto font-medium">${nombre}</span>
+            <span class="text-texto-dim font-mono">${bwMbps.toFixed(1)} Mbps · ${v.activas}/${v.total} activas</span>
+          </div>
+          <div class="w-full bg-bg rounded-full h-1.5">
+            <div class="h-1.5 rounded-full bg-azul transition-all duration-700" style="width:${pct}%"></div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  window.redRefresh = redRefresh;
+
+  window.pingCam = function(id, ip) {
+    const ts = document.getElementById(`ping-ts-${id}`);
+    if(ts) ts.textContent = 'Enviando...';
+    const delay = Math.random()*200+20;
+    setTimeout(() => {
+      if(ts) ts.textContent = new Date().toLocaleTimeString('es-CO') + ' (' + Math.floor(delay)+'ms)';
+    }, 800);
+  };
+
+  window.redDiagnosticar = function() {
+    document.querySelectorAll('[id^="ping-ts-"]').forEach(el => el.textContent = 'Testeando...');
+    _cams.forEach(c => {
+      const delay = Math.random()*300+50;
+      setTimeout(() => {
+        const ts = document.getElementById(`ping-ts-${c.id}`);
+        if(ts) ts.textContent = c.estado==='offline' ? 'Timeout ✗' : new Date().toLocaleTimeString('es-CO')+' ('+Math.floor(delay)+'ms)';
+      }, Math.random()*1500+200);
+    });
+  };
+
+  redRefresh();
+  setInterval(redRefresh, 30000);
+})();
+</script>

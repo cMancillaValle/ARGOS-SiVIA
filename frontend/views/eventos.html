@@ -1,0 +1,116 @@
+<!-- frontend/views/eventos.html -->
+<div class="animate-[fadeIn_0.3s_ease-out]">
+  
+  <div class="font-mono text-[11px] text-texto-dim mb-5 tracking-[1px] flex items-center gap-1.5">
+    <a href="?module=home" class="hover:text-rojo transition-colors cursor-pointer text-amarillo">Dashboard</a>
+    <span class="text-rojo">/</span>
+    <span class="text-texto">Eventos y Alertas</span>
+  </div>
+
+  <div class="bg-panel border border-panelBorde rounded-xl p-7 mb-5 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-5">
+    <div class="absolute top-0 left-0 bottom-0 w-1 bg-rojo rounded-l-lg"></div>
+    <div>
+      <div class="font-mono text-[9px] tracking-[2px] text-rojo uppercase mb-2">Historial</div>
+      <h2 class="font-rajdhani text-2xl md:text-3xl font-bold tracking-wide mb-2">Centro de Eventos IA</h2>
+      <p class="text-sm text-texto-dim font-light max-w-xl leading-relaxed">
+        Registro cronológico de detecciones de evasión y anomalías confirmadas por el modelo de inferencia.
+      </p>
+    </div>
+    
+    <div class="flex items-center gap-3">
+      <div class="relative">
+        <input type="text" placeholder="Buscar ID o Estación..." class="bg-bg-tertiary border border-panelBorde rounded px-3 py-2 text-xs font-mono text-texto placeholder:text-texto-dim focus:outline-none focus:border-rojo w-48 transition-colors">
+        <span class="absolute right-2.5 top-2 text-texto-dim">🔍</span>
+      </div>
+      <button class="bg-bg/50 border border-panelBorde hover:border-rojo hover:text-rojo text-texto text-xs font-rajdhani font-semibold px-4 py-2 rounded transition-all uppercase tracking-wide">
+        Filtrar
+      </button>
+    </div>
+  </div>
+
+  <!-- Eventos Data Table -->
+  <div class="bg-panel border border-white/5 rounded-xl overflow-hidden shadow-lg">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-black/40 border-b border-white/10">
+            <th class="p-4 font-mono text-[10px] text-texto-dim uppercase tracking-[2px] font-normal w-24">ID Alerta</th>
+            <th class="p-4 font-mono text-[10px] text-texto-dim uppercase tracking-[2px] font-normal">Estación</th>
+            <th class="p-4 font-mono text-[10px] text-texto-dim uppercase tracking-[2px] font-normal w-36">Timestamp</th>
+            <th class="p-4 font-mono text-[10px] text-texto-dim uppercase tracking-[2px] font-normal w-28 text-center">Precisión</th>
+            <th class="p-4 font-mono text-[10px] text-texto-dim uppercase tracking-[2px] font-normal w-32 border-l border-white/5 text-center">Estado</th>
+            <th class="p-4 font-mono text-[10px] text-texto-dim uppercase tracking-[2px] font-normal w-24 text-center">Acción</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-white/5">
+          <!-- Row 1 -->
+          <tr class="hover:bg-rojo/5 transition-colors group">
+            <td class="p-4 font-mono text-xs text-texto">EVT-992</td>
+            <td class="p-4">
+              <div class="font-rajdhani font-bold text-sm text-texto tracking-wide mb-1">Torniquete Sur - Héroes</div>
+              <div class="text-[10px] text-rojo font-medium uppercase tracking-wider">Evasión (Salto)</div>
+            </td>
+            <td class="p-4 font-mono text-[10px] text-texto-dim">2026-03-30 08:14:22</td>
+            <td class="p-4 text-center"><span class="font-mono text-xs text-verde">98.2%</span></td>
+            <td class="p-4 text-center border-l border-white/5">
+              <span class="inline-block px-2 py-1 bg-rojo/20 border border-rojo/40 text-rojo font-mono text-[9px] rounded uppercase tracking-wider">Pendiente</span>
+            </td>
+            <td class="p-4 text-center">
+              <button class="text-texto-dim hover:text-rojo text-xs font-rajdhani border-b border-transparent hover:border-rojo font-bold uppercase transition-all tracking-wide">
+                Revisar
+              </button>
+            </td>
+          </tr>
+          <!-- Row 2 -->
+          <tr class="hover:bg-rojo/5 transition-colors group">
+            <td class="p-4 font-mono text-xs text-texto">EVT-991</td>
+            <td class="p-4">
+              <div class="font-rajdhani font-bold text-sm text-texto tracking-wide mb-1">Entrada Norte - C.100</div>
+              <div class="text-[10px] text-amarillo font-medium uppercase tracking-wider">Anomalía (Crowd)</div>
+            </td>
+            <td class="p-4 font-mono text-[10px] text-texto-dim">2026-03-30 08:11:05</td>
+            <td class="p-4 text-center"><span class="font-mono text-xs text-amarillo">89.4%</span></td>
+            <td class="p-4 text-center border-l border-white/5">
+              <span class="inline-block px-2 py-1 bg-verde/10 border border-verde/30 text-verde font-mono text-[9px] rounded uppercase tracking-wider">Validado</span>
+            </td>
+            <td class="p-4 text-center">
+              <button class="text-texto-dim hover:text-rojo text-xs font-rajdhani border-b border-transparent hover:border-rojo font-bold uppercase transition-all tracking-wide">
+                Ver
+              </button>
+            </td>
+          </tr>
+          <!-- Row 3 -->
+          <tr class="hover:bg-rojo/5 transition-colors group">
+            <td class="p-4 font-mono text-xs text-texto">EVT-990</td>
+            <td class="p-4">
+              <div class="font-rajdhani font-bold text-sm text-texto tracking-wide mb-1">Torniquete Ppal - Portal Sur</div>
+              <div class="text-[10px] text-rojo font-medium uppercase tracking-wider">Evasión (Subterránea)</div>
+            </td>
+            <td class="p-4 font-mono text-[10px] text-texto-dim">2026-03-30 07:44:12</td>
+            <td class="p-4 text-center"><span class="font-mono text-xs text-verde">95.1%</span></td>
+            <td class="p-4 text-center border-l border-white/5">
+              <span class="inline-block px-2 py-1 bg-texto-dim/10 border border-texto-dim/30 text-texto-dim font-mono text-[9px] rounded uppercase tracking-wider">Descartado</span>
+            </td>
+            <td class="p-4 text-center">
+              <button class="text-texto-dim hover:text-rojo text-xs font-rajdhani border-b border-transparent hover:border-rojo font-bold uppercase transition-all tracking-wide">
+                Ver
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <!-- Paginator -->
+    <div class="border-t border-white/10 p-4 flex items-center justify-between bg-black/20">
+      <div class="font-mono text-[10px] text-texto-dim">Mostrando 1 - 3 de 3500+</div>
+      <div class="flex gap-1">
+        <button class="w-7 h-7 flex items-center justify-center font-mono text-xs bg-bg-tertiary border border-panelBorde text-texto-dim rounded hover:bg-rojo hover:text-white transition-colors cursor-not-allowed opacity-50">&lt;</button>
+        <button class="w-7 h-7 flex items-center justify-center font-mono text-xs bg-rojo border border-rojo text-white rounded hover:bg-rojo-oscuro transition-colors">1</button>
+        <button class="w-7 h-7 flex items-center justify-center font-mono text-xs bg-bg-tertiary border border-panelBorde text-texto-dim rounded hover:bg-rojo hover:text-white transition-colors">2</button>
+        <button class="w-7 h-7 flex items-center justify-center font-mono text-xs bg-bg-tertiary border border-panelBorde text-texto-dim rounded hover:bg-rojo hover:text-white transition-colors">3</button>
+        <button class="w-7 h-7 flex items-center justify-center font-mono text-xs bg-bg-tertiary border border-panelBorde text-texto-dim rounded hover:bg-rojo hover:text-white transition-colors">&gt;</button>
+      </div>
+    </div>
+  </div>
+</div>

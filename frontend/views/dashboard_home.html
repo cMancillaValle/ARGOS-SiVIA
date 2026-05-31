@@ -1,0 +1,466 @@
+<!-- frontend/views/dashboard_home.html v1.7.5 - Dashboard Real de Monitoreo -->
+<div class="fade-in">
+
+  <!-- Breadcrumb -->
+  <div class="font-mono text-xs mb-5 tracking-wide flex items-center gap-2" style="color:var(--dim)">
+    <span style="color:var(--amarillo)">ARGOS-SiViA</span>
+    <span style="color:var(--rojo)">/</span>
+    <span>Dashboard Principal</span>
+  </div>
+
+  <!-- HERO PANEL (sin cambios) -->
+  <div class="relative rounded-2xl p-8 md:p-12 mb-6 overflow-hidden border"
+       style="background:linear-gradient(135deg,rgba(232,0,29,0.08),var(--bg2));border-color:var(--borde)">
+    <div class="absolute -right-5 -top-5 font-rajdhani font-bold select-none pointer-events-none"
+         style="font-size:180px;color:rgba(232,0,29,0.04);line-height:1;letter-spacing:-8px">ARGOS</div>
+
+    <div class="relative z-10">
+      <div class="flex items-center gap-2 font-mono text-[10px] tracking-[3px] uppercase mb-3" style="color:var(--rojo)">
+        <span class="w-4 h-px" style="background:var(--rojo)"></span> Resumen Operativo
+      </div>
+      <h1 class="font-rajdhani text-4xl md:text-[42px] font-bold leading-tight mb-3 tracking-wide" style="color:var(--texto)">
+        Bienvenido a <span style="background:linear-gradient(135deg,var(--rojo),#ff4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent">ARGOS</span>
+      </h1>
+      <p class="max-w-2xl text-sm leading-relaxed font-light mb-8" style="color:var(--dim)">
+        Panel de control operativo. Supervisa alertas, cámaras y actividad del sistema en tiempo real.
+      </p>
+
+      <!-- Hero Stats -->
+      <div class="flex flex-wrap gap-8 lg:gap-14 mt-4">
+        <div>
+          <div class="font-rajdhani text-3xl font-bold" style="color:var(--amarillo)" id="home-stat-cam">-</div>
+          <div class="text-[11px] uppercase tracking-widest font-mono" style="color:var(--dim)">Cámaras activas</div>
+        </div>
+        <div>
+          <div class="font-rajdhani text-3xl font-bold" style="color:var(--verde)" id="home-stat-evt">-</div>
+          <div class="text-[11px] uppercase tracking-widest font-mono" style="color:var(--dim)">Eventos hoy</div>
+        </div>
+        <div>
+          <div class="font-rajdhani text-3xl font-bold" id="home-stat-alertas" style="color:var(--rojo)">-</div>
+          <div class="text-[11px] uppercase tracking-widest font-mono" style="color:var(--dim)">Alertas activas</div>
+        </div>
+        <div>
+          <div class="font-rajdhani text-3xl font-bold" id="home-stat-cpu" style="color:var(--azul)">-</div>
+          <div class="text-[11px] uppercase tracking-widest font-mono" style="color:var(--dim)">CPU servidor</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       FILA 1: Métricas clave + Alertas recientes
+       ══════════════════════════════════════════════ -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+
+    <!-- ── Métricas 24h (1/3) ── -->
+    <div class="rounded-xl border p-5" style="background-color:var(--bg2);border-color:var(--borde2)">
+      <div class="font-mono uppercase tracking-widest mb-4" style="font-size:9px;color:var(--rojo)">📊 Métricas 24h</div>
+      <div class="flex flex-col gap-3" id="home-metricas">
+        <!-- Se rellena por JS -->
+        <div class="text-center py-4 text-xs" style="color:var(--dim)">Cargando métricas...</div>
+      </div>
+      <!-- Mini gráfica de barras -->
+      <div class="mt-4 pt-3" style="border-top:1px solid var(--borde2)">
+        <div class="font-mono mb-2" style="font-size:9px;color:var(--dim)">ACTIVIDAD ÚLTIMAS 8H</div>
+        <div id="home-minibar" class="flex items-end gap-1 h-10 justify-evenly">
+          <!-- Se rellena por JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Alertas recientes (2/3) ── -->
+    <div class="lg:col-span-2 rounded-xl border flex flex-col" style="background-color:var(--bg2);border-color:var(--borde2)">
+      <div class="flex items-center justify-between px-5 pt-4 pb-3" style="border-bottom:1px solid var(--borde2)">
+        <div class="font-mono uppercase tracking-widest" style="font-size:9px;color:var(--rojo)">🚨 Alertas Recientes</div>
+        <button data-module="notificaciones" class="font-mono transition-colors hover:underline" style="font-size:10px;color:var(--dim)">
+          Ver todas →
+        </button>
+      </div>
+      <div id="home-alertas-list" class="flex flex-col flex-1 overflow-y-auto" style="max-height:240px">
+        <div class="text-center py-6 text-xs" style="color:var(--dim)">Cargando alertas...</div>
+      </div>
+    </div>
+
+  </div><!-- /fila 1 -->
+
+  <!-- ══════════════════════════════════════════════
+       FILA 2: Estado de cámaras + Actividad reciente
+       ══════════════════════════════════════════════ -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+
+    <!-- ── Estado de cámaras / fuentes ── -->
+    <div class="rounded-xl border" style="background-color:var(--bg2);border-color:var(--borde2)">
+      <div class="flex items-center justify-between px-5 pt-4 pb-3" style="border-bottom:1px solid var(--borde2)">
+        <div class="font-mono uppercase tracking-widest" style="font-size:9px;color:var(--azul)">🎥 Estado de Cámaras</div>
+        <div class="flex items-center gap-2" style="font-size:10px;font-family:monospace;color:var(--dim)">
+          <span class="w-2 h-2 rounded-full" style="background:var(--verde)"></span><span id="cam-online-count">-</span> online
+          &nbsp;
+          <span class="w-2 h-2 rounded-full" style="background:var(--rojo)"></span><span id="cam-offline-count">-</span> offline
+        </div>
+      </div>
+      <div id="home-camaras-list" class="p-3 grid grid-cols-2 gap-2 overflow-y-auto" style="max-height:220px">
+        <div class="text-xs text-center py-4 col-span-2" style="color:var(--dim)">Cargando cámaras...</div>
+      </div>
+    </div>
+
+    <!-- ── Feed de actividad reciente ── -->
+    <div class="rounded-xl border" style="background-color:var(--bg2);border-color:var(--borde2)">
+      <div class="px-5 pt-4 pb-3" style="border-bottom:1px solid var(--borde2)">
+        <div class="font-mono uppercase tracking-widest" style="font-size:9px;color:var(--verde)">🧾 Actividad Reciente</div>
+      </div>
+      <div id="home-actividad-list" class="flex flex-col overflow-y-auto" style="max-height:220px">
+        <div class="text-xs text-center py-4" style="color:var(--dim)">Cargando actividad...</div>
+      </div>
+    </div>
+
+  </div><!-- /fila 2 -->
+
+  <!-- System status strip (sin cambios) -->
+  <div class="rounded-xl border px-6 py-4 flex flex-wrap gap-4 items-center justify-between"
+       style="background-color:var(--bg2);border-color:var(--borde2)">
+    <div class="flex items-center gap-2 text-xs font-mono" style="color:var(--dim)">
+      <span class="w-2 h-2 rounded-full pulse-dot" style="background:var(--verde)"></span>
+      <span>Sistema operativo</span>
+    </div>
+    <div class="flex flex-wrap gap-6">
+      <div class="text-center">
+        <div class="font-rajdhani font-bold text-base" style="color:var(--texto)" id="home-strip-cpu">-</div>
+        <div class="font-mono text-[9px] uppercase tracking-widest" style="color:var(--muted)">CPU</div>
+      </div>
+      <div class="text-center">
+        <div class="font-rajdhani font-bold text-base" style="color:var(--texto)" id="home-strip-ram">-</div>
+        <div class="font-mono text-[9px] uppercase tracking-widest" style="color:var(--muted)">RAM</div>
+      </div>
+      <div class="text-center">
+        <div class="font-rajdhani font-bold text-base" style="color:var(--texto)" id="home-strip-disk">-</div>
+        <div class="font-mono text-[9px] uppercase tracking-widest" style="color:var(--muted)">Disco</div>
+      </div>
+    </div>
+    <div class="font-mono text-[9px] tracking-widest uppercase" style="color:var(--muted)">ARGOS v1.7.5 · TransMilenio S.A.</div>
+  </div>
+
+  <!-- Modal detalle alerta -->
+  <div id="home-alerta-modal" class="fixed inset-0 z-[500] flex items-center justify-center hidden">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" onclick="cerrarAlertaModal()"></div>
+    <div class="relative rounded-2xl border p-6 max-w-md w-full mx-4 shadow-2xl z-10"
+         style="background-color:var(--bg2);border-color:var(--borde)">
+      <button onclick="cerrarAlertaModal()" class="absolute top-4 right-4 text-xl" style="color:var(--dim)">×</button>
+      <div class="font-mono uppercase text-xs tracking-widest mb-3" style="color:var(--rojo)">Detalle de Alerta</div>
+      <div id="home-alerta-detail" class="space-y-2 text-sm"></div>
+      <div class="flex gap-2 mt-5">
+        <button onclick="marcarRevisada()" class="btn btn-edit btn-sm flex-1 justify-center">✓ Marcar revisada</button>
+        <button onclick="cerrarAlertaModal()" class="btn btn-ghost btn-sm flex-1 justify-center">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function() {
+  const token = () => sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token');
+  let _alertaActual = null;
+
+  // ── Paleta severidad ──────────────────────────────────────────────────────────
+  const SEV = {
+    critica: { color: 'var(--rojo)',    bg: 'rgba(232,0,29,0.08)',  label: '🔴 CRÍTICA' },
+    alta:    { color: '#F97316',        bg: 'rgba(249,115,22,0.08)',label: '🟠 ALTA' },
+    media:   { color: 'var(--amarillo)',bg: 'rgba(255,200,0,0.08)', label: '🟡 MEDIA' },
+    baja:    { color: 'var(--azul)',    bg: 'rgba(15,163,216,0.08)',label: '🔵 BAJA' },
+  };
+  const ACT_ICO = { login:'🔓', logout:'🔒', crear:'➕', editar:'✏️', eliminar:'🗑️', error:'🚫' };
+
+  // ── 1. Alertas recientes ──────────────────────────────────────────────────────
+  async function loadAlertas() {
+    try {
+      const r = await fetch('/api/eventos?limite=30', { headers: { 'X-Token': token() } });
+      if (!r.ok) throw new Error(r.status);
+      const d   = await r.json();
+      const evs = d.eventos || [];
+
+      const alertas = evs.map(e => ({
+        id:        e.id,
+        severidad: e.confianza >= 0.90 ? 'critica' : e.confianza >= 0.80 ? 'alta' : e.confianza >= 0.70 ? 'media' : 'baja',
+        tipo:      e.tipo === 'evasion' ? 'Evasión de torniquete' : e.tipo === 'intrusion' ? 'Intrusión detectada' : e.tipo || 'Evento',
+        fuente:    `CAM-${String(e.camara_id || 0).padStart(3,'0')} · ${e.estacion || 'Desconocida'}`,
+        ts:        e.detectado_en,
+        confianza: e.confianza,
+        estado:    e.estado,
+        raw:       e,
+      }));
+
+      // Stats hero
+      const hoy = new Date().toISOString().slice(0,10);
+      const hoyN = alertas.filter(a => (a.ts||'').startsWith(hoy)).length;
+      document.getElementById('home-stat-alertas').textContent = alertas.filter(a => a.severidad === 'critica' || a.severidad === 'alta').length;
+      document.getElementById('home-stat-evt').textContent = evs.length;
+
+      // Métricas 24h
+      renderMetricas(alertas, hoyN, evs.length);
+
+      // Mini barras (8h)
+      renderMiniBar(evs);
+
+      // Lista de alertas
+      const listEl = document.getElementById('home-alertas-list');
+      if (!alertas.length) {
+        listEl.innerHTML = '<div class="text-xs text-center py-6" style="color:var(--dim)">Sin alertas recientes</div>';
+        return;
+      }
+      listEl.innerHTML = alertas.slice(0, 10).map(a => {
+        const s = SEV[a.severidad] || SEV.baja;
+        const ts = a.ts ? new Date(new Date(a.ts+'Z').getTime() - 5*3600000).toLocaleString('es-CO', {dateStyle:'short',timeStyle:'short'}) : '-';
+        return `
+          <div class="flex items-center gap-3 px-4 py-2.5 border-b hover:bg-white/5 transition-colors" style="border-color:var(--borde2)">
+            <div class="w-2 h-2 rounded-full flex-shrink-0" style="background:${s.color};box-shadow:0 0 5px ${s.color}"></div>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-semibold truncate" style="color:var(--texto)">${a.tipo}</div>
+              <div class="text-xs truncate" style="color:var(--dim)">${a.fuente} · ${ts}</div>
+            </div>
+            <span class="font-mono text-[9px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
+                  style="background:${s.bg};color:${s.color};border:1px solid ${s.color}33">${s.label}</span>
+            <div class="flex gap-1 flex-shrink-0">
+              <button onclick="verAlerta(${a.id})"
+                      class="font-mono text-[9px] px-2 py-1 rounded border transition-colors hover:opacity-80"
+                      style="border-color:var(--borde2);color:var(--dim)">Ver</button>
+              <button onclick="marcarRevisadaId(${a.id}, this)"
+                      class="font-mono text-[9px] px-2 py-1 rounded border transition-colors"
+                      style="border-color:rgba(0,229,160,0.3);color:var(--verde)">✓</button>
+            </div>
+          </div>`;
+      }).join('');
+
+      window._alertasCache = alertas;
+    } catch(e) {
+      document.getElementById('home-alertas-list').innerHTML =
+        `<div class="text-xs text-center py-4" style="color:var(--rojo)">Error al cargar alertas: ${e.message}</div>`;
+    }
+  }
+
+  function renderMetricas(alertas, hoyN, totalEvs) {
+    const criticas = alertas.filter(a => a.severidad === 'critica').length;
+    const altas    = alertas.filter(a => a.severidad === 'alta').length;
+    const metricas = [
+      { label: 'Alertas (24h)',      val: hoyN,   color: 'var(--rojo)' },
+      { label: 'Alertas críticas',   val: criticas, color: 'var(--rojo)' },
+      { label: 'Alertas altas',      val: altas,   color: '#F97316' },
+      { label: 'Eventos detectados', val: totalEvs, color: 'var(--amarillo)' },
+    ];
+    document.getElementById('home-metricas').innerHTML = metricas.map(m => `
+      <div class="flex items-center justify-between py-1.5 border-b" style="border-color:var(--borde2)">
+        <span class="text-xs" style="color:var(--dim)">${m.label}</span>
+        <span class="font-rajdhani font-bold text-lg" style="color:${m.color}">${m.val}</span>
+      </div>`).join('');
+  }
+
+  function renderMiniBar(evs) {
+    const ahora = Date.now();
+    const horas = Array.from({length: 8}, (_, i) => {
+      const desde = ahora - (7 - i) * 3600000;
+      const hasta = desde + 3600000;
+      return evs.filter(e => {
+        if (!e.detectado_en) return false;
+        const t = new Date(e.detectado_en + 'Z').getTime();
+        return t >= desde && t < hasta;
+      }).length;
+    });
+    const max = Math.max(...horas, 1);
+    const labels = Array.from({length: 8}, (_, i) => {
+      const d = new Date(ahora - (7 - i) * 3600000);
+      return d.toLocaleTimeString('es-CO', {hour:'2-digit'});
+    });
+    document.getElementById('home-minibar').innerHTML = horas.map((n, i) => {
+      const pct = Math.max(4, Math.round((n / max) * 100));
+      const col = n >= max * 0.7 ? 'var(--rojo)' : n >= max * 0.4 ? 'var(--amarillo)' : 'var(--azul)';
+      return `
+        <div class="flex flex-col items-center gap-0.5 flex-1">
+          <div class="w-full rounded-t transition-all" style="height:${pct}%;background:${col};min-height:4px;opacity:0.8" title="${n} eventos a las ${labels[i]}"></div>
+          <span class="font-mono text-[7px] truncate w-full text-center" style="color:var(--muted)">${labels[i]}</span>
+        </div>`;
+    }).join('');
+  }
+
+  // ── 2. Estado de cámaras ──────────────────────────────────────────────────────
+  async function loadCamaras() {
+    try {
+      const r = await fetch('/api/camaras?limite=50', { headers: { 'X-Token': token() } });
+      if (!r.ok) throw new Error(r.status);
+      const d   = await r.json();
+      const cams = d.camaras || [];
+
+      const online  = cams.filter(c => c.estado === 'activa' || c.estado === 'online');
+      const offline = cams.filter(c => c.estado !== 'activa' && c.estado !== 'online');
+
+      document.getElementById('cam-online-count').textContent  = online.length;
+      document.getElementById('cam-offline-count').textContent = offline.length;
+      document.getElementById('home-stat-cam').textContent     = online.length;
+
+      const listEl = document.getElementById('home-camaras-list');
+      if (!cams.length) {
+        listEl.innerHTML = '<div class="text-xs text-center col-span-2 py-4" style="color:var(--dim)">Sin cámaras registradas</div>';
+        return;
+      }
+      listEl.innerHTML = cams.slice(0, 12).map(c => {
+        const isOn  = c.estado === 'activa' || c.estado === 'online';
+        const col   = isOn ? 'var(--verde)' : 'var(--rojo)';
+        const label = isOn ? 'ONLINE' : 'OFFLINE';
+        return `
+          <div class="flex items-center gap-2 px-3 py-2 rounded-lg border" style="background-color:var(--bg3);border-color:var(--borde2)">
+            <span class="w-2 h-2 rounded-full flex-shrink-0 ${isOn ? 'pulse-dot' : ''}" style="background:${col}"></span>
+            <div class="flex-1 min-w-0">
+              <div class="text-xs font-semibold truncate" style="color:var(--texto)">${c.nombre || 'CAM-'+String(c.id).padStart(3,'0')}</div>
+              <div class="font-mono truncate" style="font-size:8px;color:var(--dim)">${c.estacion || c.ubicacion || '-'}</div>
+            </div>
+            <span class="font-mono font-bold flex-shrink-0" style="font-size:8px;color:${col}">${label}</span>
+          </div>`;
+      }).join('');
+    } catch(e) {
+      document.getElementById('home-camaras-list').innerHTML =
+        `<div class="text-xs text-center col-span-2 py-4" style="color:var(--rojo)">${e.message}</div>`;
+    }
+  }
+
+  // ── 3. Actividad reciente (auditoría) ─────────────────────────────────────────
+  async function loadActividad() {
+    try {
+      const r = await fetch('/api/auditoria?limite=15&pagina=1', { headers: { 'X-Token': token() } });
+      if (!r.ok) throw new Error(r.status);
+      const d = await r.json();
+      const logs = d.logs || d.registros || d.auditoria || [];
+
+      const listEl = document.getElementById('home-actividad-list');
+      if (!logs.length) {
+        listEl.innerHTML = '<div class="text-xs text-center py-4" style="color:var(--dim)">Sin actividad registrada</div>';
+        return;
+      }
+      listEl.innerHTML = logs.map(l => {
+        const accion = (l.accion || '').toLowerCase();
+        const ico    = Object.entries(ACT_ICO).find(([k]) => accion.includes(k))?.[1] || '📋';
+        const col    = accion.includes('fail') || accion.includes('error') ? 'var(--rojo)'
+                     : accion.includes('login') ? 'var(--verde)'
+                     : accion.includes('crear') ? 'var(--azul)'
+                     : 'var(--dim)';
+        const ts = l.fecha
+          ? new Date(new Date(l.fecha+'Z').getTime() - 5*3600000).toLocaleTimeString('es-CO', {hour:'2-digit',minute:'2-digit'})
+          : '-';
+        return `
+          <div class="flex items-start gap-3 px-4 py-2 border-b hover:bg-white/5 transition-colors" style="border-color:var(--borde2)">
+            <span class="text-base flex-shrink-0 mt-0.5">${ico}</span>
+            <div class="flex-1 min-w-0">
+              <span class="text-xs font-semibold" style="color:${col}">${l.accion || '-'}</span>
+              <span class="text-xs ml-1" style="color:var(--dim)">${l.username || l.usuario || '-'}</span>
+              ${l.detalle ? `<div class="text-xs truncate mt-0.5" style="color:var(--muted)">${l.detalle}</div>` : ''}
+            </div>
+            <span class="font-mono flex-shrink-0" style="font-size:9px;color:var(--muted)">${ts}</span>
+          </div>`;
+      }).join('');
+    } catch(e) {
+      document.getElementById('home-actividad-list').innerHTML =
+        `<div class="text-xs text-center py-4" style="color:var(--rojo)">${e.message}</div>`;
+    }
+  }
+
+  // ── 4. Métricas del sistema (CPU/RAM) ─────────────────────────────────────────
+  async function loadSysMetrics() {
+    try {
+      const r = await fetch('/api/sistema/estado', { headers: { 'X-Token': token() } });
+      if (!r.ok) return;
+      const d = await r.json();
+      if (d.cpu_pct != null) {
+        const col = d.cpu_pct > 80 ? 'var(--rojo)' : d.cpu_pct > 60 ? 'var(--amarillo)' : 'var(--verde)';
+        document.getElementById('home-stat-cpu').textContent = d.cpu_pct.toFixed(1)+'%';
+        document.getElementById('home-stat-cpu').style.color = col;
+        document.getElementById('home-strip-cpu').textContent = d.cpu_pct.toFixed(1)+'%';
+        document.getElementById('home-strip-cpu').style.color = col;
+      }
+      if (d.ram_pct != null) {
+        const col = d.ram_pct > 85 ? 'var(--rojo)' : d.ram_pct > 65 ? 'var(--amarillo)' : 'var(--verde)';
+        document.getElementById('home-strip-ram').textContent = d.ram_pct.toFixed(1)+'%';
+        document.getElementById('home-strip-ram').style.color = col;
+      }
+    } catch {}
+    try {
+      const r = await fetch('/api/sistema/metricas', { headers: { 'X-Token': token() } });
+      if (!r.ok) return;
+      const d = await r.json();
+      if (d.disco?.uso_pct != null) {
+        const col = d.disco.uso_pct > 85 ? 'var(--rojo)' : 'var(--texto)';
+        document.getElementById('home-strip-disk').textContent = d.disco.uso_pct.toFixed(1)+'%';
+        document.getElementById('home-strip-disk').style.color = col;
+      }
+    } catch {}
+  }
+
+  // ── Detalle de alerta (modal) ─────────────────────────────────────────────────
+  window.verAlerta = function(id) {
+    const a = (window._alertasCache || []).find(x => x.id === id);
+    if (!a) return;
+    _alertaActual = a;
+    const s  = SEV[a.severidad] || SEV.baja;
+    const ts = a.ts ? new Date(new Date(a.ts+'Z').getTime()-5*3600000).toLocaleString('es-CO') : '-';
+    document.getElementById('home-alerta-detail').innerHTML = `
+      <div class="grid grid-cols-2 gap-x-4 gap-y-2">
+        <div><div class="font-mono text-[9px] uppercase" style="color:var(--rojo)">Severidad</div>
+          <span class="font-mono text-xs font-bold" style="color:${s.color}">${s.label}</span></div>
+        <div><div class="font-mono text-[9px] uppercase" style="color:var(--rojo)">Confianza IA</div>
+          <div class="text-sm font-bold" style="color:var(--texto)">${Math.round((a.confianza||0)*100)}%</div></div>
+        <div class="col-span-2"><div class="font-mono text-[9px] uppercase" style="color:var(--rojo)">Tipo</div>
+          <div class="text-sm" style="color:var(--texto)">${a.tipo}</div></div>
+        <div class="col-span-2"><div class="font-mono text-[9px] uppercase" style="color:var(--rojo)">Fuente</div>
+          <div class="text-sm" style="color:var(--texto)">${a.fuente}</div></div>
+        <div class="col-span-2"><div class="font-mono text-[9px] uppercase" style="color:var(--rojo)">Timestamp (UTC-5)</div>
+          <div class="text-sm font-mono" style="color:var(--texto)">${ts}</div></div>
+        <div class="col-span-2"><div class="font-mono text-[9px] uppercase" style="color:var(--rojo)">Estado</div>
+          <div class="text-sm" style="color:var(--dim)">${a.estado || '-'}</div></div>
+      </div>`;
+    document.getElementById('home-alerta-modal').classList.remove('hidden');
+  };
+
+  window.cerrarAlertaModal = function() {
+    document.getElementById('home-alerta-modal').classList.add('hidden');
+    _alertaActual = null;
+  };
+
+  window.marcarRevisada = async function() {
+    if (!_alertaActual) return;
+    await marcarRevisadaId(_alertaActual.id, null);
+    cerrarAlertaModal();
+  };
+
+  window.marcarRevisadaId = async function(id, btn) {
+    try {
+      const r = await fetch(`/api/eventos/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Token': token() },
+        body: JSON.stringify({ estado: 'confirmado' }),
+      });
+      if (r.ok && btn) {
+        btn.textContent = '✓✓';
+        btn.style.color = 'var(--verde)';
+        btn.disabled = true;
+      }
+    } catch {}
+  };
+
+  // ── Arranque ──────────────────────────────────────────────────────────────────
+  loadAlertas();
+  loadCamaras();
+  loadActividad();
+  loadSysMetrics();
+
+  // Auto-refresh cada 60s
+  const _interval = setInterval(() => {
+    loadAlertas();
+    loadCamaras();
+    loadActividad();
+    loadSysMetrics();
+  }, 60000);
+  document.addEventListener('argos:navaway', () => clearInterval(_interval), { once: true });
+
+  // RBAC: ocultar elementos según rol
+  const rol = (() => { try { return JSON.parse(sessionStorage.getItem('argos_user')||'{}').rol || ''; } catch { return ''; } })();
+  document.querySelectorAll('[data-rol]').forEach(el => {
+    if (!el.dataset.rol.split(',').includes(rol)) el.style.display = 'none';
+  });
+})();
+</script>

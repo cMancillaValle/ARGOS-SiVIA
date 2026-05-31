@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="es" id="html-root">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ARGOS - SiViA · Panel de Control</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Exo+2:ital,wght@0,300;0,400;0,600;1,300&family=Share+Tech+Mono&family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="css/argos-design.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            rojo: '#E8001D',
+            amarillo: '#FFC800',
+            verde: '#00E5A0',
+            azul: '#0FA3D8',
+          },
+          fontFamily: {
+            exo: ['"Exo 2"', 'sans-serif'],
+            rajdhani: ['Rajdhani', 'sans-serif'],
+            mono: ['"Share Tech Mono"', '"IBM Plex Mono"', 'monospace'],
+            syne: ['Syne', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: var(--bg);
+      color: var(--texto);
+    }
+
+    .pulse-dot {
+      animation: argos-pulse 2s ease-in-out infinite;
+    }
+  </style>
+  <script>
+    // Restaurar estado de la barra lateral
+    if (localStorage.getItem('argos_sidebar_collapsed') === 'true') {
+      document.documentElement.classList.add('sidebar-collapsed'); 
+    }
+  </script>
+</head>
+
+<body class="font-exo min-h-screen relative overflow-x-hidden">
+
+  <!-- Blobs de fondo -->
+  <div class="fixed w-[700px] h-[700px] rounded-full -top-[200px] -right-[200px] pointer-events-none -z-10"
+    style="background:radial-gradient(circle,rgba(232,0,29,0.05),transparent 70%)"></div>
+  <div class="fixed w-[500px] h-[500px] rounded-full -bottom-[150px] -left-[150px] pointer-events-none -z-10"
+    style="background:radial-gradient(circle,rgba(15,163,216,0.04),transparent 70%)"></div>
+
+  <!-- Overlay mobile sidebar -->
+  <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-20 hidden opacity-0" aria-hidden="true">
+  </div>
+
+  <!-- Full-Screen Loader (SOLO primera carga) -->
+  <div id="app-loader" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center"
+    style="background-color:var(--bg)">
+    <div class="relative w-14 h-14 flex items-center justify-center mb-4">
+      <div class="absolute inset-0 border-t-2 rounded-full animate-spin" style="border-color:var(--rojo)"></div>
+      <div class="absolute inset-2 border-t-2 rounded-full animate-spin"
+        style="border-color:var(--amarillo);animation-direction:reverse;animation-duration:1.5s"></div>
+      <div class="font-rajdhani font-bold text-base" style="color:var(--rojo)">A</div>
+    </div>
+    <div class="font-mono text-[10px] tracking-[3px] uppercase pulse-dot" style="color:var(--dim)">Autenticando</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       APP SHELL (hidden until ready)
+       ═══════════════════════════════════════════════════════════════ -->
+  <div id="app-shell" class="hidden min-h-screen flex-col">
+
+    <!-- Topbar container -->
+    <div id="topbar-container"></div>
+
+    <!-- Layout: Sidebar + Main -->
+    <div class="flex flex-1 pt-[60px]">
+      <div id="sidebar-container"></div>
+      <main id="main-content" class="flex-1 p-5 md:p-7 md:ml-[270px] min-h-[calc(100vh-60px)] overflow-x-hidden">
+      </main>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         PROFILE DRAWER
+         ═══════════════════════════════════════════════════════════════ -->
+    <div id="profile-drawer-backdrop"
+      class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] hidden opacity-0 transition-opacity duration-300"
+      onclick="toggleProfileDrawer()"></div>
+
+    <aside id="profile-drawer" class="fixed top-0 right-0 h-full w-full sm:w-[420px] border-l z-[61]
+                  transform translate-x-full transition-transform duration-300 overflow-y-auto flex flex-col"
+      style="background-color:var(--bg2);border-color:var(--borde)">
+
+      <!-- Drawer Header -->
+      <div class="px-6 py-4 border-b sticky top-0 z-10 flex items-center justify-between"
+        style="background-color:var(--bg2);border-color:var(--borde2)">
+        <h2 class="font-rajdhani text-lg font-bold flex items-center gap-2" style="color:var(--texto)">
+          ⚙️ Configuración de Perfil
+        </h2>
+        <button onclick="toggleProfileDrawer()"
+          class="text-2xl leading-none w-8 h-8 flex items-center justify-center rounded transition-colors hover:text-rojo"
+          style="color:var(--dim)">&times;</button>
+      </div>
+
+      <div class="p-6 flex flex-col gap-7 flex-1">
+
+        <!-- ── Información Básica ── -->
+        <section>
+          <p class="font-mono text-[9px] tracking-[2px] uppercase mb-4" style="color:var(--rojo)">Información Básica</p>
+          <div class="flex flex-col gap-3">
+            <!-- Avatar -->
+            <div class="flex items-center gap-4">
+              <div class="relative">
+                <div id="drawer-avatar"
+                  class="w-16 h-16 rounded-full flex items-center justify-center font-rajdhani font-bold text-2xl text-white shadow-lg overflow-hidden relative cursor-pointer"
+                  style="background:linear-gradient(135deg,var(--rojo-osc),var(--rojo))"
+                  onclick="document.getElementById('avatar-file-input').click()"
+                  title="Cambiar avatar">
+                  <span id="drawer-avatar-letter">U</span>
+                  <img id="drawer-avatar-img" src="" alt="Avatar"
+                       style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%">
+                </div>
+              </div>
+              <div>
+                <button onclick="document.getElementById('avatar-file-input').click()" class="btn btn-ghost btn-sm">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                  </svg>
+                  Cambiar Avatar
+                </button>
+                <input type="file" id="avatar-file-input" accept="image/*" class="hidden"
+                  onchange="previewAndUploadAvatar(event)">
+                <p class="text-[10px] mt-1" style="color:var(--muted)">JPG, PNG, WEBP · Máx 150 KB</p>
+              </div>
+            </div>
+
+            <!-- Nombre -->
+            <div>
+              <label class="argos-label">Nombre</label>
+              <div class="flex gap-2">
+                <input id="drawer-nombre" type="text" value="" class="argos-input flex-1">
+                <button onclick="guardarNombre()" class="btn btn-edit btn-sm">Guardar</button>
+              </div>
+            </div>
+
+            <!-- Cargo / Rol (solo lectura) -->
+            <div>
+              <label class="argos-label">Cargo / Rol</label>
+              <input id="drawer-rol-display" type="text" value="ADMIN" readonly
+                class="argos-input cursor-not-allowed text-sm font-mono uppercase tracking-widest opacity-60">
+            </div>
+          </div>
+        </section>
+
+        <!-- ── Seguridad ── -->
+        <section>
+          <p class="font-mono text-[9px] tracking-[2px] uppercase mb-4" style="color:var(--rojo)">Seguridad</p>
+          <div class="flex flex-col gap-2">
+
+            <!-- Cambiar Email -->
+            <details class="rounded-xl border overflow-hidden" style="border-color:var(--borde2)">
+              <summary
+                class="flex justify-between items-center px-4 py-3 cursor-pointer text-sm font-semibold transition-colors hover:bg-white/5"
+                style="color:var(--texto);background-color:var(--bg3)">
+                <span>✉️ Cambiar Email</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+                  style="color:var(--dim)">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                </svg>
+              </summary>
+              <div class="px-4 pb-4 pt-3 flex flex-col gap-2" style="background-color:var(--bg3)">
+                <p class="text-[11px] mb-1" style="color:var(--dim)">Email actual: <span id="email-actual-label"
+                    class="font-mono">-</span></p>
+                <div id="email-step-1">
+                  <label class="argos-label">Contraseña actual</label>
+                  <div class="relative mb-2">
+                    <input id="email-password" type="password" placeholder="••••••••" class="argos-input pr-10 w-full">
+                    <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 focus:outline-none" onclick="togglePasswordVisibility(this, 'email-password')" title="Mostrar/Ocultar contraseña">
+                      <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    </button>
+                  </div>
+                  <label class="argos-label mt-2">Nuevo email</label>
+                  <input id="email-nuevo" type="email" placeholder="nuevo@email.com" class="argos-input mb-2">
+                  <button onclick="emailSolicitar()" class="btn btn-edit btn-sm w-full">Enviar código →</button>
+                </div>
+                <div id="email-step-2" class="hidden">
+                  <p class="text-[11px] mb-1" style="color:var(--verde)">✓ Código enviado al email actual</p>
+                  <label class="argos-label">Código del email actual</label>
+                  <input id="email-codigo-1" type="text" placeholder="123456" maxlength="6"
+                    class="argos-input mb-2 font-mono text-center text-lg tracking-widest">
+                  <button onclick="emailConfirmar()" class="btn btn-edit btn-sm w-full">Verificar →</button>
+                </div>
+                <div id="email-step-3" class="hidden">
+                  <p class="text-[11px] mb-1" style="color:var(--verde)">✓ Código enviado al nuevo email</p>
+                  <label class="argos-label">Código del nuevo email</label>
+                  <input id="email-codigo-2" type="text" placeholder="123456" maxlength="6"
+                    class="argos-input mb-2 font-mono text-center text-lg tracking-widest">
+                  <button onclick="emailFinalizar()" class="btn btn-primary btn-sm w-full">Confirmar cambio ✓</button>
+                </div>
+                <p id="email-msg" class="text-[11px] hidden"></p>
+              </div>
+            </details>
+
+            <!-- Cambiar Contraseña -->
+            <details class="rounded-xl border overflow-hidden" style="border-color:var(--borde2)">
+              <summary
+                class="flex justify-between items-center px-4 py-3 cursor-pointer text-sm font-semibold transition-colors hover:bg-white/5"
+                style="color:var(--texto);background-color:var(--bg3)">
+                <span>🔑 Cambiar Contraseña</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+                  style="color:var(--dim)">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                </svg>
+              </summary>
+              <div class="px-4 pb-4 pt-3 flex flex-col gap-2" style="background-color:var(--bg3)">
+                <label class="argos-label">Contraseña actual</label>
+                <div class="relative mb-2">
+                  <input id="pass-actual" type="password" placeholder="••••••••" class="argos-input pr-10 w-full">
+                  <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 focus:outline-none" onclick="togglePasswordVisibility(this, 'pass-actual')" title="Mostrar/Ocultar contraseña">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                  </button>
+                </div>
+                <label class="argos-label">Nueva contraseña</label>
+                <div class="relative mb-2">
+                  <input id="pass-nueva" type="password" placeholder="Mín 8 · 1 mayús · 1 núm · 1 símb" class="argos-input pr-10 w-full">
+                  <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 focus:outline-none" onclick="togglePasswordVisibility(this, 'pass-nueva')" title="Mostrar/Ocultar contraseña">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                  </button>
+                </div>
+                <label class="argos-label">Confirmar nueva</label>
+                <div class="relative mb-2">
+                  <input id="pass-confirmar" type="password" placeholder="••••••••" class="argos-input pr-10 w-full">
+                  <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 focus:outline-none" onclick="togglePasswordVisibility(this, 'pass-confirmar')" title="Mostrar/Ocultar contraseña">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                  </button>
+                </div>
+                <button onclick="cambiarPassword()" class="btn btn-edit btn-sm w-full mt-1">Actualizar
+                  contraseña</button>
+                <p id="pass-msg" class="text-[11px] hidden"></p>
+              </div>
+            </details>
+
+            <!-- 2FA -->
+            <details class="rounded-xl border overflow-hidden" style="border-color:var(--borde2)">
+              <summary
+                class="flex justify-between items-center px-4 py-3 cursor-pointer text-sm font-semibold transition-colors hover:bg-white/5"
+                style="color:var(--texto);background-color:var(--bg3)">
+                <span>🛡️ Autenticación 2FA (TOTP)</span>
+                <span id="2fa-status-badge" class="status-badge badge-inactive text-xs">Inactivo</span>
+              </summary>
+              <div class="px-4 pb-4 pt-3" style="background-color:var(--bg3)">
+                <!-- Estado: inactivo → botón activar -->
+                <div id="twofa-activar-panel">
+                  <p class="text-[11px] mb-3" style="color:var(--dim)">Usa Google Authenticator, Authy u otra app TOTP.
+                    Genera códigos de 6 dígitos cada 30s.</p>
+                  <button onclick="activar2FA()" class="btn btn-activate btn-sm w-full">Activar 2FA →</button>
+                </div>
+                <!-- QR para escanear -->
+                <div id="2fa-qr-panel" class="hidden text-center">
+                  <p class="text-[11px] mb-2" style="color:var(--dim)">Escanea este QR con tu app TOTP:</p>
+                  <img id="2fa-qr-img" src="" alt="QR TOTP" class="w-48 h-48 mx-auto rounded-xl mb-3">
+                  <label class="argos-label">Ingresa un código para confirmar</label>
+                  <input id="2fa-confirmar-codigo" type="text" placeholder="123456" maxlength="6"
+                    class="argos-input font-mono text-center text-xl tracking-widest mb-2">
+                  <button onclick="confirmar2FA()" class="btn btn-primary btn-sm w-full">Confirmar activación</button>
+                </div>
+                <!-- Backup codes -->
+                <div id="2fa-backup-panel" class="hidden">
+                  <p class="text-[11px] mb-2 font-bold" style="color:var(--amarillo)">⚠️ Guarda estos códigos de
+                    respaldo. Solo se muestran una vez:</p>
+                  <div id="2fa-backup-list" class="grid grid-cols-2 gap-1 font-mono text-xs mb-3 p-3 rounded-lg"
+                    style="background:var(--bg4);color:var(--verde)"></div>
+                  <button onclick="cerrar2FABackup()" class="btn btn-ghost btn-sm w-full">Los guardé ✓</button>
+                </div>
+                <!-- Estado: activo → botón desactivar -->
+                <div id="2fa-desactivar-panel" class="hidden">
+                  <p class="text-[11px] mb-3" style="color:var(--verde)">✅ 2FA está activo en tu cuenta.</p>
+                  <label class="argos-label">Contraseña actual</label>
+                  <div class="relative mb-2">
+                    <input id="2fa-des-pass" type="password" class="argos-input pr-10 w-full">
+                    <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 focus:outline-none" onclick="togglePasswordVisibility(this, '2fa-des-pass')" title="Mostrar/Ocultar contraseña">
+                      <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    </button>
+                  </div>
+                  <label class="argos-label">Código TOTP actual</label>
+                  <input id="2fa-des-codigo" type="text" maxlength="6" placeholder="123456"
+                    class="argos-input font-mono text-center tracking-widest mb-2">
+                  <button onclick="desactivar2FA()" class="btn btn-danger btn-sm w-full">Desactivar 2FA</button>
+                </div>
+                <p id="2fa-msg" class="text-[11px] mt-2 hidden"></p>
+              </div>
+            </details>
+
+            <!-- Sesiones activas -->
+            <button
+              class="flex justify-between items-center w-full border px-4 py-3 rounded-xl text-sm font-semibold transition-colors hover:border-rojo/30"
+              style="background-color:var(--bg3);border-color:var(--borde2);color:var(--texto)"
+              onclick="cerrarTodasSesiones()">
+              <span>📱 Sesiones Activas</span>
+              <span class="text-xs border px-2 py-0.5 rounded"
+                style="border-color:rgba(232,0,29,0.3);background:rgba(232,0,29,0.1);color:var(--rojo)">Cerrar
+                todas</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- ── Tema ── -->
+        <section>
+          <p class="font-mono text-[9px] tracking-[2px] uppercase mb-4" style="color:var(--rojo)">Preferencias</p>
+          <div class="flex justify-between items-center px-4 py-3 rounded-xl border"
+            style="background-color:var(--bg3);border-color:var(--borde2)">
+            <span class="text-sm font-semibold" style="color:var(--texto)">Tema de Interfaz</span>
+            <div class="flex p-0.5 rounded-lg border" style="background-color:var(--bg4);border-color:var(--borde2)">
+              <button id="drawer-dark-btn" onclick="setTheme('dark')"
+                class="px-3 py-1 rounded-md text-xs font-bold transition-all">Oscuro</button>
+              <button id="drawer-light-btn" onclick="setTheme('light')"
+                class="px-3 py-1 rounded-md text-xs font-bold transition-all">Claro</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── Notificaciones ── -->
+        <section>
+          <p class="font-mono text-[9px] tracking-[2px] uppercase mb-4" style="color:var(--rojo)">Notificaciones</p>
+          <div class="flex flex-col gap-1.5">
+            <label
+              class="flex justify-between items-center px-4 py-3 border rounded-xl cursor-pointer transition-colors hover:border-white/20 text-sm"
+              style="background-color:var(--bg3);border-color:var(--borde2);color:var(--texto)">
+              <span>Alertas Críticas del Sistema</span>
+              <label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span><span
+                  class="toggle-thumb"></span></label>
+            </label>
+            <label
+              class="flex justify-between items-center px-4 py-3 border rounded-xl cursor-pointer transition-colors hover:border-white/20 text-sm"
+              style="background-color:var(--bg3);border-color:var(--borde2);color:var(--texto)">
+              <span>Notificaciones Internas</span>
+              <label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span><span
+                  class="toggle-thumb"></span></label>
+            </label>
+          </div>
+        </section>
+
+      </div><!-- /drawer body -->
+    </aside>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         HERMES IA WIDGET (MICRO-FRONTEND)
+         ═══════════════════════════════════════════════════════════════ -->
+    <hermes-widget id="hermes-ai-widget" api-base="/api" modulo="dashboard"></hermes-widget>
+
+  </div><!-- /#app-shell -->
+
+  <!-- Scripts -->
+  <script src="/hermes/hermes-widget.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/rbac.js"></script>
+  <script src="js/router.js"></script>
+
+  <script>
+    // ┌───────────────────────────────────────────────────────────────
+    // │  TEMA GLOBAL (Dark / Light)
+    // └───────────────────────────────────────────────────────────────
+    const THEME_KEY = 'argos-theme';
+
+    function applyTheme(theme) {
+      const html = document.getElementById('html-root');
+      if (theme === 'light') html.classList.add('light');
+      else html.classList.remove('light');
+
+      const dDark = document.getElementById('drawer-dark-btn');
+      const dLight = document.getElementById('drawer-light-btn');
+      if (dDark && dLight) {
+        if (theme === 'light') {
+          dLight.style.cssText = 'background:rgba(232,0,29,0.15);color:var(--rojo)';
+          dDark.style.cssText = 'color:var(--dim)';
+        } else {
+          dDark.style.cssText = 'background:rgba(232,0,29,0.15);color:var(--rojo)';
+          dLight.style.cssText = 'color:var(--dim)';
+        }
+      }
+      const topBtn = document.getElementById('theme-toggle-btn');
+      if (topBtn) topBtn.textContent = theme === 'light' ? '🌙' : '☀️';
+    }
+
+    function setTheme(theme) {
+      localStorage.setItem(THEME_KEY, theme);
+      applyTheme(theme);
+    }
+
+    applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
+    window.setTheme = setTheme;
+
+    // ┌───────────────────────────────────────────────────────────────
+    // │  DRAWER DE PERFIL
+    // └───────────────────────────────────────────────────────────────
+    function toggleProfileDrawer() {
+      const drawer = document.getElementById('profile-drawer');
+      const backdrop = document.getElementById('profile-drawer-backdrop');
+      const isOpen = !drawer.classList.contains('translate-x-full');
+      if (isOpen) {
+        drawer.classList.add('translate-x-full');
+        backdrop.classList.add('opacity-0');
+        setTimeout(() => backdrop.classList.add('hidden'), 300);
+      } else {
+        backdrop.classList.remove('hidden');
+        setTimeout(() => backdrop.classList.remove('opacity-0'), 10);
+        drawer.classList.remove('translate-x-full');
+        loadProfileData();
+        window.dispatchEvent(new CustomEvent('close-hermes'));
+      }
+    }
+    window.toggleProfileDrawer = toggleProfileDrawer;
+
+    async function loadProfileData() {
+      applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
+      const token = sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token');
+      try {
+        const r = await fetch('/api/perfil/me', { headers: { 'X-Token': token } });
+        if (!r.ok) return;
+        const d = await r.json();
+        document.getElementById('drawer-nombre').value = d.nombre || '';
+        document.getElementById('drawer-rol-display').value = (d.rol || '').toUpperCase();
+        document.getElementById('email-actual-label').textContent = d.email || '';
+
+        // Sincronizar avatar en todos los lugares (topbar + sidebar + drawer)
+        if (typeof updateAvatarEverywhere === 'function') {
+          updateAvatarEverywhere(d.avatar_url || '', d.nombre || d.username || '');
+        } else {
+          // Fallback directo al drawer si topbar aún no cargó
+          const letter = (d.nombre || 'U')[0].toUpperCase();
+          document.getElementById('drawer-avatar-letter').textContent = letter;
+          if (d.avatar_url) {
+            const img = document.getElementById('drawer-avatar-img');
+            img.src = d.avatar_url;
+            img.style.display = 'block';
+            document.getElementById('drawer-avatar-letter').style.display = 'none';
+          }
+        }
+        // 2FA state
+        const fa2Active = d.fa2_activo;
+        document.getElementById('2fa-status-badge').textContent = fa2Active ? 'Activo' : 'Inactivo';
+        document.getElementById('2fa-status-badge').className = `status-badge text-xs ${fa2Active ? 'badge-active' : 'badge-inactive'}`;
+        document.getElementById('twofa-activar-panel').classList.toggle('hidden', fa2Active);
+        document.getElementById('2fa-desactivar-panel').classList.toggle('hidden', !fa2Active);
+        document.getElementById('2fa-qr-panel').classList.add('hidden');
+        document.getElementById('2fa-backup-panel').classList.add('hidden');
+      } catch (e) { }
+    }
+
+    // Avatar - clic en el círculo o en el botón
+    window.previewAndUploadAvatar = async function (event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      if (file.size > 400000) { alert('Imagen demasiado grande. Máx 300 KB.'); return; }
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const dataUrl = e.target.result;
+
+        // Actualizamos los 3 lugares inmediatamente (preview)
+        const u = JSON.parse(sessionStorage.getItem('argos_user') || '{}');
+        if (typeof updateAvatarEverywhere === 'function') {
+          updateAvatarEverywhere(dataUrl, u.nombre || u.username || '');
+        }
+
+        // Subir al servidor
+        const token = sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token');
+        try {
+          const r = await fetch('/api/perfil/me/avatar', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-Token': token },
+            body: JSON.stringify({ avatar_url: dataUrl }),
+          });
+          if (!r.ok) {
+            const d = await r.json().catch(() => ({}));
+            alert('Error al guardar el avatar: ' + (d.error || r.status));
+          }
+        } catch (err) {
+          alert('Error de conexión al guardar el avatar.');
+        }
+      };
+      reader.readAsDataURL(file);
+    };
+
+    // Guardar nombre
+    window.guardarNombre = async function () {
+      const nombre = document.getElementById('drawer-nombre').value.trim();
+      if (!nombre) return;
+      const token = sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token');
+      const r = await fetch('/api/perfil/me', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Token': token },
+        body: JSON.stringify({ nombre }),
+      });
+      if (r.ok) { showDrawerToast('Nombre actualizado ✓', 'verde'); }
+      else { showDrawerToast('Error al guardar nombre.', 'rojo'); }
+    };
+
+    // Cambio email - Step 1
+    window.emailSolicitar = async function () {
+      const password = document.getElementById('email-password').value;
+      const nuevo = document.getElementById('email-nuevo').value.trim();
+      const msg = document.getElementById('email-msg');
+      const token = sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token');
+      const r = await fetch('/api/perfil/me/email/solicitar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Token': token },
+        body: JSON.stringify({ password, nuevo_email: nuevo }),
+      });
+      const d = await r.json();
+      if (r.ok) {
+        document.getElementById('email-step-1').classList.add('hidden');
+        document.getElementById('email-step-2').classList.remove('hidden');
+        msg.textContent = d.aviso || ''; msg.style.color = 'var(--azul)';
+        msg.classList.toggle('hidden', !d.aviso);
+        if (d.dev_code) { msg.textContent += `  Código (DEV): ${d.dev_code}`; msg.classList.remove('hidden'); }
+      } else {
+        msg.textContent = d.error || 'Error.'; msg.style.color = 'var(--rojo)'; msg.classList.remove('hidden');
+      }
+    };
+
+    // Cambio email - Step 2
+    window.emailConfirmar = async function () {
+      const codigo = document.getElementById('email-codigo-1').value;
+      const token = sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token');
+      const r = await fetch('/api/perfil/me/email/confirmar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Token': token },
+        body: JSON.stringify({ codigo }),
+      });
+      const d = await r.json();
+      const msg = document.getElementById('email-msg');
+      if (r.ok) {
+        document.getElementById('email-step-2').classList.add('hidden');
+        document.getElementById('email-step-3').classList.remove('hidden');
+        msg.textContent = d.aviso || ''; msg.classList.toggle('hidden', !d.aviso);
+        if (d.dev_code) { msg.textContent += `  Código (DEV): ${d.dev_code}`; msg.classList.remove('hidden'); }
+      } else {
+        msg.textContent = d.error; msg.style.color = 'var(--rojo)'; msg.classList.remove('hidden');
+      }
+    };
+
+    // Cambio email - Step 3
+    window.emailFinalizar = async function () {
+      const codigo = document.getElementById('email-codigo-2').value;
+      const nuevo = document.getElementById('email-nuevo').value.trim();
+      const token = sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token');
+      const r = await fetch('/api/perfil/me/email/finalizar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Token': token },
+        body: JSON.stringify({ codigo, nuevo_email: nuevo }),
+      });
+      const d = await r.json();
+      const msg = document.getElementById('email-msg');
+      if (r.ok) {
+        showDrawerToast('Email actualizado ✓', 'verde');
+        document.getElementById('email-step-3').classList.add('hidden');
+        document.getElementById('email-step-1').classList.remove('hidden');
+        document.getElementById('email-actual-label').textContent = nuevo;
+        msg.classList.add('hidden');
+      } else {
+        msg.textContent = d.error; msg.style.color = 'var(--rojo)'; msg.classList.remove('hidden');
+      }
+    };
+
+    // Cambiar contraseña
+    window.cambiarPassword = async function () {
+      const actual = document.getElementById('pass-actual').value;
+      const nueva = document.getElementById('pass-nueva').value;
+      const confirmar = document.getElementById('pass-confirmar').value;
+      const msg = document.getElementById('pass-msg');
+      const token = sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token');
+      const r = await fetch('/api/perfil/me/password', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Token': token },
+        body: JSON.stringify({ actual, nueva, confirmar }),
+      });
+      const d = await r.json();
+      msg.classList.remove('hidden');
+      if (r.ok) { msg.textContent = '✓ Contraseña actualizada.'; msg.style.color = 'var(--verde)'; }
+      else { msg.textContent = d.error; msg.style.color = 'var(--rojo)'; }
+    };
+
+    // cerrar todas las sesiones
+    window.cerrarTodasSesiones = async function () {
+      showDrawerToast('Sesiones cerradas ✓', 'verde');
+    };
+
+    // 2FA - Activar
+    window.activar2FA = async function () {
+      const token = sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token');
+      const btn = document.querySelector('#twofa-activar-panel button');
+      if (btn) { btn.textContent = 'Generando QR...'; btn.disabled = true; }
+      const r = await fetch('/api/perfil/me/2fa/activar', { method: 'POST', headers: { 'X-Token': token } });
+      const d = await r.json();
+      if (btn) { btn.textContent = 'Activar 2FA →'; btn.disabled = false; }
+      const msg = document.getElementById('2fa-msg');
+      if (r.ok) {
+        document.getElementById('2fa-qr-img').src = d.qr_image;
+        document.getElementById('twofa-activar-panel').classList.add('hidden');
+        document.getElementById('2fa-qr-panel').classList.remove('hidden');
+        msg.classList.add('hidden');
+      } else {
+        msg.textContent = d.error; msg.style.color = 'var(--rojo)'; msg.classList.remove('hidden');
+      }
+    };
+
+    // 2FA - Confirmar
+    window.confirmar2FA = async function () {
+      const codigo = document.getElementById('2fa-confirmar-codigo').value;
+      const token = sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token');
+      const r = await fetch('/api/perfil/me/2fa/confirmar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Token': token },
+        body: JSON.stringify({ codigo }),
+      });
+      const d = await r.json();
+      const msg = document.getElementById('2fa-msg');
+      if (r.ok) {
+        document.getElementById('2fa-qr-panel').classList.add('hidden');
+        const list = document.getElementById('2fa-backup-list');
+        list.innerHTML = (d.backup_codes || []).map(c => `<code>${c}</code>`).join('');
+        document.getElementById('2fa-backup-panel').classList.remove('hidden');
+        document.getElementById('2fa-status-badge').textContent = 'Activo';
+        document.getElementById('2fa-status-badge').className = 'status-badge badge-active text-xs';
+        msg.classList.add('hidden');
+      } else {
+        msg.textContent = d.error; msg.style.color = 'var(--rojo)'; msg.classList.remove('hidden');
+      }
+    };
+
+    // 2FA - Cerrar panel backup codes
+    window.cerrar2FABackup = function () {
+      document.getElementById('2fa-backup-panel').classList.add('hidden');
+      document.getElementById('2fa-desactivar-panel').classList.remove('hidden');
+    };
+
+    // 2FA - Desactivar
+    window.desactivar2FA = async function () {
+      const password = document.getElementById('2fa-des-pass').value;
+      const codigo = document.getElementById('2fa-des-codigo').value;
+      const token = sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token');
+      const r = await fetch('/api/perfil/me/2fa/desactivar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Token': token },
+        body: JSON.stringify({ password, codigo }),
+      });
+      const d = await r.json();
+      const msg = document.getElementById('2fa-msg');
+      if (r.ok) {
+        document.getElementById('2fa-desactivar-panel').classList.add('hidden');
+        document.getElementById('twofa-activar-panel').classList.remove('hidden');
+        document.getElementById('2fa-status-badge').textContent = 'Inactivo';
+        document.getElementById('2fa-status-badge').className = 'status-badge badge-inactive text-xs';
+        showDrawerToast('2FA desactivado.', 'amarillo');
+        msg.classList.add('hidden');
+      } else {
+        msg.textContent = d.error; msg.style.color = 'var(--rojo)'; msg.classList.remove('hidden');
+      }
+    };
+
+    // Toast helper
+    function showDrawerToast(text, color = 'verde') {
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-4 left-1/2 -translate-x-1/2 z-[200] px-5 py-2.5 rounded-xl font-mono text-sm font-bold text-white shadow-xl fade-in';
+      toast.style.background = `var(--${color})`;
+      toast.style.color = '#fff';
+      toast.textContent = text;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // ┌───────────────────────────────────────────────────────────────
+    // │  HERMES IA WIDGET (MICRO-FRONTEND)
+    // └───────────────────────────────────────────────────────────────
+    // El widget se carga vía Web Component (<hermes-widget>)
+    // Se le pasará el token una vez el router haya cargado.
+
+    // ┌───────────────────────────────────────────────────────────────
+    // │  SIDEBAR TOGGLE GLOBAL
+    // └───────────────────────────────────────────────────────────────
+    window.toggleSidebarGlobal = function() {
+      if (window.innerWidth < 768) {
+        if (typeof openSidebar === 'function') openSidebar();
+      } else {
+        document.body.classList.toggle('sidebar-collapsed');
+        document.documentElement.classList.toggle('sidebar-collapsed');
+        localStorage.setItem('argos_sidebar_collapsed', document.body.classList.contains('sidebar-collapsed'));
+      }
+    };
+
+    // ┌───────────────────────────────────────────────────────────────
+    // │  ARRANQUE PRINCIPAL
+    // └───────────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', async () => {
+      const loader = document.getElementById('app-loader');
+      const shell = document.getElementById('app-shell');
+
+      const token = sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token');
+      if (!token) { window.location.replace('login.html'); return; }
+
+      try {
+        if (window.RBAC) await RBAC.init().catch(() => { });
+      } catch (e) { }
+
+      if (localStorage.getItem('argos_sidebar_collapsed') === 'true') {
+        document.body.classList.add('sidebar-collapsed');
+      }
+
+      shell.classList.remove('hidden');
+      shell.classList.add('flex');
+
+      if (window.AppRouter) await AppRouter.init();
+
+      // Hermes por rol (Web Component)
+      const hermes = document.getElementById('hermes-ai-widget');
+      if (hermes) {
+        hermes.setAttribute('token', token);
+      }
+
+      loader.style.opacity = '0';
+      loader.style.transition = 'opacity 0.35s';
+      setTimeout(() => loader.remove(), 400);
+    });
+  </script>
+</body>
+
+</html>

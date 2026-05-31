@@ -1,0 +1,62 @@
+<!-- frontend/views/estadisticas.html -->
+<div class="animate-[fadeIn_0.3s_ease-out]">
+  
+  <div class="font-mono text-[11px] text-texto-dim mb-5 tracking-[1px] flex items-center gap-1.5">
+    <a href="?module=home" class="hover:text-rojo transition-colors cursor-pointer text-amarillo">Dashboard</a>
+    <span class="text-rojo">/</span>
+    <span class="text-texto">Estadísticas</span>
+  </div>
+
+  <div class="bg-panel border border-panelBorde rounded-xl p-7 mb-6 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-5">
+    <div class="absolute top-0 left-0 bottom-0 w-1 bg-rojo rounded-l-lg"></div>
+    <div>
+      <div class="font-mono text-[9px] tracking-[2px] text-rojo uppercase mb-2">Reportes Analíticos</div>
+      <h2 class="font-rajdhani text-2xl md:text-3xl font-bold tracking-wide mb-2">Desempeño y Métricas</h2>
+      <p class="text-sm text-texto-dim font-light max-w-xl leading-relaxed">
+        Visualización de evasiones detectadas por troncal, precisión del modelo y tasas de falsos positivos reportados durante la última semana.
+      </p>
+    </div>
+    
+    <div class="flex gap-2 font-mono text-xs text-texto-dim">
+      <button class="bg-bg-tertiary border border-panelBorde px-3 py-1.5 rounded hover:text-texto transition-colors">7 Días</button>
+      <button class="bg-rojo/20 border border-rojo/50 text-rojo px-3 py-1.5 rounded">30 Días</button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Chart Mock 1 -->
+    <div class="bg-panel border border-white/5 rounded-xl p-6 shadow-lg">
+      <h3 class="font-rajdhani font-bold text-lg text-texto mb-5 uppercase tracking-wide">Evasiones por Troncal</h3>
+      <div class="h-48 border-b border-l border-white/10 flex items-end justify-between px-2 pt-4 pb-0 relative">
+        <!-- Bars -->
+        <div class="w-[12%] bg-gradient-to-t from-rojo/80 to-[#ff4444] rounded-t-sm relative group" style="height: 85%;">
+          <div class="absolute -top-6 left-1/2 -translate-x-1/2 font-mono text-[10px] text-texto opacity-0 group-hover:opacity-100 transition-opacity">850</div>
+        </div>
+        <div class="w-[12%] bg-gradient-to-t from-rojo/60 to-rojo rounded-t-sm relative group" style="height: 60%;"></div>
+        <div class="w-[12%] bg-gradient-to-t from-rojo/40 to-rojo/80 rounded-t-sm relative group" style="height: 40%;"></div>
+        <div class="w-[12%] bg-gradient-to-t from-rojo/60 to-rojo rounded-t-sm relative group" style="height: 70%;"></div>
+        <div class="w-[12%] bg-gradient-to-t from-rojo/40 to-rojo/80 rounded-t-sm relative group" style="height: 35%;"></div>
+        <div class="w-[12%] bg-gradient-to-t from-rojo/20 to-rojo/50 rounded-t-sm relative group" style="height: 20%;"></div>
+      </div>
+      <div class="flex justify-between font-mono text-[9px] text-texto-dim uppercase tracking-wider mt-2 px-1">
+        <span>Caracas</span><span>NQS</span><span>Américas</span><span>Suba</span><span>80</span><span>Sur</span>
+      </div>
+    </div>
+
+    <!-- Chart Mock 2 -->
+    <div class="bg-panel border border-white/5 rounded-xl p-6 shadow-lg">
+      <h3 class="font-rajdhani font-bold text-lg text-texto mb-5 uppercase tracking-wide">Tasa de Confiabilidad IA (YOLOv8)</h3>
+      <div class="flex h-48 items-center justify-center relative">
+        <!-- Circulo central -->
+        <div class="w-32 h-32 rounded-full border-[12px] border-bg-tertiary relative flex items-center justify-center">
+          <div class="absolute inset-[-12px] rounded-full border-[12px] border-verde border-l-transparent border-b-transparent transform rotate-45"></div>
+          <div class="font-rajdhani text-3xl font-bold text-verde">98%</div>
+        </div>
+      </div>
+      <div class="flex justify-center gap-6 font-mono text-[10px] mt-4">
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded bg-verde"></span> <span class="text-texto-dim">Aciertos (True Positive)</span></div>
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded bg-bg-tertiary"></span> <span class="text-texto-dim">Falsos Positivos</span></div>
+      </div>
+    </div>
+  </div>
+</div>

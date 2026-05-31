@@ -1,0 +1,22 @@
+Flask==3.0.3
+flask-cors==4.0.1
+Werkzeug==3.0.3
+Flask-Limiter==3.8.0
+flask-sock>=0.7.0         # WebSocket para cámara cliente remota
+python-dotenv>=1.0.1       # Carga de variables de entorno (.env)
+
+# Métricas del sistema
+psutil==6.1.1
+
+# 2FA (TOTP + QR)
+pyotp==2.9.0
+qrcode[pil]==8.0
+
+# Cifrado Fernet (TOTP secret)
+cryptography==43.0.3
+
+# Hermes IA — Validación de contratos API
+pydantic>=2.0
+
+# Tunnel (opcional)
+# pyngrok==7.2.0
