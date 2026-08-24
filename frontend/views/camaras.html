@@ -29,6 +29,11 @@
         class="inline-flex items-center gap-2 bg-bg/50 border border-[color:var(--borde2)] hover:border-rojo hover:text-rojo text-[color:var(--texto)] text-xs font-rajdhani font-semibold px-4 py-2 rounded transition-all uppercase tracking-wide">
         ↻ Actualizar Lista
       </button>
+      <button id="btn-subir-video"
+        class="inline-flex items-center gap-2 bg-azul/10 border border-azul/30 hover:border-azul hover:bg-azul hover:text-white text-azul text-xs font-rajdhani font-semibold px-4 py-2 rounded transition-all uppercase tracking-wide"
+        title="Sube un video .mp4 para analizarlo con Athena">
+        📹 Subir Video
+      </button>
       <div id="athena-badge"
         class="inline-flex items-center gap-2 px-3 py-1.5 rounded border text-xs font-mono bg-bg/60 border-[color:var(--borde2)] text-[color:var(--dim)]">
         <span id="athena-dot" class="w-2 h-2 rounded-full bg-texto-dim/40"></span>
@@ -83,7 +88,15 @@
             📋 Eventos
             <span id="events-badge" class="absolute -top-1.5 -right-1.5 bg-rojo text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full hidden shadow border border-panel">0</span>
           </button>
-          
+
+          <!-- Selector de modo Athena -->
+          <select id="select-modo-athena"
+            class="bg-[color:var(--bg3)] border border-[color:var(--borde2)] text-[color:var(--dim)] text-[10px] font-mono px-2 py-1 rounded outline-none focus:border-azul transition-colors"
+            title="Modo de operación de Athena">
+            <option value="acceso">🔐 Acceso</option>
+            <option value="evasion">🚨 Evasión</option>
+          </select>
+
           <button id="btn-conectar" disabled
             class="inline-flex items-center gap-1.5 bg-verde/10 border border-verde/30 text-verde hover:bg-verde hover:text-bg text-[10px] font-mono px-3 py-1 rounded transition-all uppercase tracking-wider disabled:opacity-40 disabled:cursor-not-allowed">
             ▶ Conectar
@@ -241,6 +254,95 @@
       <button id="modal-save"
         class="bg-rojo hover:bg-rojo-oscuro text-white text-xs font-rajdhani font-bold px-5 py-2 rounded transition-colors uppercase tracking-wider">
         Guardar
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     MODAL: Subir Video para Análisis
+════════════════════════════════════ -->
+<div id="modal-video"
+  class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+  <div class="bg-[color:var(--bg2)] border border-[color:var(--borde2)] rounded-2xl w-full max-w-lg shadow-2xl">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between p-5 border-b border-[color:var(--borde2)]">
+      <div>
+        <div class="font-mono text-[9px] tracking-widest text-azul uppercase mb-0.5">Athena IA</div>
+        <h3 class="font-rajdhani text-lg font-bold text-[color:var(--texto)]">Subir Video para Análisis</h3>
+      </div>
+      <button id="modal-video-close" class="text-[color:var(--dim)] hover:text-rojo text-2xl leading-none">&times;</button>
+    </div>
+
+    <!-- Body -->
+    <div class="p-5 flex flex-col gap-4">
+
+      <!-- Zona drag & drop -->
+      <label id="video-dropzone"
+        class="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-[color:var(--borde2)] hover:border-azul rounded-xl py-8 px-4 cursor-pointer transition-colors group">
+        <div class="text-4xl group-hover:scale-110 transition-transform">📹</div>
+        <div class="text-center">
+          <div class="text-sm font-rajdhani font-bold text-[color:var(--texto)] group-hover:text-azul transition-colors">
+            Arrastra tu video aquí o haz clic para seleccionar
+          </div>
+          <div class="text-[10px] text-[color:var(--dim)] font-mono mt-1">
+            .mp4 · .avi · .mkv · .mov · .webm
+          </div>
+        </div>
+        <input id="video-file-input" type="file"
+          accept=".mp4,.avi,.mkv,.mov,.webm,.ts,.flv"
+          class="hidden">
+      </label>
+
+      <!-- Archivo seleccionado -->
+      <div id="video-selected-info" class="hidden flex items-center gap-3 bg-azul/5 border border-azul/20 rounded-lg px-4 py-3">
+        <span class="text-xl">🎬</span>
+        <div class="flex-1 min-w-0">
+          <div id="video-selected-name" class="text-sm font-mono text-azul truncate"></div>
+          <div id="video-selected-size" class="text-[10px] text-[color:var(--dim)]"></div>
+        </div>
+        <button id="video-clear-file" class="text-[color:var(--dim)] hover:text-rojo text-lg leading-none">&times;</button>
+      </div>
+
+      <!-- Barra de progreso -->
+      <div id="video-progress-wrap" class="hidden">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-[10px] font-mono text-[color:var(--dim)]">Subiendo...</span>
+          <span id="video-progress-pct" class="text-[10px] font-mono text-azul">0%</span>
+        </div>
+        <div class="w-full h-1.5 bg-[color:var(--borde2)] rounded-full overflow-hidden">
+          <div id="video-progress-bar" class="h-full bg-azul rounded-full transition-all duration-300" style="width:0%"></div>
+        </div>
+      </div>
+
+      <!-- Resultado del upload -->
+      <div id="video-upload-result" class="hidden rounded-lg px-4 py-3 text-xs font-mono"></div>
+
+      <!-- Separador -->
+      <div class="border-t border-[color:var(--borde2)] pt-3">
+        <div class="font-mono text-[9px] text-[color:var(--dim)] uppercase tracking-widest mb-2 flex items-center justify-between">
+          <span>Videos disponibles en el servidor</span>
+          <button id="btn-refrescar-videos" class="text-[9px] hover:text-azul transition-colors">↻</button>
+        </div>
+        <div id="video-list" class="flex flex-col gap-1.5 max-h-44 overflow-y-auto">
+          <div class="text-[10px] text-[color:var(--dim)]/50 font-mono text-center py-3">Cargando...</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="flex justify-end gap-3 px-5 pb-5">
+      <button id="modal-video-cancel"
+        class="text-xs font-mono text-[color:var(--dim)] hover:text-rojo border border-[color:var(--borde2)] px-4 py-2 rounded transition-colors uppercase">
+        Cerrar
+      </button>
+      <button id="btn-upload-video"
+        class="inline-flex items-center gap-2 bg-azul hover:bg-azul/80 text-white text-xs font-rajdhani font-bold px-5 py-2 rounded transition-colors uppercase tracking-wider disabled:opacity-40 disabled:cursor-not-allowed"
+        disabled>
+        ↑ Subir Video
       </button>
     </div>
   </div>
@@ -421,9 +523,10 @@
     $btnConectar.disabled = true;
     $btnConectar.textContent = '…';
     const esWebcam = (selectedCam.ip || '').trim().toLowerCase() === 'webcam';
+    const modo = (document.getElementById('select-modo-athena') || {}).value || 'acceso';
     try {
-      const res = await api('POST', `/api/camaras/${selectedCam.id}/connect`);
-      setAthenaOnline(res, esWebcam);
+      const res = await api('POST', `/api/camaras/${selectedCam.id}/connect`, { mode: modo });
+      setAthenaOnline(res, esWebcam, modo);
     } catch (e) {
       alert(`No se pudo conectar: ${e.message}`);
       $btnConectar.disabled   = false;
@@ -431,10 +534,9 @@
     }
   });
 
-  function setAthenaOnline(info, esWebcam = false) {
+  function setAthenaOnline(info, esWebcam = false, modo = 'acceso') {
     athenaActive = true;
 
-    // Mostrar stream (dar 800ms si es webcam para que el WS se conecte primero)
     const startStream = () => {
       $streamImg.src = `/api/camaras/stream?t=${TOKEN()}&ts=${Date.now()}`;
       $streamImg.classList.remove('hidden');
@@ -444,7 +546,6 @@
     };
 
     if (esWebcam) {
-      // Primero activar webcam, luego mostrar stream
       activarWebcam().then(() => setTimeout(startStream, 600)).catch(err => {
         alert(`No se pudo acceder a la cámara: ${err.message}`);
         setAthenaOffline();
@@ -453,19 +554,19 @@
       startStream();
     }
 
-    // Badge
-    const badgeLabel = esWebcam ? `📷 Webcam · CAM ${info.cam_id}` : `Athena · CAM ${info.cam_id}`;
-    $athenaDot.className   = 'w-2 h-2 rounded-full bg-verde pulse-dot';
+    // Badge con info del modo
+    const modoLabel = modo === 'evasion' ? '🚨 Evasión' : '🔐 Acceso';
+    const badgeLabel = esWebcam ? `📷 Webcam · ${modoLabel}` : `Athena · ${modoLabel}`;
+    $athenaDot.className     = 'w-2 h-2 rounded-full bg-verde pulse-dot';
     $athenaLabel.textContent = badgeLabel;
     $athenaBadge.className   = 'inline-flex items-center gap-2 px-3 py-1.5 rounded border text-xs font-mono bg-verde/5 border-verde/30 text-verde';
 
     // Botones
-    $btnConectar.textContent = esWebcam ? '📷 Activo' : '▶ Activo';
+    $btnConectar.textContent = esWebcam ? '📷 Activo' : (modo === 'evasion' ? '🚨 Activo' : '▶ Activo');
     btnsDesconectar.forEach(btn => btn.classList.remove('hidden'));
 
     $confidence.textContent = esWebcam ? 'Webcam' : `${((info.confidence || 0.5) * 100).toFixed(0)}%`;
 
-    // Iniciar SSE de eventos
     startSSE();
     updateTsLoop();
   }
@@ -538,6 +639,7 @@
     TARJETA_INVALIDA:  { icon: '🚫', color: 'rojo',     label: 'Tarjeta Inválida' },
     ACCESO_CONCEDIDO:  { icon: '✅', color: 'verde',    label: 'Acceso Concedido' },
     POSE_ANOMALA:      { icon: '⚠️', color: 'amarillo', label: 'Pose Anómala' },
+    EVASION_DETECTADA: { icon: '🚨', color: 'rojo',     label: 'Evasión Detectada' },
   };
 
   function appendEvent(ev) {
@@ -803,11 +905,287 @@
           $camLabel.textContent = `${cam.codigo} · ${cam.ubicacion}`;
           $srcLabel.textContent  = cam.ip || 'índice 0';
           const esWebcam = (cam.ip || '').trim().toLowerCase() === 'webcam';
-          setAthenaOnline({ cam_id: s.cam_id, confidence: 0.5 }, esWebcam);
+          const modoActual = s.mode || 'acceso';
+          const selModo = document.getElementById('select-modo-athena');
+          if (selModo) selModo.value = modoActual;
+          setAthenaOnline({ cam_id: s.cam_id, confidence: 0.5 }, esWebcam, modoActual);
         }
       }
     } catch (_) {}
   })();
+
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  MODAL SUBIR VIDEO
+  // ══════════════════════════════════════════════════════════════════════════
+
+  const $modalVideo       = document.getElementById('modal-video');
+  const $btnSubirVideo    = document.getElementById('btn-subir-video');
+  const $modalVideoClose  = document.getElementById('modal-video-close');
+  const $modalVideoCancel = document.getElementById('modal-video-cancel');
+  const $videoFileInput   = document.getElementById('video-file-input');
+  const $videoDropzone    = document.getElementById('video-dropzone');
+  const $videoSelInfo     = document.getElementById('video-selected-info');
+  const $videoSelName     = document.getElementById('video-selected-name');
+  const $videoSelSize     = document.getElementById('video-selected-size');
+  const $videoClearFile   = document.getElementById('video-clear-file');
+  const $videoProgressW   = document.getElementById('video-progress-wrap');
+  const $videoProgressBar = document.getElementById('video-progress-bar');
+  const $videoProgressPct = document.getElementById('video-progress-pct');
+  const $videoResult      = document.getElementById('video-upload-result');
+  const $videoList        = document.getElementById('video-list');
+  const $btnUploadVideo   = document.getElementById('btn-upload-video');
+  const $btnRefreshVideos = document.getElementById('btn-refrescar-videos');
+
+  let selectedVideoFile = null;
+
+  function openModalVideo() {
+    $modalVideo.classList.remove('hidden');
+    $modalVideo.classList.add('flex');
+    resetVideoModal();
+    loadVideoList();
+  }
+
+  function closeModalVideo() {
+    $modalVideo.classList.add('hidden');
+    $modalVideo.classList.remove('flex');
+    resetVideoModal();
+  }
+
+  function resetVideoModal() {
+    selectedVideoFile = null;
+    if ($videoFileInput) $videoFileInput.value = '';
+    $videoSelInfo.classList.add('hidden');
+    $videoProgressW.classList.add('hidden');
+    $videoResult.classList.add('hidden');
+    $videoResult.textContent = '';
+    $btnUploadVideo.disabled = true;
+    $videoProgressBar.style.width = '0%';
+    $videoProgressPct.textContent = '0%';
+    // Restaurar dropzone
+    $videoDropzone.classList.remove('border-azul', 'bg-azul/5');
+    $videoDropzone.classList.add('border-[color:var(--borde2)]');
+  }
+
+  function onFileSelected(file) {
+    if (!file) return;
+    const ext = file.name.split('.').pop().toLowerCase();
+    const allowed = ['mp4','avi','mkv','mov','webm','ts','flv'];
+    if (!allowed.includes(ext)) {
+      showVideoResult('error', `Formato no permitido: .${ext}. Use: ${allowed.map(e=>'.'+e).join(', ')}`);
+      return;
+    }
+    selectedVideoFile = file;
+    $videoSelName.textContent = file.name;
+    $videoSelSize.textContent = (file.size / (1024*1024)).toFixed(2) + ' MB';
+    $videoSelInfo.classList.remove('hidden');
+    $videoResult.classList.add('hidden');
+    $btnUploadVideo.disabled = false;
+    $videoDropzone.classList.add('border-azul', 'bg-azul/5');
+    $videoDropzone.classList.remove('border-[color:var(--borde2)]');
+  }
+
+  function showVideoResult(tipo, msg) {
+    $videoResult.classList.remove('hidden', 'bg-verde/10', 'border-verde/20', 'text-verde',
+                                            'bg-rojo/10',  'border-rojo/20',  'text-rojo');
+    if (tipo === 'ok') {
+      $videoResult.classList.add('bg-verde/10', 'border', 'border-verde/20', 'text-verde');
+    } else {
+      $videoResult.classList.add('bg-rojo/10', 'border', 'border-rojo/20', 'text-rojo');
+    }
+    $videoResult.textContent = msg;
+  }
+
+  async function loadVideoList() {
+    $videoList.innerHTML = '<div class="text-[10px] text-[color:var(--dim)]/50 font-mono text-center py-3">Cargando...</div>';
+    try {
+      const res = await fetch('/api/camaras/videos', { headers: { 'X-Token': TOKEN() } });
+      const data = await res.json();
+      const videos = data.videos || [];
+      if (!videos.length) {
+        $videoList.innerHTML = '<div class="text-[10px] text-[color:var(--dim)]/40 font-mono text-center py-3">Sin videos subidos aún.</div>';
+        return;
+      }
+      $videoList.innerHTML = videos.map(v => `
+        <div class="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-white/3 border border-[color:var(--borde2)] hover:border-azul/40 group transition-all">
+          <span class="text-lg shrink-0">🎬</span>
+          <div class="flex-1 min-w-0">
+            <div class="text-[11px] font-mono text-[color:var(--texto)] truncate font-semibold">${v.nombre}</div>
+            <div class="text-[9px] text-[color:var(--dim)]">${v.tamano_mb} MB · Video Grabado</div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button
+              class="btn-probar-video inline-flex items-center gap-1 bg-rojo hover:bg-rojo-oscuro text-white text-[10px] font-mono px-2.5 py-1 rounded transition-colors font-bold uppercase tracking-wider"
+              data-video-nombre="${v.nombre}"
+              title="Crear cámara y analizar este video inmediatamente">
+              ▶ Analizar
+            </button>
+            <button
+              class="btn-copiar-video text-[9px] font-mono text-[color:var(--dim)] hover:text-azul border border-[color:var(--borde2)] hover:border-azul/40 px-2 py-1 rounded transition-colors"
+              data-video-nombre="${v.nombre}"
+              title="Copiar nombre del archivo">
+              Copiar
+            </button>
+          </div>
+        </div>
+      `).join('');
+
+      // Listener "▶ Analizar": crea/selecciona cámara y la conecta de una vez
+      $videoList.querySelectorAll('.btn-probar-video').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const nombre = btn.dataset.videoNombre;
+          btn.disabled = true;
+          btn.textContent = '…';
+          try {
+            await reproducirVideoDirecto(nombre);
+          } catch (err) {
+            alert('Error al iniciar análisis: ' + err.message);
+            btn.disabled = false;
+            btn.textContent = '▶ Analizar';
+          }
+        });
+      });
+
+      // Listener "Copiar": copia al portapapeles
+      $videoList.querySelectorAll('.btn-copiar-video').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const nombre = btn.dataset.videoNombre;
+          navigator.clipboard && navigator.clipboard.writeText(nombre);
+          showVideoResult('ok', `✓ Nombre copiado: "${nombre}"`);
+        });
+      });
+    } catch (e) {
+      $videoList.innerHTML = `<div class="text-[10px] text-rojo font-mono text-center py-2">Error: ${e.message}</div>`;
+    }
+  }
+
+  // ── Función para reproducir y analizar un video con un solo clic ───────────
+  async function reproducirVideoDirecto(nombreArchivo) {
+    showVideoResult('ok', 'Configurando cámara para el video...');
+    
+    // 1. Verificar si ya existe una cámara con este video
+    let cam = cameras.find(c => (c.ip || '').trim() === nombreArchivo);
+    
+    // 2. Si no existe, crear una cámara automática para este video
+    if (!cam) {
+      const codigoAuto = 'VID-' + Math.floor(100 + Math.random() * 900);
+      const nuevaCam = await api('POST', '/api/camaras', {
+        codigo: codigoAuto,
+        estacion: 'Estación Virtual',
+        ubicacion: 'Torniquetes Video (' + nombreArchivo.substring(0, 15) + '...)',
+        estado: 'activa',
+        ip: nombreArchivo,
+      });
+      await loadCameras();
+      cam = cameras.find(c => c.id === nuevaCam.id || c.codigo === codigoAuto);
+    }
+
+    if (!cam) {
+      throw new Error('No se pudo inicializar la cámara para el video.');
+    }
+
+    // 3. Cerrar el modal
+    closeModalVideo();
+
+    // 4. Seleccionar la cámara en la UI
+    selectCamera(cam.id);
+
+    // 5. Ajustar el selector en modo Evasión
+    const selModo = document.getElementById('select-modo-athena');
+    if (selModo) selModo.value = 'evasion';
+
+    // 6. Conectar Athena en modo Evasión
+    $btnConectar.disabled = true;
+    $btnConectar.textContent = '…';
+    const res = await api('POST', `/api/camaras/${cam.id}/connect`, { mode: 'evasion', tripwire: 0.55 });
+    setAthenaOnline(res, false, 'evasion');
+  }
+
+  // Drag & Drop
+  $videoDropzone.addEventListener('dragover', e => {
+    e.preventDefault();
+    $videoDropzone.classList.add('border-azul', 'bg-azul/5');
+  });
+  $videoDropzone.addEventListener('dragleave', () => {
+    if (!selectedVideoFile) $videoDropzone.classList.remove('border-azul', 'bg-azul/5');
+  });
+  $videoDropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) onFileSelected(file);
+  });
+
+  $videoFileInput.addEventListener('change', () => {
+    if ($videoFileInput.files[0]) onFileSelected($videoFileInput.files[0]);
+  });
+
+  $videoClearFile.addEventListener('click', e => {
+    e.preventDefault();
+    resetVideoModal();
+  });
+
+  // Subir con progreso usando XMLHttpRequest
+  $btnUploadVideo.addEventListener('click', () => {
+    if (!selectedVideoFile) return;
+
+    const formData = new FormData();
+    formData.append('video', selectedVideoFile);
+
+    $btnUploadVideo.disabled = true;
+    $videoProgressW.classList.remove('hidden');
+    $videoResult.classList.add('hidden');
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/camaras/upload-video');
+    xhr.setRequestHeader('X-Token', TOKEN());
+
+    xhr.upload.onprogress = e => {
+      if (e.lengthComputable) {
+        const pct = Math.round(e.loaded / e.total * 100);
+        $videoProgressBar.style.width = pct + '%';
+        $videoProgressPct.textContent = pct + '%';
+      }
+    };
+
+    xhr.onload = () => {
+      $videoProgressW.classList.add('hidden');
+      try {
+        const data = JSON.parse(xhr.responseText);
+        if (xhr.status === 201) {
+          showVideoResult('ok',
+            `✓ Video guardado: "${data.nombre}" (${data.tamano_mb} MB). Asigna este nombre como IP de la cámara y conecta en modo Evasión.`
+          );
+          loadVideoList();
+          resetVideoModal();
+        } else {
+          showVideoResult('error', data.error || `Error HTTP ${xhr.status}`);
+          $btnUploadVideo.disabled = false;
+        }
+      } catch (_) {
+        showVideoResult('error', `Error inesperado (HTTP ${xhr.status})`);
+        $btnUploadVideo.disabled = false;
+      }
+    };
+
+    xhr.onerror = () => {
+      $videoProgressW.classList.add('hidden');
+      showVideoResult('error', 'Error de red al subir el video.');
+      $btnUploadVideo.disabled = false;
+    };
+
+    xhr.send(formData);
+  });
+
+  // Abrir / cerrar modal video
+  if ($btnSubirVideo)    $btnSubirVideo.addEventListener('click', openModalVideo);
+  if ($modalVideoClose)  $modalVideoClose.addEventListener('click', closeModalVideo);
+  if ($modalVideoCancel) $modalVideoCancel.addEventListener('click', closeModalVideo);
+  if ($btnRefreshVideos) $btnRefreshVideos.addEventListener('click', loadVideoList);
+
+  // Cerrar con Escape o clic en backdrop
+  $modalVideo.addEventListener('click', e => {
+    if (e.target === $modalVideo) closeModalVideo();
+  });
 
 })();
 </script>

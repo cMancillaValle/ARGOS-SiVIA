@@ -42,6 +42,16 @@ backend/core_ia/athena/dataset/labels/
 *.db
 *.sqlite3
 
+# ── Videos y Archivos Multimedia Subidos (Uploads) ───────────────────────────
+backend/uploads/videos/*
+!backend/uploads/videos/.gitkeep
+*.mp4
+*.avi
+*.mkv
+*.mov
+*.webm
+*.flv
+
 # ── Dependencias Node.js y Builds de Frontend ────────────────────────────────
 node_modules/
 frontend-hermes/dist/

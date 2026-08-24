@@ -4,7 +4,12 @@ import cv2
 mp_pose = mp.solutions.pose
 mp_draw = mp.solutions.drawing_utils
 
-pose = mp_pose.Pose()
+pose = mp_pose.Pose(
+    static_image_mode=False,
+    model_complexity=0,           # 0=Lite (ultrarrápido en CPU), 1=Full
+    min_detection_confidence=0.5,
+    min_tracking_confidence=0.5,
+)
 
 def detectar_brazo(frame, rgb):
     results = pose.process(rgb)

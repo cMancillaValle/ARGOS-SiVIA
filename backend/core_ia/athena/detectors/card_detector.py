@@ -1,10 +1,20 @@
+import os
 from ultralytics import YOLO
 import cv2
 
-model = YOLO("runs/detect/train2/weights/best.pt")
+_DIR = os.path.dirname(os.path.abspath(__file__))
+_MODEL_PATH = os.path.normpath(os.path.join(_DIR, '..', 'runs', 'detect', 'train2', 'weights', 'best.pt'))
+
+try:
+    model = YOLO(_MODEL_PATH)
+except Exception:
+    model = None
 
 def detectar_tarjeta(frame):
-    results = model(frame, verbose=False)
+    if model is None:
+        return False, frame
+    # imgsz=320 acelera la inferencia en CPU
+    results = model(frame, verbose=False, imgsz=320, conf=0.15)
 
     tarjeta_valida = False
 
@@ -15,21 +25,20 @@ def detectar_tarjeta(frame):
 
             x1, y1, x2, y2 = map(int, box.xyxy[0])
 
-            if conf > 0.1:  # Reducido de 0.6 a 0.3 para que detecte al menos en algún momento
-                if cls == 0:  # tuLlave
-                    tarjeta_valida = True
-                    label = "Valida"
-                    color = (0,255,0)
-                else:
-                    label = "No valida"
-                    color = (0,0,255)
+            if cls == 0:  # tuLlave
+                tarjeta_valida = True
+                label = "Valida"
+                color = (0, 255, 0)
+            else:
+                label = "No valida"
+                color = (0, 0, 255)
 
-                cv2.rectangle(frame, (x1,y1), (x2,y2), color, 2)
-                cv2.putText(frame, f"{label} {conf:.2f}",
-                            (x1, y1-10),
-                            cv2.FONT_HERSHEY_SIMPLEX,
-                            0.6,
-                            color,
-                            2)
+            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+            cv2.putText(frame, f"{label} {conf:.2f}",
+                        (x1, y1 - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.6,
+                        color,
+                        2)
 
     return tarjeta_valida, frame

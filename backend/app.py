@@ -10,15 +10,21 @@ import os, sys
 sys.path.insert(0, os.path.dirname(__file__))
 
 # ── Cargar variables de entorno desde .env ───────────────────────────────────
+try:
+    from dotenv import load_dotenv  # pyright: ignore[reportMissingImports]
+except ImportError:  # python-dotenv no está instalado
+    def load_dotenv(*_args, **_kwargs):
+        return False
+
+
 def _load_env():
     """Lee el .env de la raíz del proyecto e inyecta en os.environ (sin sobreescribir)."""
     env_path = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', '.env'))
     if not os.path.exists(env_path):
         return
     try:
-        from dotenv import load_dotenv  # python-dotenv si está instalado
         load_dotenv(env_path, override=False)
-    except ImportError:
+    except Exception:
         # Fallback: leer manualmente
         with open(env_path, encoding='utf-8') as f:
             for line in f:

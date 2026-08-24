@@ -14,13 +14,13 @@ mp_hands    = mp.solutions.hands
 mp_draw     = mp.solutions.drawing_utils
 mp_draw_styles = mp.solutions.drawing_styles
 
-# max_num_hands=2, confianza alta para menos falsos positivos
+# max_num_hands=1 y model_complexity=0 para máxima velocidad en tiempo real
 hands = mp_hands.Hands(
     static_image_mode=False,
-    max_num_hands=2,
-    model_complexity=1,           # 0=ligero, 1=completo (mejor precisión de dedos)
-    min_detection_confidence=0.70,
-    min_tracking_confidence=0.65,
+    max_num_hands=1,
+    model_complexity=0,           # 0=ligero (Lite, ultrarrápido), 1=completo
+    min_detection_confidence=0.60,
+    min_tracking_confidence=0.55,
 )
 
 # ── Colores por dedo (BGR) ──────────────────────────────────────────────────

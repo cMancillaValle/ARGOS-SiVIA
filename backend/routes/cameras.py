@@ -13,12 +13,15 @@ Endpoints CRUD:
 
 Endpoints IA / Streaming:
   POST   /api/camaras/<id>/connect    → Iniciar Athena en esa cámara
+                                         ?mode=acceso|evasion  ?tripwire=0.55
   POST   /api/camaras/disconnect      → Detener Athena
   GET    /api/camaras/stream          → Multipart stream del frame procesado
   GET    /api/camaras/eventos/stream  → SSE de eventos IA (solo vista Cámaras)
   GET    /api/camaras/athena/status   → Estado del motor Athena
+  POST   /api/camaras/upload-video    → Subir video .mp4/.avi para análisis
+  GET    /api/camaras/videos          → Listar videos subidos
 
-v1.7.5: integración con AthenaManager (buffer global + SSE)
+v1.7.5+: integración con AthenaManager (buffer global + SSE + modo evasión)
 """
 
 import sqlite3
@@ -27,6 +30,7 @@ import time
 import json
 import queue
 import logging
+from werkzeug.utils import secure_filename
 from flask import Blueprint, request, jsonify, Response, stream_with_context
 from services.auth_service import (
     requiere_auth, registrar_auditoria, requiere_permiso, validate_token,
@@ -38,6 +42,13 @@ cameras_bp = Blueprint('cameras', __name__)
 DB_PATH = os.path.normpath(
     os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'database', 'argos.db')
 )
+
+# ── Directorio de videos subidos para análisis ────────────────────────────────
+UPLOADS_DIR = os.path.normpath(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'uploads', 'videos')
+)
+os.makedirs(UPLOADS_DIR, exist_ok=True)
+_VIDEO_EXTENSIONS = {'.mp4', '.avi', '.mkv', '.mov', '.webm', '.ts', '.flv'}
 
 # ── Importar AthenaManager (lazy para no bloquear si CV2 no está disponible) ─
 def _get_athena():
@@ -64,18 +75,29 @@ def get_conn():
 def _resolve_source(cam_row: dict):
     """
     Convierte los datos de la cámara en una fuente OpenCV válida.
-    - Si 'ip' == 'webcam'          → modo cámara cliente (navegador remoto)
-    - Si 'ip' empieza con 'rtsp://', 'http://' → URL de stream de red
-    - Si 'ip' es un dígito         → índice de cámara local del servidor
-    - Fallback                     → índice 0 (cámara local por defecto)
+    - Si 'ip' == 'webcam'                  → modo cámara cliente (navegador remoto)
+    - Si 'ip' empieza con 'rtsp://', etc.  → URL de stream de red
+    - Si 'ip' es un dígito                 → índice de cámara local del servidor
+    - Si 'ip' es ruta de archivo de video  → ruta local (mp4, avi, mkv...)
+    - Fallback                             → índice 0 (cámara local por defecto)
     """
     ip = (cam_row.get('ip') or '').strip()
     if ip.lower() == 'webcam':
-        return 'webcam'   # modo remoto: frames vienen del navegador vía WS
+        return 'webcam'
     if ip.startswith(('rtsp://', 'http://', 'https://')):
         return ip
     if ip.isdigit():
         return int(ip)
+    # Verificar si es una ruta de archivo de video (absoluta o relativa a uploads)
+    _, ext = os.path.splitext(ip.lower())
+    if ext in _VIDEO_EXTENSIONS:
+        # Si la ruta no es absoluta, buscarla en UPLOADS_DIR
+        if not os.path.isabs(ip):
+            candidate = os.path.join(UPLOADS_DIR, ip)
+            if os.path.isfile(candidate):
+                return candidate
+        if os.path.isfile(ip):
+            return ip
     return 0
 
 
@@ -230,8 +252,13 @@ def delete_camera(cam_id):
 def connect_camera(cam_id):
     """
     Arranca Athena apuntando a la cámara <cam_id>.
-    - Fuente 'webcam': modo cliente remoto (frames llegan por WebSocket)
-    - Fuente RTSP/índice: worker OpenCV normal
+
+    Body JSON opcional:
+      { "mode": "acceso" | "evasion", "tripwire": 0.55 }
+
+    - mode=acceso  : control de acceso biométrico (por defecto)
+    - mode=evasion : detección de colados TransMilenio (tracking + tripwire)
+    - tripwire     : fracción Y de la línea del torniquete (0.1–0.9)
     """
     conn = get_conn()
     row  = conn.execute('SELECT * FROM camaras WHERE id=?', (cam_id,)).fetchone()
@@ -239,30 +266,39 @@ def connect_camera(cam_id):
     if not row:
         return jsonify({'error': 'Cámara no encontrada.'}), 404
 
-    cam_data = dict(row)
-    source   = _resolve_source(cam_data)   # 'webcam' | 'rtsp://...' | int
-
-    # Leer umbral de confianza desde configuración del sistema
+    cam_data   = dict(row)
+    source     = _resolve_source(cam_data)
     confidence = _get_confidence()
+
+    body     = request.get_json(silent=True) or {}
+    mode     = body.get('mode', 'acceso').strip().lower()
+    if mode not in ('acceso', 'evasion'):
+        mode = 'acceso'
+    tripwire = float(body.get('tripwire', 0.55))
+    tripwire = max(0.1, min(0.9, tripwire))
 
     athena = _get_athena()
     if not athena:
         return jsonify({'error': 'Motor Athena no disponible (verifique dependencias de IA).'}), 503
 
     try:
-        athena.start(cam_id=cam_id, source=source, confidence=confidence)
+        athena.start(
+            cam_id=cam_id, source=source, confidence=confidence,
+            mode=mode, tripwire=tripwire,
+        )
         registrar_auditoria(
             request.usuario['id'], 'ATHENA_CONECTADA',
-            f'Athena iniciada en cámara {cam_data["codigo"]} (fuente: {source})'
+            f'Athena [{mode}] iniciada en cámara {cam_data["codigo"]} (fuente: {source})'
         )
-        modo = 'webcam-cliente' if str(source) == 'webcam' else str(source)
         return jsonify({
-            'status':     'conectado',
-            'cam_id':     cam_id,
-            'codigo':     cam_data['codigo'],
-            'source':     modo,
+            'status':      'conectado',
+            'cam_id':      cam_id,
+            'codigo':      cam_data['codigo'],
+            'source':      'webcam-cliente' if str(source) == 'webcam' else str(source),
             'webcam_mode': str(source) == 'webcam',
-            'confidence': confidence,
+            'mode':        mode,
+            'tripwire':    tripwire,
+            'confidence':  confidence,
         })
     except Exception as e:
         logger.error(f"Error al iniciar Athena cam={cam_id}: {e}", exc_info=True)
@@ -388,3 +424,82 @@ def _get_confidence() -> float:
     except Exception:
         pass
     return 0.50
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# VIDEO UPLOAD — Análisis de grabaciones
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ── POST /api/camaras/upload-video ────────────────────────────────────────────
+@cameras_bp.route('/upload-video', methods=['POST'])
+@requiere_auth
+@requiere_permiso('camaras:ver')
+def upload_video():
+    """
+    Sube un archivo de video (.mp4, .avi, .mkv, .mov) al servidor para su análisis.
+    El video queda guardado en backend/uploads/videos/ y puede usarse como fuente
+    de una cámara configurando el campo 'ip' con el nombre del archivo.
+
+    Cuerpo: multipart/form-data con campo 'video'.
+    Retorna el nombre de archivo guardado y la ruta para asignarlo a una cámara.
+    """
+    if 'video' not in request.files:
+        return jsonify({'error': 'No se encontró el campo "video" en el formulario.'}), 400
+
+    archivo = request.files['video']
+    if not archivo.filename:
+        return jsonify({'error': 'El archivo no tiene nombre.'}), 400
+
+    _, ext = os.path.splitext(archivo.filename.lower())
+    if ext not in _VIDEO_EXTENSIONS:
+        return jsonify({
+            'error': f'Extensión "{ext}" no permitida. Use: {", ".join(sorted(_VIDEO_EXTENSIONS))}'
+        }), 415
+
+    nombre_seguro = secure_filename(archivo.filename)
+    # Añadir timestamp para evitar colisiones de nombres
+    base, extension = os.path.splitext(nombre_seguro)
+    nombre_final = f"{base}_{int(time.time())}{extension}"
+    ruta_destino = os.path.join(UPLOADS_DIR, nombre_final)
+
+    archivo.save(ruta_destino)
+    tamano_mb = round(os.path.getsize(ruta_destino) / (1024 * 1024), 2)
+
+    registrar_auditoria(
+        request.usuario['id'], 'VIDEO_SUBIDO',
+        f'Video "{nombre_final}" subido ({tamano_mb} MB)'
+    )
+    logger.info(f"Video guardado: {ruta_destino} ({tamano_mb} MB)")
+
+    return jsonify({
+        'status':       'ok',
+        'nombre':       nombre_final,
+        'ruta':         ruta_destino,
+        'tamano_mb':    tamano_mb,
+        'instruccion':  f'Asigna ip="{nombre_final}" a una cámara y conecta en modo evasion',
+    }), 201
+
+
+# ── GET /api/camaras/videos ───────────────────────────────────────────────────
+@cameras_bp.route('/videos', methods=['GET'])
+@requiere_auth
+@requiere_permiso('camaras:ver')
+def listar_videos():
+    """Lista todos los videos disponibles en el directorio de uploads."""
+    videos = []
+    try:
+        for nombre in sorted(os.listdir(UPLOADS_DIR)):
+            _, ext = os.path.splitext(nombre.lower())
+            if ext in _VIDEO_EXTENSIONS:
+                ruta = os.path.join(UPLOADS_DIR, nombre)
+                tamano_mb = round(os.path.getsize(ruta) / (1024 * 1024), 2)
+                videos.append({
+                    'nombre':    nombre,
+                    'tamano_mb': tamano_mb,
+                    'ruta':      ruta,
+                })
+    except Exception as e:
+        logger.warning(f"Error listando videos: {e}")
+
+    return jsonify({'total': len(videos), 'videos': videos})
+

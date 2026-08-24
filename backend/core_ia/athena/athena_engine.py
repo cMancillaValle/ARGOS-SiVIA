@@ -47,14 +47,15 @@ _WORKER_SCRIPT = os.path.join(_ATHENA_DIR, 'athena_worker.py')
 
 # ── Catálogo de eventos ───────────────────────────────────────────────────────
 EVENTS = {
-    "PERSONA_DETECTADA": "persona",
-    "BRAZO_ARRIBA":      "brazo",
-    "MANO_ABIERTA":      "mano_abierta",
-    "MANO_CERRADA":      "mano_cerrada",
-    "TARJETA_VALIDA":    "tarjeta_valida",
-    "TARJETA_INVALIDA":  "tarjeta_invalida",
-    "ACCESO_CONCEDIDO":  "acceso",
-    "POSE_ANOMALA":      "pose_anomala",
+    "PERSONA_DETECTADA":  "persona",
+    "BRAZO_ARRIBA":       "brazo",
+    "MANO_ABIERTA":       "mano_abierta",
+    "MANO_CERRADA":       "mano_cerrada",
+    "TARJETA_VALIDA":     "tarjeta_valida",
+    "TARJETA_INVALIDA":   "tarjeta_invalida",
+    "ACCESO_CONCEDIDO":   "acceso",
+    "POSE_ANOMALA":       "pose_anomala",
+    "EVASION_DETECTADA":  "evasion",   # Colados / evasión de pago TransMilenio
 }
 
 
@@ -106,14 +107,17 @@ class AthenaThread(threading.Thread):
     MSG_HB    = 0xFF
 
     def __init__(self, cam_id: int, source, buffer: AthenaBuffer,
-                 event_queue: queue.Queue, confidence: float = 0.50):
+                 event_queue: queue.Queue, confidence: float = 0.50,
+                 mode: str = 'acceso', tripwire: float = 0.55):
         super().__init__(daemon=True, name=f"AthenaThread-cam{cam_id}")
         self.cam_id      = cam_id
         self.source      = source
         self.buffer      = buffer
         self.event_queue = event_queue
         self.confidence  = confidence
-        self._stop       = threading.Event()
+        self.mode        = mode
+        self.tripwire    = tripwire
+        self._stop_ev    = threading.Event()
         self._running    = False
         self._proc: Optional[subprocess.Popen] = None
 
@@ -122,7 +126,7 @@ class AthenaThread(threading.Thread):
         return self._running
 
     def stop(self):
-        self._stop.set()
+        self._stop_ev.set()
         if self._proc and self._proc.poll() is None:
             try:
                 self._proc.terminate()
@@ -148,6 +152,8 @@ class AthenaThread(threading.Thread):
             '--source',     str(self.source),
             '--confidence', str(self.confidence),
             '--cam-id',     str(self.cam_id),
+            '--mode',       self.mode,
+            '--tripwire',   str(self.tripwire),
         ]
         logger.info(f"Lanzando worker: {' '.join(cmd)}")
         try:
@@ -159,7 +165,6 @@ class AthenaThread(threading.Thread):
                 cwd=_ATHENA_DIR,     # CWD = athena dir → rutas YOLO relativas funcionan
                 close_fds=True,
             )
-            # Hilo auxiliar para loggear stderr del worker sin bloquear
             threading.Thread(
                 target=self._log_stderr,
                 args=(proc,),
@@ -184,7 +189,7 @@ class AthenaThread(threading.Thread):
     def _read_exact(self, n: int) -> Optional[bytes]:
         """Lee exactamente n bytes del stdout del proceso hijo."""
         buf = b''
-        while len(buf) < n and not self._stop.is_set():
+        while len(buf) < n and not self._stop_ev.is_set():
             try:
                 chunk = self._proc.stdout.read(n - len(buf))
                 if not chunk:
@@ -205,16 +210,16 @@ class AthenaThread(threading.Thread):
 
         retry_delay = 3
 
-        while not self._stop.is_set():
+        while not self._stop_ev.is_set():
             self._proc = self._spawn()
             if not self._proc:
                 self._emit_error_frame()
-                self._stop.wait(retry_delay)
+                self._stop_ev.wait(retry_delay)
                 continue
 
             # ── Loop de lectura del protocolo ────────────────────────────
             try:
-                while not self._stop.is_set():
+                while not self._stop_ev.is_set():
                     # Verificar que el proceso sigue vivo
                     if self._proc.poll() is not None:
                         logger.warning(f"Worker terminó (returncode={self._proc.returncode}). Reiniciando...")
@@ -255,9 +260,9 @@ class AthenaThread(threading.Thread):
                 if self._proc and self._proc.poll() is None:
                     self._proc.terminate()
 
-            if not self._stop.is_set():
+            if not self._stop_ev.is_set():
                 logger.info(f"Reintentando en {retry_delay}s...")
-                self._stop.wait(retry_delay)
+                self._stop_ev.wait(retry_delay)
 
         self._running = False
         logger.info(f"⏹ AthenaThread cam={self.cam_id} detenido")
@@ -347,7 +352,8 @@ class AthenaManager:
             logger.error(f'No se pudo importar client_frame_buffer: {e}')
             return None
 
-    def start(self, cam_id: int, source, confidence: float = 0.50):
+    def start(self, cam_id: int, source, confidence: float = 0.50,
+              mode: str = 'acceso', tripwire: float = 0.55):
         with self._lock:
             # Detener lo que este corriendo
             if self._thread and self._thread.is_running:
@@ -369,6 +375,7 @@ class AthenaManager:
 
             self._active_cam_id = cam_id
             self._webcam_mode = (str(source).strip().lower() == 'webcam')
+            self._mode = mode
 
             # Si es webcam, usar el endpoint MJPEG local interno como fuente de OpenCV
             engine_source = 'http://127.0.0.1:5000/api/camaras/client/mjpeg' if self._webcam_mode else source
@@ -380,9 +387,11 @@ class AthenaManager:
                 buffer=self.buffer,
                 event_queue=self.event_queue,
                 confidence=confidence,
+                mode=mode,
+                tripwire=tripwire,
             )
             self._thread.start()
-            logger.info(f'Athena iniciado cam={cam_id} source={source!r}')
+            logger.info(f'Athena iniciado cam={cam_id} source={source!r} mode={mode}')
 
     def stop(self):
         with self._lock:
@@ -396,6 +405,7 @@ class AthenaManager:
                 self._relay = None
             self._active_cam_id = None
             self._webcam_mode   = False
+            self._mode          = 'acceso'
             logger.info('Athena detenido')
 
     def status(self) -> dict:
@@ -403,6 +413,7 @@ class AthenaManager:
             'running':      self.is_running,
             'cam_id':       self._active_cam_id,
             'webcam_mode':  self._webcam_mode,
+            'mode':         getattr(self, '_mode', 'acceso'),
             'venv_ok':      os.path.isfile(_VENV_PYTHON),
             'venv_path':    _VENV_PYTHON,
         }

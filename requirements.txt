@@ -15,7 +15,7 @@ qrcode[pil]==8.0
 # Cifrado Fernet (TOTP secret)
 cryptography==43.0.3
 
-# Hermes IA — Validación de contratos API
+# Hermes IA - Validación de contratos API
 pydantic>=2.0
 
 # Tunnel (opcional)

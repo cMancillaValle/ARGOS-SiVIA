@@ -11,43 +11,49 @@ El sistema integra un pipeline de visión por computador con un backend REST, un
 
 ## ✨ Funcionalidades Principales
 
-### 🎥 Módulo de Visión IA — Athena
-- **Detección de personas** en tiempo real usando **YOLOv8n** (ultralytics)
-- **Estimación de pose corporal** con **MediaPipe Pose** para clasificar comportamientos sospechosos (salto de torniquete, merodeo)
-- **Detección de manos y gestos** con **MediaPipe Hands**
-- **Detección facial** con **MediaPipe Face Mesh** para análisis de presencia
-- **Detector de tarjetas/objetos** (OpenCV + contornos) para identificar elementos en zonas restringidas
-- Procesamiento de cámara en tiempo real (webcam o cámara IP)
-- Worker de inferencia independiente con comunicación inter-proceso con el backend Flask
+### 🎥 Módulo de Visión IA — Athena (v1.7.5+)
+- **Tracking de personas con IDs persistentes** en tiempo real usando **YOLOv8n + ByteTrack** (`person_tracker.py`) con dibujo de trayectorias de desplazamiento.
+- **Detección de Evasión de Pasaje (TransMilenio)** (`evasion_detector.py`):
+  - **Línea virtual configurable (Tripwire)** para delimitar la zona de torniquetes.
+  - **Análisis biomecánico de postura** con **MediaPipe Pose Lite** para clasificar automáticamente:
+    - `SALTO`: Detección de elevación anómala de rodillas sobre la cadera.
+    - `AGACHADO`: Paso por debajo del torniquete (cabeza a nivel de cadera).
+    - `CRUCE`: Cruce no autorizado sin validación.
+- **Soporte de análisis para videos grabados** (`.mp4`, `.avi`, `.mkv`, `.mov`):
+  - Lector multihilo `FastCameraReader` con sincronización de FPS reales y **reproducción en bucle automático**.
+  - Subida directa de grabaciones desde la interfaz web y análisis con 1 solo clic.
+- **Modo Dual de Operación**:
+  - `🔐 Modo Acceso`: Control de acceso biométrico (YOLO + Pose + Tarjeta).
+  - `🚨 Modo Evasión`: Seguridad perimetral, seguimiento de personas y detección de colados.
+- **Optimización Integral de Rendimiento**:
+  - Desactivación de FaceMesh y MediaPipe Hands para reducción drástica de latencia.
+  - Escalado adaptativo a 480px (ahorro del 44% de cómputo por cuadro).
+  - Detección en cascada condicional (Pose y espacio de color RGB se ejecutan únicamente si hay personas en escena).
+- **Procesamiento multihilo aislado**: Worker en subproceso con comunicación por pipe binario de bajo retardo hacia Flask.
 
 ### 🖥️ Backend REST — Flask
 - API REST completa con autenticación por token (`X-Token`)
 - **Control de Acceso Basado en Roles (RBAC)** con 6 roles: `admin`, `supervisor`, `operador`, `analista`, `técnico`, `auditor`
-- Gestión completa de cámaras (CRUD)
-- Registro y gestión de eventos de seguridad detectados
+- Gestión completa de cámaras (CRUD) y soporte de fuentes físicas, RTSP y archivos de video
+- **Endpoints de análisis de video**: `POST /api/camaras/upload-video` y `GET /api/camaras/videos`
+- Registro y persistencia automática de eventos de evasión (`tipo='evasion'`) en base de datos SQLite
+- Transmisión en vivo por streaming MJPEG y eventos en tiempo real via Server-Sent Events (SSE)
 - Auditoría de acciones del sistema con log persistente
-- Estadísticas del sistema en tiempo real
-- Gestión de perfil de usuario con cambio de email y contraseña verificados por código OTP
-- Autenticación de dos factores **2FA TOTP** (Google Authenticator compatible) con código QR
-- Restablecimiento de contraseña por correo electrónico con códigos temporales (SMTP Gmail)
+- Estadísticas del sistema en tiempo real y métricas (CPU, RAM, disco — psutil)
+- Autenticación de dos factores **2FA TOTP** con código QR y recuperación por correo (SMTP)
 - Rate limiting y protección contra fuerza bruta (Flask-Limiter)
-- Métricas de sistema en tiempo real (CPU, RAM, disco — psutil)
 - Acceso remoto a cámara cliente via **WebSocket** (flask-sock)
 
 ### 🌐 Frontend Web — Dashboard Principal
-- Interfaz SPA multi-panel renderizada dinámicamente con JavaScript
-- **Landing page** de presentación del sistema
-- **Panel de inicio de sesión** con soporte 2FA
-- **Dashboard** de monitoreo con los siguientes módulos:
-  - Vista de inicio con métricas del sistema
-  - Monitor de cámaras registradas con stream en tiempo real
-  - Eventos y alertas de seguridad (confirmar / descartar)
-  - Gestión de usuarios y asignación de roles (RBAC)
-  - Módulo de auditoría con exportación CSV
-  - Estadísticas e informes de actividad
-  - Configuración de parámetros del sistema e IA
-  - Módulos de infraestructura (servidores, red, cámaras)
-  - Notificaciones internas del sistema
+- Interfaz SPA multi-panel renderizada dinámicamente con JavaScript Vanilla
+- **Módulo de Cámaras y Monitoreo Inteligente**:
+  - Selector de modo operativo en vivo (`🔐 Acceso` / `🚨 Evasión`).
+  - Modal de carga de grabaciones con **Drag & Drop** y barra de progreso.
+  - Botón de acción rápida **`▶ Analizar`** para probar videos instantáneamente.
+  - Drawer desplegable de eventos IA en tiempo real.
+  - Overlay HUD con estado del motor, confianza y conteo de personas.
+- **Landing page** y **Panel de autenticación** con soporte 2FA
+- Módulos de Gestión de Usuarios (RBAC), Auditoría con exportación CSV, Infraestructura y Notificaciones
 
 ### 🤖 Hermes IA — Asistente Conversacional
 - Motor NLP liviano basado en reglas (sin dependencias de ML)
@@ -181,10 +187,11 @@ ARGOS-SiVIA/
 ### Motor de Visión IA — Athena
 | Tecnología | Versión | Uso |
 |---|---|---|
-| **YOLOv8n** (ultralytics) | 8.4.33 | Detección de objetos y personas en tiempo real |
-| **MediaPipe** | 0.10.9 | Estimación de pose, manos y malla facial |
-| **OpenCV** | 4.13.0 | Captura de video, procesamiento de frames |
-| **PyTorch** | 2.11.0 | Backend de inferencia de YOLOv8 |
+| **YOLOv8n** (ultralytics) | 8.4.33 | Detección de personas y objetos en tiempo real |
+| **ByteTrack / Lapx** | 0.9.4+ | Seguimiento multi-objeto (Tracking) con IDs persistentes |
+| **MediaPipe Pose** | 0.10.9 | Análisis biomecánico de postura corporal (salto/agachado) |
+| **OpenCV** | 4.13.0 | Captura, decodificación y renderizado de video |
+| **PyTorch** | 2.11.0 | Backend de inferencia de redes neuronales |
 | **NumPy** | 2.2.6 | Operaciones matriciales sobre frames |
 
 ### Frontend Principal
@@ -228,10 +235,10 @@ pip install -r requirements.txt
 
 ### 2. Instalación del motor de IA (Athena)
 ```bash
-# Crear entorno virtual e instalar dependencias de IA (PyTorch, YOLO, MediaPipe)
+# Crear entorno virtual e instalar dependencias de IA (PyTorch, YOLO, MediaPipe, Tracking)
 python -m venv vision_env
 vision_env\Scripts\activate
-pip install ultralytics opencv-python mediapipe torch
+pip install ultralytics opencv-python mediapipe torch lapx
 ```
 
 ### 3. Iniciar el sistema
