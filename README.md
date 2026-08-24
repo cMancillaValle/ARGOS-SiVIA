@@ -1,4 +1,4 @@
-# ARGOS - SiViA
+# ARGOS - SiVIA
 ## Plataforma de Monitoreo Inteligente Basada en Visión por Computador
 
 > **Prototipo Académico de Investigación** · Universidad Central · Bogotá, Colombia
