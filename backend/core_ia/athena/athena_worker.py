@@ -1,5 +1,6 @@
 import sys, os, json, time, struct, argparse, logging, traceback
 import threading
+from evidence.capture_manager import capture_manager
 
 logging.basicConfig(stream=sys.stderr, level=logging.INFO,
                     format='[WORKER %(levelname)s] %(message)s')
@@ -276,15 +277,45 @@ def main():
             tracks = []
             if 'tracker' in mods:
                 try:
+                    logger.info('Procesando frame con ByteTrack...')
+        
+                    inicio_tracker = time.time()
+
                     estado['persona'], tracks, frame = mods['tracker'](frame)
+
+                    tiempo_tracker = time.time() - inicio_tracker
+
+                    logger.info(
+                    'ByteTrack OK - personas=%d - tiempo=%.2fs',
+                    len(tracks),
+                    tiempo_tracker
+                    )
+
                 except Exception as e:
-                    logger.debug('tracker: %s' % e)
+                    logger.error(
+                    'ERROR EN BYTE TRACK: %s\n%s',
+                    e,
+                    traceback.format_exc()
+                    )
+
+                    
             if estado['persona'] and ev_detector is not None:
                 rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 alertas = ev_detector.analizar(tracks, frame, rgb)
                 for alerta in alertas:
                     alerta['cam_id'] = cam_id
+                    # Guardar captura del evento detectado
+                    evidencia = capture_manager.save_capture(
+                    frame,
+                    alerta
+                    )
+
+                    # Agregar la ruta de la evidencia al evento
+                    if evidencia:
+                        alerta['evidencia'] = evidencia
+                    # Enviar evento al backend                    
                     send_event(alerta)
+
             draw_overlay(cv2, frame, estado, source, mode)
             if tracks:
                 cv2.putText(frame, 'Personas: %d' % len(tracks), (10, 36),
