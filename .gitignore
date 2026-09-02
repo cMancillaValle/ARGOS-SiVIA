@@ -52,6 +52,8 @@ backend/uploads/videos/*
 *.webm
 *.flv
 
+backend/evidence/
+
 # ── Dependencias Node.js y Builds de Frontend ────────────────────────────────
 node_modules/
 frontend-hermes/dist/
