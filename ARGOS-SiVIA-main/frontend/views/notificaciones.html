@@ -1,0 +1,335 @@
+<!-- frontend/views/notificaciones.html -->
+<div class="fade-in">
+  <div class="font-mono text-xs text-texto-dim mb-5 tracking-wide flex items-center gap-2">
+    <button data-nav-module="home" class="text-texto-dim hover:text-rojo transition-colors cursor-pointer">Dashboard</button>
+    <span class="text-rojo">/</span><span>Alertas y Notificaciones</span>
+  </div>
+
+  <!-- Pestañas -->
+  <div class="flex gap-1 mb-6 bg-panel border border-panelBorde rounded-lg p-1 w-fit">
+    <button onclick="notifTab('alertas')" id="tab-alertas" class="tab-btn active-tab px-4 py-2 rounded text-sm font-rajdhani font-bold transition-colors">🚨 Alertas</button>
+    <button onclick="notifTab('config')"  id="tab-config"  class="tab-btn px-4 py-2 rounded text-sm font-rajdhani font-bold transition-colors text-texto-dim hover:text-texto">⚙️ Configuración</button>
+    <button onclick="notifTab('canales')" id="tab-canales" class="tab-btn px-4 py-2 rounded text-sm font-rajdhani font-bold transition-colors text-texto-dim hover:text-texto">🔔 Mis Notificaciones</button>
+  </div>
+
+  <style>
+    .tab-btn { transition: all 0.15s; }
+    .active-tab { background: rgba(232,0,29,0.15); color: #E8001D; border: 1px solid rgba(232,0,29,0.3); }
+  </style>
+
+  <!-- ── PANEL: ALERTAS ── -->
+  <div id="panel-alertas">
+    <!-- Sevs filterbar -->
+    <div class="flex flex-wrap items-center gap-2 mb-4">
+      <button onclick="alertFiltro('')"         id="sf-all"    class="sf-btn sf-active text-xs border px-3 py-1 rounded-full transition-colors border-texto-dim/30 text-texto-dim">Todas</button>
+      <button onclick="alertFiltro('critica')"  id="sf-crit"   class="sf-btn text-xs border px-3 py-1 rounded-full transition-colors border-rojo/30 text-rojo hover:bg-rojo/10">🔴 Crítica</button>
+      <button onclick="alertFiltro('alta')"     id="sf-alta"   class="sf-btn text-xs border px-3 py-1 rounded-full transition-colors border-[#F97316]/30 text-[#F97316] hover:bg-[#F97316]/10">🟠 Alta</button>
+      <button onclick="alertFiltro('media')"    id="sf-media"  class="sf-btn text-xs border px-3 py-1 rounded-full transition-colors border-amarillo/30 text-amarillo hover:bg-amarillo/10">🟡 Media</button>
+      <button onclick="alertFiltro('baja')"     id="sf-baja"   class="sf-btn text-xs border px-3 py-1 rounded-full transition-colors border-azul/30 text-azul hover:bg-azul/10">🔵 Baja</button>
+      <div class="flex-1"></div>
+      <select id="alert-estado-filter" onchange="alertRender()" class="bg-panel border border-panelBorde text-xs text-texto rounded px-2 py-1">
+        <option value="">Todos los estados</option>
+        <option>nueva</option><option>en_revision</option><option>confirmada</option><option>falsa_alarma</option><option>resuelta</option>
+      </select>
+    </div>
+
+    <style>
+      .sf-active { background: rgba(232,0,29,0.15); color: #E8001D !important; border-color: rgba(232,0,29,0.4) !important; }
+    </style>
+
+    <!-- Lista de Alertas -->
+    <div id="alert-list" class="flex flex-col gap-2 mb-4">
+      <div class="text-center py-10 text-texto-dim text-xs">Cargando alertas...</div>
+    </div>
+
+    <!-- Panel de detalle -->
+    <div id="alert-detail" class="hidden bg-panel border border-panelBorde rounded-xl p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-rajdhani text-lg font-bold" id="det-titulo">Detalle de Alerta</h3>
+        <button onclick="document.getElementById('alert-detail').classList.add('hidden')" class="text-texto-dim hover:text-rojo text-xl">✕</button>
+      </div>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="space-y-2">
+          <div><span class="text-[10px] text-texto-dim uppercase font-mono">ID</span><div class="text-sm font-mono text-texto" id="det-id"></div></div>
+          <div><span class="text-[10px] text-texto-dim uppercase font-mono">Timestamp</span><div class="text-sm text-texto" id="det-ts"></div></div>
+          <div><span class="text-[10px] text-texto-dim uppercase font-mono">Tipo</span><div class="text-sm text-texto" id="det-tipo"></div></div>
+          <div><span class="text-[10px] text-texto-dim uppercase font-mono">Severidad</span><div id="det-sev"></div></div>
+          <div><span class="text-[10px] text-texto-dim uppercase font-mono">Cámara / Origen</span><div class="text-sm text-texto" id="det-origen"></div></div>
+          <div><span class="text-[10px] text-texto-dim uppercase font-mono">Estado actual</span><div id="det-estado"></div></div>
+          <div><span class="text-[10px] text-texto-dim uppercase font-mono">Descripción</span><div class="text-sm text-texto-dim" id="det-desc"></div></div>
+        </div>
+        <div>
+          <div class="text-[10px] text-texto-dim uppercase font-mono mb-2">Acciones Rápidas</div>
+          <div class="flex flex-col gap-2" id="det-actions"></div>
+          <div class="mt-4">
+            <label class="text-[10px] text-texto-dim uppercase font-mono">Añadir Comentario</label>
+            <textarea id="det-comment" rows="2" placeholder="Observación sobre esta alerta..." class="w-full mt-1 bg-bg border border-white/10 rounded px-3 py-2 text-xs text-texto resize-none focus:outline-none focus:border-rojo"></textarea>
+            <button onclick="alertGuardarComment()" class="mt-1 text-xs bg-rojo/10 text-rojo border border-rojo/30 px-3 py-1 rounded hover:bg-rojo hover:text-white transition-colors">Guardar comentario</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PANEL: CONFIGURACIÓN ── -->
+  <div id="panel-config" class="hidden">
+    <h2 class="font-rajdhani text-xl font-bold text-texto mb-4">Configuración de Alertas</h2>
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-panel border border-panelBorde rounded-xl p-5">
+        <div class="font-mono text-[9px] tracking-widest text-rojo uppercase mb-4">Reglas de Generación</div>
+        <div class="flex flex-col gap-3">
+          <div class="flex justify-between items-center py-2 border-b border-white/5">
+            <span class="text-sm">Evasión ≥ 80% confianza → Alerta Alta</span>
+            <span class="w-8 h-4 bg-rojo rounded-full flex-shrink-0 cursor-pointer"></span>
+          </div>
+          <div class="flex justify-between items-center py-2 border-b border-white/5">
+            <span class="text-sm">Cámara offline &gt; 10s → Alerta Crítica</span>
+            <span class="w-8 h-4 bg-rojo rounded-full flex-shrink-0 cursor-pointer"></span>
+          </div>
+          <div class="flex justify-between items-center py-2 border-b border-white/5">
+            <span class="text-sm">CPU &gt; 90% → Alerta Media</span>
+            <span class="w-8 h-4 bg-rojo rounded-full flex-shrink-0 cursor-pointer"></span>
+          </div>
+          <div class="flex justify-between items-center py-2">
+            <span class="text-sm">Intrusión detectada → Alerta Crítica</span>
+            <span class="w-8 h-4 bg-rojo rounded-full flex-shrink-0 cursor-pointer"></span>
+          </div>
+        </div>
+      </div>
+      <div class="bg-panel border border-panelBorde rounded-xl p-5">
+        <div class="font-mono text-[9px] tracking-widest text-rojo uppercase mb-4">Umbrales y Cooldown</div>
+        <div class="flex flex-col gap-4">
+          <div>
+            <label class="text-[10px] text-texto-dim uppercase font-mono">Umbral confianza IA</label>
+            <input type="range" min="50" max="99" value="80" class="w-full mt-1 accent-rojo" oninput="this.nextElementSibling.textContent=this.value+'%'">
+            <span class="text-xs text-rojo font-bold">80%</span>
+          </div>
+          <div>
+            <label class="text-[10px] text-texto-dim uppercase font-mono">Cooldown entre alertas (segundos)</label>
+            <input type="number" value="30" min="5" max="300" class="w-full mt-1 bg-bg border border-white/10 rounded px-3 py-1.5 text-sm text-texto focus:outline-none focus:border-rojo">
+          </div>
+          <div>
+            <label class="text-[10px] text-texto-dim uppercase font-mono">Max alertas por hora</label>
+            <input type="number" value="50" min="1" class="w-full mt-1 bg-bg border border-white/10 rounded px-3 py-1.5 text-sm text-texto focus:outline-none focus:border-rojo">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mt-4 bg-panel border border-panelBorde rounded-xl p-5">
+      <div class="font-mono text-[9px] tracking-widest text-rojo uppercase mb-4">Enrutamiento de Alertas</div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs min-w-[500px]">
+          <thead><tr class="border-b border-panelBorde text-texto-dim">
+            <th class="text-left py-2 font-mono text-[9px] tracking-widest uppercase">Severidad</th>
+            <th class="text-center py-2 font-mono text-[9px] tracking-widest uppercase">Admin</th>
+            <th class="text-center py-2 font-mono text-[9px] tracking-widest uppercase">Supervisor</th>
+            <th class="text-center py-2 font-mono text-[9px] tracking-widest uppercase">Operador</th>
+            <th class="text-center py-2 font-mono text-[9px] tracking-widest uppercase">Técnico</th>
+          </tr></thead>
+          <tbody id="routing-tbody">
+            <tr class="border-b" style="border-color:var(--borde2)">
+              <td class="py-2.5 font-bold">🔴 Crítica</td>
+              <td class="text-center py-2.5 font-bold" style="color:var(--verde)">✓</td>
+              <td class="text-center py-2.5 font-bold" style="color:var(--verde)">✓</td>
+              <td class="text-center py-2.5 font-bold" style="color:var(--verde)">✓</td>
+              <td class="text-center py-2.5 font-bold" style="color:var(--verde)">✓</td>
+            </tr>
+            <tr class="border-b" style="border-color:var(--borde2)">
+              <td class="py-2.5 font-bold">🟠 Alta</td>
+              <td class="text-center py-2.5 font-bold" style="color:var(--verde)">✓</td>
+              <td class="text-center py-2.5 font-bold" style="color:var(--verde)">✓</td>
+              <td class="text-center py-2.5 font-bold" style="color:var(--verde)">✓</td>
+              <td class="text-center py-2.5" style="color:var(--muted)">-</td>
+            </tr>
+            <tr class="border-b" style="border-color:var(--borde2)">
+              <td class="py-2.5 font-bold">🟡 Media</td>
+              <td class="text-center py-2.5 font-bold" style="color:var(--verde)">✓</td>
+              <td class="text-center py-2.5 font-bold" style="color:var(--verde)">✓</td>
+              <td class="text-center py-2.5" style="color:var(--muted)">-</td>
+              <td class="text-center py-2.5" style="color:var(--muted)">-</td>
+            </tr>
+            <tr>
+              <td class="py-2.5 font-bold">🔵 Baja</td>
+              <td class="text-center py-2.5 font-bold" style="color:var(--verde)">✓</td>
+              <td class="text-center py-2.5" style="color:var(--muted)">-</td>
+              <td class="text-center py-2.5" style="color:var(--muted)">-</td>
+              <td class="text-center py-2.5" style="color:var(--muted)">-</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PANEL: NOTIFICACIONES PERSONALES ── -->
+  <div id="panel-canales" class="hidden">
+    <h2 class="font-rajdhani text-xl font-bold text-texto mb-4">Mis Preferencias de Notificación</h2>
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-panel border border-panelBorde rounded-xl p-5">
+        <div class="font-mono text-[9px] tracking-widest text-rojo uppercase mb-4">Canales Activos</div>
+        <div class="flex flex-col gap-3">
+          <label class="flex justify-between items-center cursor-pointer hover:bg-white/5 rounded px-2 py-2 transition-colors">
+            <div><div class="text-sm font-medium">🔔 In-App (Dashboard)</div><div class="text-xs text-texto-dim">Notificaciones dentro del sistema</div></div>
+            <div class="w-10 h-5 bg-rojo rounded-full relative"><div class="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full"></div></div>
+          </label>
+          <label class="flex justify-between items-center cursor-pointer hover:bg-white/5 rounded px-2 py-2 transition-colors">
+            <div><div class="text-sm font-medium">📧 Email</div><div class="text-xs text-texto-dim">Resúmenes y alertas críticas</div></div>
+            <div class="w-10 h-5 bg-bg-tertiary rounded-full relative"><div class="absolute left-0.5 top-0.5 w-4 h-4 bg-texto-dim rounded-full"></div></div>
+          </label>
+        </div>
+      </div>
+      <div class="bg-panel border border-panelBorde rounded-xl p-5">
+        <div class="font-mono text-[9px] tracking-widest uppercase mb-4" style="color:var(--rojo)">Qué Recibir</div>
+        <div class="flex flex-col gap-1">
+          <label class="flex justify-between items-center py-2 border-b cursor-pointer" style="border-color:var(--borde2)">
+            <span class="text-sm" style="color:var(--texto)">🔴 Alertas Críticas</span>
+            <label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+          </label>
+          <label class="flex justify-between items-center py-2 border-b cursor-pointer" style="border-color:var(--borde2)">
+            <span class="text-sm" style="color:var(--texto)">🟠 Alertas Altas</span>
+            <label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+          </label>
+          <label class="flex justify-between items-center py-2 border-b cursor-pointer" style="border-color:var(--borde2)">
+            <span class="text-sm" style="color:var(--texto)">🟡 Alertas Medias</span>
+            <label class="toggle"><input type="checkbox"><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+          </label>
+          <label class="flex justify-between items-center py-2 border-b cursor-pointer" style="border-color:var(--borde2)">
+            <span class="text-sm" style="color:var(--texto)">🔵 Alertas Bajas</span>
+            <label class="toggle"><input type="checkbox"><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+          </label>
+          <label class="flex justify-between items-center py-2 cursor-pointer">
+            <span class="text-sm" style="color:var(--texto)">⚙️ Cambios del Sistema</span>
+            <label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  const token = () => sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token');
+
+  // Generar alertas simuladas desde eventos reales
+  let _alerts = [];
+  let _filtroSev = '';
+  let _alertSel = null;
+
+  const SEV_CFG = {
+    'critica': { cls:'border-l-rojo bg-rojo/5',    badge:'bg-rojo/10 text-rojo border-rojo/30',       ico:'🔴' },
+    'alta':    { cls:'border-l-[#F97316] bg-[#F97316]/5', badge:'bg-[#F97316]/10 text-[#F97316] border-[#F97316]/30', ico:'🟠' },
+    'media':   { cls:'border-l-amarillo bg-amarillo/5', badge:'bg-amarillo/10 text-amarillo border-amarillo/30', ico:'🟡' },
+    'baja':    { cls:'border-l-azul bg-azul/5',     badge:'bg-azul/10 text-azul border-azul/30',       ico:'🔵' },
+  };
+
+  async function loadAlertas() {
+    try {
+      const r = await fetch('/api/eventos?limite=50', { headers:{'X-Token': token()} });
+      const d = await r.json();
+      const evts = d.eventos || [];
+      // Mapear eventos de la BD a alertas
+      _alerts = evts.map(e => ({
+        id:       e.id,
+        tipo:     e.tipo === 'evasion' ? 'IA - Evasión de torniquete' : e.tipo === 'intrusion' ? 'Seguridad - Intrusión' : `Sistema - ${e.tipo}`,
+        severidad: e.confianza >= 0.90 ? 'critica' : e.confianza >= 0.80 ? 'alta' : e.confianza >= 0.70 ? 'media' : 'baja',
+        estado:   e.estado === 'confirmado' ? 'confirmada' : e.estado === 'descartado' ? 'falsa_alarma' : 'nueva',
+        origen:   `CAM-${String(e.camara_id).padStart(3,'0')} · ${e.estacion||'Estación desconocida'}`,
+        confianza: e.confianza,
+        ts:       e.detectado_en,
+        desc:     `Confianza: ${Math.round(e.confianza*100)}% · Operador: ${e.operador||'Sin asignar'}`,
+      }));
+      alertRender();
+    } catch(e) { document.getElementById('alert-list').innerHTML=`<div class="text-center py-8 text-rojo text-xs">${e.message}</div>`; }
+  }
+
+  function alertRender() {
+    const estadoF = document.getElementById('alert-estado-filter')?.value || '';
+    let list = _alerts.filter(a =>
+      (!_filtroSev || a.severidad === _filtroSev) &&
+      (!estadoF || a.estado === estadoF)
+    );
+    const cont = document.getElementById('alert-list');
+    cont.innerHTML = list.map(a => {
+      const s = SEV_CFG[a.severidad] || SEV_CFG.baja;
+      const fecha = a.ts ? new Date(a.ts).toLocaleString('es-CO',{dateStyle:'short',timeStyle:'short'}) : '-';
+      return `
+        <div onclick="alertDetalle(${a.id})" class="bg-panel border border-panelBorde border-l-4 ${s.cls} rounded-lg px-4 py-3 flex items-center gap-4 cursor-pointer hover:border-panelBorde/80 transition-all">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-[10px] font-bold border px-2 py-0.5 rounded-full ${s.badge}">${s.ico} ${a.severidad.toUpperCase()}</span>
+              <span class="text-[10px] text-texto-dim font-mono">${fecha}</span>
+            </div>
+            <div class="text-sm text-texto font-medium truncate">${a.tipo}</div>
+            <div class="text-xs text-texto-dim mt-0.5">${a.origen}</div>
+          </div>
+          <span class="text-[10px] border px-2 py-0.5 rounded-full font-bold ${a.estado==='nueva'?'border-rojo/30 text-rojo':'border-white/10 text-texto-dim'} flex-shrink-0">${a.estado}</span>
+        </div>`;
+    }).join('') || '<div class="text-center py-8 text-texto-dim text-xs">Sin alertas con estos filtros</div>';
+  }
+
+  window.alertRender = alertRender;
+
+  window.alertFiltro = function(sev) {
+    _filtroSev = sev;
+    document.querySelectorAll('.sf-btn').forEach(b => b.classList.remove('sf-active'));
+    const idMap = {'':'sf-all','critica':'sf-crit','alta':'sf-alta','media':'sf-media','baja':'sf-baja'};
+    document.getElementById(idMap[sev])?.classList.add('sf-active');
+    alertRender();
+  };
+
+  window.alertDetalle = function(id) {
+    const a = _alerts.find(x => x.id === id);
+    if(!a) return;
+    _alertSel = a;
+    const s = SEV_CFG[a.severidad] || SEV_CFG.baja;
+    document.getElementById('det-titulo').textContent = a.tipo;
+    document.getElementById('det-id').textContent     = '#' + a.id;
+    document.getElementById('det-ts').textContent     = a.ts ? new Date(a.ts).toLocaleString('es-CO') : '-';
+    document.getElementById('det-tipo').textContent   = a.tipo;
+    document.getElementById('det-sev').innerHTML      = `<span class="text-xs font-bold border px-2 py-0.5 rounded-full ${s.badge}">${s.ico} ${a.severidad}</span>`;
+    document.getElementById('det-origen').textContent = a.origen;
+    document.getElementById('det-estado').innerHTML   = `<span class="text-xs text-texto-dim">${a.estado}</span>`;
+    document.getElementById('det-desc').textContent   = a.desc;
+    document.getElementById('det-actions').innerHTML  = `
+      <button onclick="alertAccion('confirmar')" class="text-xs bg-verde/10 text-verde border border-verde/30 px-3 py-1.5 rounded hover:bg-verde hover:text-bg transition-colors">✓ Confirmar</button>
+      <button onclick="alertAccion('descartar')" class="text-xs bg-rojo/10 text-rojo border border-rojo/30 px-3 py-1.5 rounded hover:bg-rojo hover:text-white transition-colors">✗ Falsa alarma</button>
+      <button onclick="alertAccion('escalar')"   class="text-xs bg-amarillo/10 text-amarillo border border-amarillo/30 px-3 py-1.5 rounded hover:bg-amarillo hover:text-bg transition-colors">↑ Escalar</button>
+      <button onclick="alertAccion('resolver')"  class="text-xs bg-azul/10 text-azul border border-azul/30 px-3 py-1.5 rounded hover:bg-azul hover:text-white transition-colors">● Resolver</button>`;
+    document.getElementById('alert-detail').classList.remove('hidden');
+    document.getElementById('alert-detail').scrollIntoView({behavior:'smooth',block:'nearest'});
+  };
+
+  window.alertAccion = async function(accion) {
+    if(!_alertSel) return;
+    const estadoMap = {confirmar:'confirmado',descartar:'descartado',resolver:'descartado',escalar:'pendiente'};
+    try {
+      const r = await fetch(`/api/eventos/${_alertSel.id}`, {
+        method:'PUT',
+        headers:{'Content-Type':'application/json','X-Token':token()},
+        body: JSON.stringify({estado: estadoMap[accion] || 'pendiente'}),
+      });
+      if(r.ok) { loadAlertas(); document.getElementById('alert-detail').classList.add('hidden'); }
+    } catch(e) { alert(e.message); }
+  };
+
+  window.alertGuardarComment = function() {
+    const c = document.getElementById('det-comment').value.trim();
+    if(c) { alert('Comentario guardado: '+c); document.getElementById('det-comment').value=''; }
+  };
+
+  // Tabs
+  window.notifTab = function(tab) {
+    ['alertas','config','canales'].forEach(t => {
+      document.getElementById('panel-'+t).classList.toggle('hidden', t!==tab);
+      document.getElementById('tab-'+t).classList.toggle('active-tab', t===tab);
+      if(t!==tab) { document.getElementById('tab-'+t).classList.add('text-texto-dim'); document.getElementById('tab-'+t).classList.remove('text-texto'); }
+      else { document.getElementById('tab-'+t).classList.remove('text-texto-dim'); }
+    });
+  };
+
+  loadAlertas();
+  setInterval(loadAlertas, 60000);
+})();
+</script>

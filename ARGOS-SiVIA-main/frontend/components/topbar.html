@@ -1,0 +1,151 @@
+<!-- frontend/components/topbar.html v1.7.5 - con soporte de avatar imagen -->
+<header id="topbar"
+        class="h-14 flex items-center px-4 gap-4 border-b shrink-0"
+        style="background-color:var(--bg2);border-color:var(--borde)">
+
+  <!-- Hamburger (móvil y desktop) -->
+  <button id="sidebar-toggle"
+          class="flex items-center justify-center w-8 h-8 rounded-lg border transition-colors"
+          style="border-color:var(--borde2);color:var(--dim)"
+          onclick="toggleSidebarGlobal()">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5"/>
+    </svg>
+  </button>
+
+  <!-- Título módulo activo -->
+  <div class="flex-1 min-w-0">
+    <div class="font-rajdhani font-bold text-base tracking-wide truncate" id="topbar-module-title" style="color:var(--texto)">Dashboard</div>
+  </div>
+
+  <!-- Derecha -->
+  <div class="flex items-center gap-2">
+
+    <!-- Hermes IA -->
+    <button id="hermes-topbar-btn"
+            onclick="window.dispatchEvent(new CustomEvent('toggle-hermes'))"
+            class="h-8 px-3 flex items-center gap-1.5 rounded-lg border transition-all hover:scale-105 font-syne font-bold text-white text-xs shadow-md"
+            style="background:#0FA3D8;border-color:rgba(15,163,216,0.3)">
+      <span class="hidden sm:inline">Hermes IA</span>
+    </button>
+
+    <!-- Tema -->
+    <button id="theme-toggle-btn"
+            onclick="if(typeof setTheme === 'function') { const t = localStorage.getItem('argos-theme')==='light'?'dark':'light'; setTheme(t); }"
+            class="w-8 h-8 flex items-center justify-center rounded-lg border transition-colors text-base flex-shrink-0"
+            style="border-color:var(--borde2);color:var(--dim)"
+            title="Cambiar tema">☀️</button>
+
+    <!-- User menu -->
+    <div class="relative group">
+      <button class="flex items-center gap-2 p-1 rounded-lg transition-colors hover:bg-white/5 cursor-pointer">
+        <!-- Avatar topbar: soporta imagen o inicial -->
+        <div id="topbar-avatar"
+             class="w-8 h-8 rounded-full flex items-center justify-center font-rajdhani font-bold text-xs text-white shadow flex-shrink-0 overflow-hidden relative"
+             style="background:linear-gradient(135deg,var(--rojo-osc),var(--rojo))">
+          <span id="topbar-avatar-letter">U</span>
+          <img id="topbar-avatar-img" src="" alt=""
+               class="absolute inset-0 w-full h-full object-cover rounded-full"
+               style="display:none">
+        </div>
+        <span class="text-xs font-semibold hidden md:block capitalize" id="current-username" style="color:var(--texto)">Usuario</span>
+      </button>
+      <!-- Dropdown -->
+      <div class="absolute right-0 top-full mt-2 w-52 border rounded-xl shadow-xl
+                  opacity-0 invisible group-hover:opacity-100 group-hover:visible
+                  transition-all duration-150 flex flex-col p-2 z-[200]"
+           style="background-color:var(--bg2);border-color:var(--borde2)">
+        <button onclick="if(typeof toggleProfileDrawer==='function') toggleProfileDrawer();"
+                class="text-xs font-semibold px-3 py-2.5 rounded-lg flex items-center gap-2 text-left w-full transition-colors hover:bg-white/5"
+                style="color:var(--dim)">
+          <span>⚙️</span> Configuración de Perfil
+        </button>
+        <div class="h-px my-1" style="background:var(--borde2)"></div>
+        <button onclick="cerrarSesion()"
+                class="text-xs font-bold px-3 py-2.5 rounded-lg flex items-center gap-2 text-left w-full transition-colors hover:bg-red-500/10"
+                style="color:var(--rojo)">
+          <span>🚪</span> Cerrar Sesión
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<script>
+(function initTopbar() {
+  // ── Sincronizar tema ────────────────────────────────────────────────────────
+  const t   = localStorage.getItem('argos-theme') || 'dark';
+  const btn = document.getElementById('theme-toggle-btn');
+  if (btn) btn.textContent = t === 'light' ? '🌙' : '☀️';
+
+  // ── Función global: actualiza el avatar en TODOS los lugares ───────────────
+  window.updateAvatarEverywhere = function(avatarUrl, nombre) {
+    const letter = (nombre || 'U')[0].toUpperCase();
+
+    // 1. Topbar
+    const tbImg = document.getElementById('topbar-avatar-img');
+    const tbLet = document.getElementById('topbar-avatar-letter');
+    if (avatarUrl) {
+      if (tbImg) { tbImg.src = avatarUrl; tbImg.style.display = 'block'; }
+      if (tbLet) tbLet.style.display = 'none';
+    } else {
+      if (tbImg) tbImg.style.display = 'none';
+      if (tbLet) { tbLet.style.display = ''; tbLet.textContent = letter; }
+    }
+
+    // 2. Sidebar footer
+    const sbAvEl = document.getElementById('sidebar-avatar');
+    if (sbAvEl) {
+      if (avatarUrl) {
+        sbAvEl.style.backgroundImage = `url(${avatarUrl})`;
+        sbAvEl.style.backgroundSize  = 'cover';
+        sbAvEl.style.backgroundPosition = 'center';
+        sbAvEl.textContent = '';
+      } else {
+        sbAvEl.style.backgroundImage = '';
+        sbAvEl.textContent = letter;
+      }
+    }
+
+    // 3. Drawer perfil
+    const drImg = document.getElementById('drawer-avatar-img');
+    const drLet = document.getElementById('drawer-avatar-letter');
+    if (avatarUrl) {
+      if (drImg) { drImg.src = avatarUrl; drImg.style.display = 'block'; drImg.classList.remove('hidden'); }
+      if (drLet) { drLet.classList.add('hidden'); drLet.style.display = 'none'; }
+    } else {
+      if (drImg) { drImg.style.display = 'none'; drImg.classList.add('hidden'); }
+      if (drLet) { drLet.classList.remove('hidden'); drLet.style.display = ''; drLet.textContent = letter; }
+    }
+
+    // 4. Guardar en sessionStorage para persistir
+    try {
+      const u = JSON.parse(sessionStorage.getItem('argos_user') || '{}');
+      if (avatarUrl) u.avatar_url = avatarUrl;
+      if (nombre)    u.nombre     = nombre;
+      sessionStorage.setItem('argos_user', JSON.stringify(u));
+    } catch {}
+  };
+
+  // ── Rellenar datos del usuario al cargar ──────────────────────────────────
+  function fillUser() {
+    try {
+      const u = JSON.parse(sessionStorage.getItem('argos_user') || '{}');
+      const nameEl = document.getElementById('current-username');
+      if (nameEl) nameEl.textContent = u.nombre || u.username || 'Usuario';
+      // Aplicar avatar guardado
+      updateAvatarEverywhere(u.avatar_url || '', u.nombre || u.username || '');
+    } catch(e) {}
+  }
+  fillUser();
+
+  // ── Cerrar sesión ─────────────────────────────────────────────────────────
+  window.cerrarSesion = function() {
+    const tok = sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token');
+    if (tok) fetch('/api/auth/logout', { method:'POST', headers:{'X-Token': tok} }).catch(()=>{});
+    sessionStorage.clear();
+    localStorage.removeItem('argos_token');
+    window.location.href = 'login.html';
+  };
+})();
+</script>

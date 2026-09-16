@@ -1,0 +1,319 @@
+<!-- frontend/components/sidebar.html v1.7.5 - Módulos completos -->
+<aside id="sidebar" class="fixed top-0 left-0 h-full w-[270px] z-30
+              border-r flex flex-col
+              -translate-x-full md:translate-x-0
+              transition-transform duration-300 ease-in-out"
+  style="background-color:var(--bg2);border-color:var(--borde);box-shadow:4px 0 32px rgba(0,0,0,0.3)"
+  aria-label="Navegación principal">
+
+  <!-- Logo -->
+  <div class="flex items-center gap-3 px-5 py-4 border-b shrink-0" style="border-color:var(--borde)">
+    <div class="relative flex-shrink-0 text-white font-rajdhani font-bold py-1 px-3" style="font-size:14px;letter-spacing:3px;background:linear-gradient(135deg,var(--rojo-osc),var(--rojo));
+                clip-path:polygon(0 0,calc(100% - 9px) 0,100% 50%,calc(100% - 9px) 100%,0 100%);
+                box-shadow:0 0 16px rgba(232,0,29,0.4)">ARGOS</div>
+    <div>
+      <div class="font-rajdhani text-sm font-bold tracking-widest leading-tight" style="color:var(--texto)">
+        SiV<span style="color:var(--rojo)">IA</span>
+      </div>
+      <div class="font-mono uppercase leading-none mt-0.5" style="font-size:8px;letter-spacing:2px;color:var(--dim)">
+        Visión Artificial
+      </div>
+    </div>
+    <button id="sidebar-close" class="ml-auto" style="color:var(--dim)" onclick="
+      if (window.innerWidth < 768) {
+        document.getElementById('sidebar').classList.add('-translate-x-full');
+        document.getElementById('sidebar-overlay')?.classList.add('hidden');
+      } else {
+        if(typeof toggleSidebarGlobal === 'function') toggleSidebarGlobal();
+      }">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+      </svg>
+    </button>
+  </div>
+
+  <!-- Status -->
+  <div class="mx-3 mt-2.5 mb-1 px-3 py-2 rounded-xl border flex items-center gap-2 shrink-0"
+    style="background:var(--bg3);border-color:var(--borde2)">
+    <span class="w-2 h-2 rounded-full flex-shrink-0 pulse-dot" style="background:var(--verde)"></span>
+    <span class="font-mono" style="font-size:10px;color:var(--dim)">Sistema operativo</span>
+    <span class="ml-auto font-mono font-bold" style="font-size:10px;color:var(--verde)">ONLINE</span>
+  </div>
+
+  <!-- Nav scrollable -->
+  <nav class="flex-1 overflow-y-auto px-3 py-2" style="scrollbar-width:thin;scrollbar-color:var(--borde) transparent">
+    <ul class="space-y-0.5" role="list">
+
+      <!-- Dashboard -->
+      <li>
+        <a href="#" data-module="home" class="nav-item nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl w-full"
+          data-rol="admin,supervisor,operador,analista,tecnico,auditor">
+          <span class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <rect x="3" y="3" width="7" height="7" rx="1.5" />
+              <rect x="14" y="3" width="7" height="7" rx="1.5" />
+              <rect x="3" y="14" width="7" height="7" rx="1.5" />
+              <rect x="14" y="14" width="7" height="7" rx="1.5" />
+            </svg>
+          </span>
+          <span class="nav-label text-sm font-semibold">Dashboard</span>
+        </a>
+      </li>
+
+      <!-- ┌─ MONITOREO ─┐ -->
+      <li>
+        <button class="nav-item nav-toggle w-full flex items-center gap-3 px-3 py-2.5 rounded-xl"
+          data-target="sub-monitoreo" aria-expanded="false" data-rol="admin,supervisor,operador,analista,tecnico">
+          <span class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="3" />
+              <path stroke-linecap="round" d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+            </svg>
+          </span>
+          <span class="nav-label text-sm font-semibold">Monitoreo</span>
+          <svg class="nav-chevron w-4 h-4 ml-auto shrink-0" fill="none" stroke="currentColor" stroke-width="2"
+            viewBox="0 0 24 24" style="color:var(--muted)">
+            <path stroke-linecap="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+          </svg>
+        </button>
+        <ul id="sub-monitoreo" class="submenu ml-4 pl-3 space-y-0.5 mt-0.5"
+          style="max-height:0;border-left:1px solid var(--borde2)">
+          <li><a href="#" class="nav-sublink" data-module="eventos" data-rol="admin,supervisor,operador,analista">📹
+              Eventos en Tiempo Real</a></li>
+          <li><a href="#" class="nav-sublink" data-module="camaras" data-rol="admin,supervisor,tecnico">🎥 Cámaras
+              (Vista Rápida)</a></li>
+          <li><a href="#" class="nav-sublink" data-module="torniquetes" data-rol="admin,supervisor,operador"
+              data-in-construction="true">🚧 Control de Torniquetes</a></li>
+          <li><a href="#" class="nav-sublink" data-module="estadisticas" data-in-construction="true"
+              data-rol="admin,supervisor,analista">📊 Estadísticas y Evasión</a></li>
+        </ul>
+      </li>
+
+      <!-- ┌─ ANÁLISIS E INFORMES ─┐ -->
+      <li>
+        <button class="nav-item nav-toggle w-full flex items-center gap-3 px-3 py-2.5 rounded-xl"
+          data-target="sub-analisis" aria-expanded="false" data-rol="admin,supervisor,analista,auditor">
+          <span class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" d="M3 13.5h3v6H3zM9 9h3v10.5H9zM15 6h3v13.5h-3z" />
+            </svg>
+          </span>
+          <span class="nav-label text-sm font-semibold">Análisis e Informes</span>
+          <svg class="nav-chevron w-4 h-4 ml-auto shrink-0" fill="none" stroke="currentColor" stroke-width="2"
+            viewBox="0 0 24 24" style="color:var(--muted)">
+            <path stroke-linecap="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+          </svg>
+        </button>
+        <ul id="sub-analisis" class="submenu ml-4 pl-3 space-y-0.5 mt-0.5"
+          style="max-height:0;border-left:1px solid var(--borde2)">
+          <li><a href="#" class="nav-sublink" data-module="analisis_evasion" data-in-construction="true"
+              data-rol="admin,supervisor,analista">📈 Estadísticas de Evasión</a></li>
+          <li><a href="#" class="nav-sublink" data-module="analisis_historial" data-in-construction="true"
+              data-rol="admin,supervisor,analista,auditor">📋 Historial de Incidentes</a></li>
+          <li><a href="#" class="nav-sublink" data-module="analisis_tendencias" data-in-construction="true"
+              data-rol="admin,supervisor,analista">🔍 Tendencias y Patrones</a></li>
+          <li><a href="#" class="nav-sublink" data-module="analisis_reportes" data-in-construction="true"
+              data-rol="admin,supervisor,analista,auditor">📄 Generación de Reportes</a></li>
+        </ul>
+      </li>
+
+      <!-- ┌─ INFRAESTRUCTURA ─┐ -->
+      <li>
+        <button class="nav-item nav-toggle w-full flex items-center gap-3 px-3 py-2.5 rounded-xl"
+          data-target="sub-infra" aria-expanded="false" data-rol="admin,tecnico,supervisor">
+          <span class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <rect x="2" y="3" width="20" height="5" rx="1.5" />
+              <rect x="2" y="10" width="20" height="5" rx="1.5" />
+              <rect x="2" y="17" width="20" height="5" rx="1.5" />
+              <circle cx="18" cy="5.5" r="1.2" fill="currentColor" />
+              <circle cx="18" cy="12.5" r="1.2" fill="currentColor" />
+            </svg>
+          </span>
+          <span class="nav-label text-sm font-semibold">Infraestructura</span>
+          <svg class="nav-chevron w-4 h-4 ml-auto shrink-0" fill="none" stroke="currentColor" stroke-width="2"
+            viewBox="0 0 24 24" style="color:var(--muted)">
+            <path stroke-linecap="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+          </svg>
+        </button>
+        <ul id="sub-infra" class="submenu ml-4 pl-3 space-y-0.5 mt-0.5"
+          style="max-height:0;border-left:1px solid var(--borde2)">
+          <li><a href="#" class="nav-sublink" data-module="infra_servidores" data-rol="admin,tecnico">🖥️ Servidores y
+              Storage</a></li>
+          <li><a href="#" class="nav-sublink" data-module="infra_camaras" data-rol="admin,tecnico,supervisor">📷 Gestión
+              de Cámaras</a></li>
+          <li><a href="#" class="nav-sublink" data-module="infra_red" data-rol="admin,tecnico">🌐 Red y Conectividad</a>
+          </li>
+        </ul>
+      </li>
+
+      <!-- ┌─ IA Y DETECCIÓN ─┐ -->
+      <li>
+        <button class="nav-item nav-toggle w-full flex items-center gap-3 px-3 py-2.5 rounded-xl" data-target="sub-ia"
+          aria-expanded="false" data-rol="admin,analista,supervisor,tecnico">
+          <span class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round"
+                d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z" />
+            </svg>
+          </span>
+          <span class="nav-label text-sm font-semibold">IA y Detección</span>
+          <svg class="nav-chevron w-4 h-4 ml-auto shrink-0" fill="none" stroke="currentColor" stroke-width="2"
+            viewBox="0 0 24 24" style="color:var(--muted)">
+            <path stroke-linecap="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+          </svg>
+        </button>
+        <ul id="sub-ia" class="submenu ml-4 pl-3 space-y-0.5 mt-0.5"
+          style="max-height:0;border-left:1px solid var(--borde2)">
+          <li><a href="#" class="nav-sublink" data-module="parametros" data-rol="admin,tecnico">⚙️ Parámetros del
+              Modelo</a></li>
+          <li><a href="#" class="nav-sublink" data-module="metricas_ia" data-in-construction="true"
+              data-rol="admin,analista,supervisor">📊 Métricas de Rendimiento</a></li>
+          <li><a href="#" class="nav-sublink" data-module="entrenamiento" data-in-construction="true"
+              data-rol="admin,tecnico">🧪 Entrenamiento y Dataset</a></li>
+          <li><a href="#" class="nav-sublink" data-module="reportes" data-in-construction="true"
+              data-rol="admin,analista,supervisor">📄 Reportes de Detección</a></li>
+        </ul>
+      </li>
+
+      <!-- Separador Gestión -->
+      <li class="pt-3 pb-1 px-2">
+        <div class="h-px" style="background:var(--borde2)"></div>
+        <p class="font-mono uppercase tracking-widest mt-2.5 mb-1 px-1" style="font-size:9px;color:var(--muted)">Gestión
+        </p>
+      </li>
+
+      <!-- Usuarios y Roles -->
+      <li>
+        <a href="#" class="nav-item nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl w-full"
+          data-module="usuarios_rbac" data-rol="admin">
+          <span class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round"
+                d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+            </svg>
+          </span>
+          <span class="nav-label text-sm font-semibold">Usuarios y Roles</span>
+        </a>
+      </li>
+
+      <!-- Auditoría -->
+      <li>
+        <a href="#" class="nav-item nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl w-full"
+          data-module="auditoria" data-rol="admin,auditor,supervisor">
+          <span class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round"
+                d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
+            </svg>
+          </span>
+          <span class="nav-label text-sm font-semibold">Auditoría</span>
+        </a>
+      </li>
+
+      <!-- Separador Sistema -->
+      <li class="pt-3 pb-1 px-2">
+        <div class="h-px" style="background:var(--borde2)"></div>
+        <p class="font-mono uppercase tracking-widest mt-2.5 mb-1 px-1" style="font-size:9px;color:var(--muted)">Sistema
+        </p>
+      </li>
+
+      <!-- ┌─ ALERTAS ─┐ -->
+      <li>
+        <button class="nav-item nav-toggle w-full flex items-center gap-3 px-3 py-2.5 rounded-xl"
+          data-target="sub-alertas" aria-expanded="false" data-rol="admin,supervisor,operador,analista,tecnico">
+          <span class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round"
+                d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+            </svg>
+          </span>
+          <span class="nav-label text-sm font-semibold">Alertas / Notifs</span>
+          <svg class="nav-chevron w-4 h-4 ml-auto shrink-0" fill="none" stroke="currentColor" stroke-width="2"
+            viewBox="0 0 24 24" style="color:var(--muted)">
+            <path stroke-linecap="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+          </svg>
+        </button>
+        <ul id="sub-alertas" class="submenu ml-4 pl-3 space-y-0.5 mt-0.5"
+          style="max-height:0;border-left:1px solid var(--borde2)">
+          <li><a href="#" class="nav-sublink" data-module="notificaciones"
+              data-rol="admin,supervisor,operador,analista,tecnico">🔔 Centro de Alertas</a></li>
+          <li><a href="#" class="nav-sublink" data-module="configuracion" data-rol="admin,supervisor,tecnico">⚙️
+              Configuración del Sistema</a></li>
+        </ul>
+      </li>
+
+    </ul>
+  </nav>
+
+  <!-- Footer usuario -->
+  <div class="shrink-0 p-3" style="border-top:1px solid var(--borde2)">
+    <div class="flex items-center gap-3">
+      <div id="sidebar-avatar"
+        class="w-9 h-9 rounded-full flex items-center justify-center font-rajdhani font-bold text-sm text-white flex-shrink-0"
+        style="background:linear-gradient(135deg,var(--rojo-osc),var(--rojo))">U</div>
+      <div class="flex-1 min-w-0">
+        <p class="text-xs font-semibold truncate" style="color:var(--texto)" id="sidebar-username">Usuario</p>
+        <p class="font-mono truncate" style="font-size:9px;color:var(--dim)" id="sidebar-rol">-</p>
+      </div>
+      <button onclick="if(typeof cerrarSesion==='function') cerrarSesion();" style="color:var(--dim)"
+        title="Cerrar sesión" class="transition-colors hover:text-red-500">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round"
+            d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+        </svg>
+      </button>
+    </div>
+  </div>
+</aside>
+
+<script>
+  (function initSidebar() {
+    // Datos del usuario en footer
+    try {
+      const u = JSON.parse(sessionStorage.getItem('argos_user') || '{}');
+      const unEl = document.getElementById('sidebar-username');
+      const rolEl = document.getElementById('sidebar-rol');
+      const avrEl = document.getElementById('sidebar-avatar');
+      if (unEl) unEl.textContent = u.nombre || u.username || 'Usuario';
+      if (rolEl) rolEl.textContent = (u.rol || '-').toUpperCase();
+      if (avrEl) avrEl.textContent = (u.nombre || u.username || 'U')[0].toUpperCase();
+    } catch (e) { }
+
+    // Acordeones
+    document.querySelectorAll('.nav-toggle').forEach(btn => {
+      btn.addEventListener('click', function () {
+        const target = document.getElementById(this.dataset.target);
+        if (!target) return;
+        const isOpen = this.classList.contains('is-expanded');
+
+        // Cerrar otros
+        document.querySelectorAll('.nav-toggle.is-expanded').forEach(other => {
+          if (other === this) return;
+          const ot = document.getElementById(other.dataset.target);
+          if (ot) { ot.style.maxHeight = '0'; ot.classList.remove('is-open'); }
+          other.classList.remove('is-expanded');
+          other.setAttribute('aria-expanded', 'false');
+        });
+
+        if (isOpen) {
+          target.style.maxHeight = '0'; target.classList.remove('is-open');
+          this.classList.remove('is-expanded'); this.setAttribute('aria-expanded', 'false');
+        } else {
+          target.style.maxHeight = target.scrollHeight + 50 + 'px';
+          target.classList.add('is-open'); this.classList.add('is-expanded');
+          this.setAttribute('aria-expanded', 'true');
+        }
+      });
+    });
+
+    // Mobile overlay close
+    window.openSidebar = function () {
+      const sb = document.getElementById('sidebar');
+      const ov = document.getElementById('sidebar-overlay');
+      sb?.classList.remove('-translate-x-full');
+      ov?.classList.remove('hidden');
+      setTimeout(() => ov?.classList.add('is-visible'), 10);
+    };
+  })();
+</script>

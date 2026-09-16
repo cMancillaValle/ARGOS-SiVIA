@@ -1,0 +1,251 @@
+<!-- frontend/views/infra_camaras.html -->
+<div class="fade-in">
+
+  <div class="font-mono text-xs text-texto-dim mb-5 tracking-wide flex items-center gap-2">
+    <button data-nav-module="home" class="text-texto-dim hover:text-rojo transition-colors cursor-pointer">Dashboard</button>
+    <span class="text-rojo">/</span><span class="text-amarillo">Infraestructura</span>
+    <span class="text-rojo">/</span><span>Gestión de Cámaras</span>
+  </div>
+
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="font-rajdhani text-2xl font-bold text-texto">Gestión de Cámaras</h1>
+      <div class="text-xs text-texto-dim mt-1" id="cam-infra-summary">Cargando cámaras del sistema...</div>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="camRefresh()" class="bg-panel border border-panelBorde text-texto-dim text-xs font-bold px-3 py-1.5 rounded hover:text-texto transition-colors flex items-center gap-1">↻ Actualizar</button>
+      <button onclick="camOpenModal(null)" data-rol="admin,tecnico"
+              class="bg-rojo text-white font-rajdhani font-bold text-sm px-4 py-1.5 rounded hover:bg-rojo-oscuro transition-colors flex items-center gap-2">
+        + Nueva Cámara
+      </button>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="flex flex-wrap gap-2 mb-4">
+    <select id="cam-filter-estado" onchange="camFilter()" class="bg-panel border border-panelBorde rounded px-3 py-1.5 text-xs text-texto">
+      <option value="">Todos los estados</option>
+      <option value="activa">🟢 Activa</option>
+      <option value="offline">🔴 Offline</option>
+      <option value="mantenimiento">🟡 Mantenimiento</option>
+    </select>
+    <input id="cam-filter-buscar" oninput="camFilter()" placeholder="Buscar por estación o IP..." 
+           class="bg-panel border border-panelBorde rounded px-3 py-1.5 text-xs text-texto placeholder-texto-dim/50 w-56">
+  </div>
+
+  <!-- Tabla -->
+  <div class="bg-panel border border-panelBorde rounded-xl overflow-hidden">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-panelBorde text-texto-dim">
+          <th class="text-left px-4 py-3 font-mono text-[9px] tracking-widest uppercase">Código</th>
+          <th class="text-left px-4 py-3 font-mono text-[9px] tracking-widest uppercase">Estación</th>
+          <th class="text-left px-4 py-3 font-mono text-[9px] tracking-widest uppercase hidden md:table-cell">Ubicación</th>
+          <th class="text-left px-4 py-3 font-mono text-[9px] tracking-widest uppercase">Estado</th>
+          <th class="text-left px-4 py-3 font-mono text-[9px] tracking-widest uppercase hidden lg:table-cell">IP</th>
+          <th class="text-left px-4 py-3 font-mono text-[9px] tracking-widest uppercase hidden lg:table-cell">FPS / Res</th>
+          <th class="text-right px-4 py-3 font-mono text-[9px] tracking-widest uppercase">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="cam-tbody">
+        <tr><td colspan="7" class="text-center py-10 text-texto-dim text-xs">Cargando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal Crear/Editar -->
+  <div id="cam-modal" class="fixed inset-0 z-[200] flex items-center justify-center hidden">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" onclick="camCloseModal()"></div>
+    <div class="relative bg-[#0a101a] border border-panelBorde rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl">
+      <h3 class="font-rajdhani text-xl font-bold mb-5" id="cam-modal-title">Nueva Cámara</h3>
+      <input type="hidden" id="cam-modal-id">
+      <div class="flex flex-col gap-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-[10px] text-texto-dim uppercase tracking-widest font-mono">Código</label>
+            <input id="cam-modal-codigo" type="text" placeholder="CAM-021"
+                   class="w-full mt-1 bg-bg border border-white/10 rounded px-3 py-2 text-sm text-texto focus:outline-none focus:border-rojo">
+          </div>
+          <div>
+            <label class="text-[10px] text-texto-dim uppercase tracking-widest font-mono">IP / URL RTSP</label>
+            <input id="cam-modal-ip" type="text" placeholder="192.168.1.x"
+                   class="w-full mt-1 bg-bg border border-white/10 rounded px-3 py-2 text-sm text-texto focus:outline-none focus:border-rojo">
+          </div>
+        </div>
+        <div>
+          <label class="text-[10px] text-texto-dim uppercase tracking-widest font-mono">Estación</label>
+          <input id="cam-modal-estacion" type="text" placeholder="Portal Norte"
+                 class="w-full mt-1 bg-bg border border-white/10 rounded px-3 py-2 text-sm text-texto focus:outline-none focus:border-rojo">
+        </div>
+        <div>
+          <label class="text-[10px] text-texto-dim uppercase tracking-widest font-mono">Ubicación específica</label>
+          <input id="cam-modal-ubicacion" type="text" placeholder="Torniquete 1 - Entrada Principal"
+                 class="w-full mt-1 bg-bg border border-white/10 rounded px-3 py-2 text-sm text-texto focus:outline-none focus:border-rojo">
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="text-[10px] text-texto-dim uppercase tracking-widest font-mono">Estado</label>
+            <select id="cam-modal-estado" class="w-full mt-1 bg-bg border border-white/10 rounded px-3 py-2 text-sm text-texto focus:outline-none focus:border-rojo">
+              <option value="activa">Activa</option>
+              <option value="offline">Offline</option>
+              <option value="mantenimiento">Mantenimiento</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-[10px] text-texto-dim uppercase tracking-widest font-mono">FPS</label>
+            <input id="cam-modal-fps" type="number" value="15" min="1" max="60"
+                   class="w-full mt-1 bg-bg border border-white/10 rounded px-3 py-2 text-sm text-texto focus:outline-none focus:border-rojo">
+          </div>
+          <div>
+            <label class="text-[10px] text-texto-dim uppercase tracking-widest font-mono">Resolución</label>
+            <select id="cam-modal-res" class="w-full mt-1 bg-bg border border-white/10 rounded px-3 py-2 text-sm text-texto">
+              <option value="1080p">1080p</option>
+              <option value="720p">720p</option>
+              <option value="4K">4K</option>
+              <option value="480p">480p</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div id="cam-modal-err" class="hidden mt-3 text-xs text-rojo bg-rojo/10 border border-rojo/20 rounded px-3 py-2"></div>
+      <div class="flex justify-end gap-2 mt-5">
+        <button onclick="camCloseModal()" class="px-4 py-2 border border-white/10 rounded text-sm text-texto-dim hover:text-texto hover:border-white/30 transition-colors">Cancelar</button>
+        <button onclick="camGuardar()" class="bg-rojo text-white font-rajdhani font-bold px-5 py-2 rounded hover:bg-rojo-oscuro transition-colors">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  let _cams = [];
+  const token = () => sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token');
+
+  async function camRefresh() {
+    try {
+      const r = await fetch('/api/camaras', { headers: {'X-Token': token()} });
+      const d = await r.json();
+      _cams = d.camaras || [];
+      document.getElementById('cam-infra-summary').textContent =
+        `${_cams.length} cámaras · ${_cams.filter(c=>c.estado==='activa').length} activas · ${_cams.filter(c=>c.estado==='offline').length} offline`;
+      camRenderTable(_cams);
+    } catch(e) {
+      document.getElementById('cam-tbody').innerHTML = `<tr><td colspan="7" class="text-center py-8 text-rojo text-xs">${e.message}</td></tr>`;
+    }
+  }
+
+  function camRenderTable(cams) {
+    const tb = document.getElementById('cam-tbody');
+    if(!cams.length){ tb.innerHTML='<tr><td colspan="7" class="text-center py-8 text-texto-dim text-xs">Sin resultados</td></tr>'; return; }
+    const badgeCls = {'activa':'bg-verde/10 text-verde border-verde/30','offline':'bg-rojo/10 text-rojo border-rojo/30','mantenimiento':'bg-amarillo/10 text-amarillo border-amarillo/30'};
+    const badgeIcon = {'activa':'🟢','offline':'🔴','mantenimiento':'🟡'};
+    tb.innerHTML = cams.map(c => `
+      <tr class="border-b border-panelBorde/50 hover:bg-white/3 transition-colors">
+        <td class="px-4 py-3 font-mono text-xs text-azul">${c.codigo}</td>
+        <td class="px-4 py-3 text-sm text-texto font-medium">${c.estacion}</td>
+        <td class="px-4 py-3 text-xs text-texto-dim hidden md:table-cell">${c.ubicacion}</td>
+        <td class="px-4 py-3">
+          <span class="text-[10px] font-bold border px-2 py-0.5 rounded-full ${badgeCls[c.estado]||''}">
+            ${badgeIcon[c.estado]||''} ${c.estado}
+          </span>
+        </td>
+        <td class="px-4 py-3 font-mono text-xs text-texto-dim hidden lg:table-cell">${c.ip||'-'}</td>
+        <td class="px-4 py-3 text-xs text-texto-dim hidden lg:table-cell">${c.fps}fps / ${c.resolucion}</td>
+        <td class="px-4 py-3 text-right">
+          <div class="flex justify-end gap-1">
+            <button onclick="camPing(${c.id},'${c.ip}')" title="Test conexión" class="p-1.5 rounded hover:bg-azul/10 text-texto-dim hover:text-azul transition-colors text-xs">📡</button>
+            <button onclick="camOpenModal(${c.id})" data-rol="admin,tecnico" title="Editar" class="p-1.5 rounded hover:bg-amarillo/10 text-texto-dim hover:text-amarillo transition-colors text-xs">✏️</button>
+            <button onclick="camEliminar(${c.id},'${c.codigo}')" data-rol="admin" title="Eliminar" class="p-1.5 rounded hover:bg-rojo/10 text-texto-dim hover:text-rojo transition-colors text-xs">🗑️</button>
+          </div>
+        </td>
+      </tr>`).join('');
+    if(window.RBAC) RBAC.aplicarUI();
+  }
+
+  function camFilter() {
+    const estado = document.getElementById('cam-filter-estado').value;
+    const q = document.getElementById('cam-filter-buscar').value.toLowerCase();
+    const filtered = _cams.filter(c =>
+      (!estado || c.estado === estado) &&
+      (!q || c.estacion.toLowerCase().includes(q) || (c.ip||'').includes(q) || c.codigo.toLowerCase().includes(q))
+    );
+    camRenderTable(filtered);
+  }
+
+  window.camRefresh = camRefresh;
+  window.camFilter  = camFilter;
+
+  window.camPing = function(id, ip) {
+    const msg = ip ? `Enviando ping a ${ip}...` : 'IP no configurada';
+    alert(`📡 Test de conexión\n\n${msg}\n\n(Resultado simulado - integrar con endpoint de diagnóstico real)`);
+  };
+
+  window.camOpenModal = function(id) {
+    document.getElementById('cam-modal-err').classList.add('hidden');
+    if(id === null) {
+      document.getElementById('cam-modal-title').textContent = 'Nueva Cámara';
+      document.getElementById('cam-modal-id').value = '';
+      ['codigo','ip','estacion','ubicacion'].forEach(f => document.getElementById(`cam-modal-${f}`).value = '');
+      document.getElementById('cam-modal-fps').value = 15;
+      document.getElementById('cam-modal-estado').value = 'activa';
+    } else {
+      const c = _cams.find(x => x.id === id);
+      if(!c) return;
+      document.getElementById('cam-modal-title').textContent = `Editar ${c.codigo}`;
+      document.getElementById('cam-modal-id').value = id;
+      document.getElementById('cam-modal-codigo').value = c.codigo;
+      document.getElementById('cam-modal-ip').value = c.ip || '';
+      document.getElementById('cam-modal-estacion').value = c.estacion;
+      document.getElementById('cam-modal-ubicacion').value = c.ubicacion;
+      document.getElementById('cam-modal-estado').value = c.estado;
+      document.getElementById('cam-modal-fps').value = c.fps;
+      document.getElementById('cam-modal-res').value = c.resolucion;
+    }
+    document.getElementById('cam-modal').classList.remove('hidden');
+  };
+
+  window.camCloseModal = function() {
+    document.getElementById('cam-modal').classList.add('hidden');
+  };
+
+  window.camGuardar = async function() {
+    const id = document.getElementById('cam-modal-id').value;
+    const body = {
+      codigo: document.getElementById('cam-modal-codigo').value.trim(),
+      ip: document.getElementById('cam-modal-ip').value.trim(),
+      estacion: document.getElementById('cam-modal-estacion').value.trim(),
+      ubicacion: document.getElementById('cam-modal-ubicacion').value.trim(),
+      estado: document.getElementById('cam-modal-estado').value,
+      fps: parseInt(document.getElementById('cam-modal-fps').value) || 15,
+      resolucion: document.getElementById('cam-modal-res').value,
+    };
+    const err = document.getElementById('cam-modal-err');
+    try {
+      const url = id ? `/api/camaras/${id}` : '/api/camaras';
+      const r = await fetch(url, {
+        method: id ? 'PUT' : 'POST',
+        headers: {'Content-Type':'application/json','X-Token':token()},
+        body: JSON.stringify(body),
+      });
+      const d = await r.json();
+      if(!r.ok) throw new Error(d.error || `Error ${r.status}`);
+      camCloseModal();
+      camRefresh();
+    } catch(e) {
+      err.textContent = e.message;
+      err.classList.remove('hidden');
+    }
+  };
+
+  window.camEliminar = async function(id, codigo) {
+    if(!confirm(`¿Eliminar la cámara ${codigo}? Esta acción no se puede deshacer.`)) return;
+    try {
+      const r = await fetch(`/api/camaras/${id}`, {method:'DELETE', headers:{'X-Token':token()}});
+      if(!r.ok) throw new Error('Error al eliminar');
+      camRefresh();
+    } catch(e) { alert(e.message); }
+  };
+
+  camRefresh();
+})();
+</script>
