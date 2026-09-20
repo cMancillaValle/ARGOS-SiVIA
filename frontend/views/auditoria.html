@@ -251,9 +251,19 @@
     }
 
     function renderSesiones(sesiones) {
-      document.getElementById('ses-count').textContent = `${sesiones.length} conectado${sesiones.length === 1 ? '' : 's'}`;
+      // Tomar estrictamente la sesión más reciente por usuario único
+      const usuariosMap = new Map();
+      sesiones.forEach(s => {
+        const key = s.usuario_id || s.username || s.nombre;
+        if (!usuariosMap.has(key)) {
+          usuariosMap.set(key, s);
+        }
+      });
+      const usuariosUnicos = Array.from(usuariosMap.values());
+
+      document.getElementById('ses-count').textContent = `${usuariosUnicos.length} conectado${usuariosUnicos.length === 1 ? '' : 's'}`;
       const tb = document.getElementById('ses-tbody');
-      tb.innerHTML = sesiones.map(s => {
+      tb.innerHTML = usuariosUnicos.map(s => {
         const modulo = MODULO_LABEL[s.modulo_actual] || s.modulo_actual || 'Sin actividad';
         const conectadoDesde = s.conectado_desde
           ? new Date(s.conectado_desde + 'Z')

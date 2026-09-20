@@ -175,21 +175,31 @@ def actualizar_modulo_sesion(token: str, modulo: str):
 
 def listar_sesiones_activas():
     """
-    Devuelve todas las sesiones vigentes (no expiradas) con el usuario
-    y el módulo que tienen abierto actualmente.
+    Devuelve los usuarios conectados actualmente (1 fila por usuario único),
+    tomando su sesión más reciente y activa (última actividad en los últimos 30 min).
     """
     conn  = get_conn()
     ahora = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    rows = conn.execute(
-        '''SELECT u.id AS usuario_id, u.username, u.nombre, u.rol,
-                  s.modulo_actual, s.creado_en AS conectado_desde,
-                  s.ultima_actividad
-           FROM sesiones s
-           JOIN usuarios u ON u.id = s.usuario_id
-           WHERE s.expira_en > ? AND u.activo = 1
-           ORDER BY s.ultima_actividad DESC''',
-        (ahora,)
-    ).fetchall()
+    query = '''
+        SELECT u.id AS usuario_id, u.username, u.nombre, u.rol,
+               s.modulo_actual, s.creado_en AS conectado_desde,
+               s.ultima_actividad
+        FROM sesiones s
+        JOIN usuarios u ON u.id = s.usuario_id
+        WHERE s.expira_en > ? 
+          AND u.activo = 1
+          AND s.ultima_actividad >= datetime('now', '-30 minutes')
+          AND s.token = (
+              SELECT s2.token 
+              FROM sesiones s2 
+              WHERE s2.usuario_id = s.usuario_id 
+                AND s2.expira_en > ?
+              ORDER BY s2.ultima_actividad DESC, s2.creado_en DESC
+              LIMIT 1
+          )
+        ORDER BY s.ultima_actividad DESC
+    '''
+    rows = conn.execute(query, (ahora, ahora)).fetchall()
     conn.close()
     return [dict(r) for r in rows]
 

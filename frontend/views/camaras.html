@@ -1,137 +1,112 @@
-<!-- frontend/views/camaras.html -->
-<!-- ARGOS-SiViA v1.7.5 · Módulo Cámaras + Athena IA -->
-<div class="fade-in" id="modulo-camaras">
-  <div class="font-mono text-[11px] text-[color:var(--dim)] mb-5 tracking-[1px] flex items-center gap-1.5">
-    <button data-nav-module="home" class="hover:text-rojo transition-colors cursor-pointer text-amarillo">Dashboard</button>
-    <span class="text-rojo">/</span>
-    <span class="text-[color:var(--texto)]">Cámaras · Athena IA</span>
-  </div>
-
-  <div class="bg-[color:var(--bg2)] border border-[color:var(--borde2)] rounded-xl p-6 mb-5 relative overflow-hidden shadow-sm">
-    <div class="absolute top-0 left-0 bottom-0 w-1 bg-rojo rounded-l-lg"></div>
-    <div class="font-mono text-[9px] tracking-[2px] text-rojo uppercase mb-2">Monitoreo IA</div>
-    <h1 class="font-rajdhani text-2xl md:text-3xl font-bold tracking-wide mb-1">Red de Cámaras · Athena IA</h1>
-    <p class="text-sm text-[color:var(--dim)] font-light max-w-3xl leading-relaxed">
-      Streaming procesado en tiempo real por el motor Athena (YOLO + MediaPipe). Seleccione una cámara y presione Conectar para activar la detección.
-    </p>
-    <div class="flex flex-wrap gap-2.5 mt-4">
-      <button id="btn-nueva-camara" class="inline-flex items-center gap-2 bg-rojo hover:bg-rojo-oscuro text-white text-xs font-rajdhani font-bold px-4 py-2 rounded shadow-md transition-all uppercase tracking-wider" data-permiso="camaras:crear">
-        <span class="text-lg leading-none">+</span> Nueva Cámara
-      </button>
-      <button id="btn-refrescar-camaras" class="inline-flex items-center gap-2 bg-bg/50 border border-[color:var(--borde2)] hover:border-rojo hover:text-rojo text-[color:var(--texto)] text-xs font-rajdhani font-semibold px-4 py-2 rounded transition-all uppercase tracking-wide">
-        ↻ Actualizar Lista
-      </button>
-      <button id="btn-subir-video" class="inline-flex items-center gap-2 bg-azul/10 border border-azul/30 hover:border-azul hover:bg-azul hover:text-white text-azul text-xs font-rajdhani font-semibold px-4 py-2 rounded transition-all uppercase tracking-wide" title="Sube un video .mp4 para analizarlo con Athena">
-        📹 Subir Video
-      </button>
-      <div id="athena-badge" class="inline-flex items-center gap-2 px-3 py-1.5 rounded border text-xs font-mono bg-bg/60 border-[color:var(--borde2)] text-[color:var(--dim)]">
-        <span id="athena-dot" class="w-2 h-2 rounded-full bg-texto-dim/40"></span>
-        <span id="athena-label">Athena · OFFLINE</span>
+<div class="p-4 sm:p-6 flex flex-col h-[calc(100vh-64px)] max-h-[calc(100vh-64px)] overflow-hidden">
+  
+  <!-- CABECERA PRINCIPAL -->
+  <div class="flex flex-wrap items-center justify-between gap-3 pb-3 mb-3 border-b border-[color:var(--borde2)] shrink-0">
+    <div class="flex items-center gap-3">
+      <a href="#/dashboard" class="flex items-center gap-1 text-[color:var(--dim)] hover:text-rojo text-xs font-mono transition-colors">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        Dashboard
+      </a>
+      <span class="text-[color:var(--borde2)]">/</span>
+      <div class="flex items-center gap-2">
+        <div class="w-2 h-2 rounded-full bg-rojo animate-pulse"></div>
+        <h1 class="font-rajdhani font-bold text-lg sm:text-xl text-[color:var(--texto)] tracking-wide uppercase">
+          Matriz de Monitoreo <span class="text-rojo text-xs font-mono font-normal">Cuadrícula 2x2</span>
+        </h1>
       </div>
+      <div id="athena-badge" class="inline-flex items-center gap-2 px-2.5 py-1 rounded border text-[11px] font-mono bg-bg/60 border-[color:var(--borde2)] text-[color:var(--dim)]">
+        <div class="w-2 h-2 rounded-full bg-texto-dim/40" id="athena-dot"></div>
+        <span id="athena-label">0 Activas</span>
+      </div>
+    </div>
+
+    <!-- ACCIONES DE CABECERA -->
+    <div class="flex items-center gap-2 flex-wrap">
+      <!-- Botón Colapsar/Expandir Panel Fuentes -->
+      <button id="btn-toggle-fuentes" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono bg-[color:var(--bg2)] hover:bg-[color:var(--bg3)] text-[color:var(--texto)] border border-[color:var(--borde2)] rounded-lg transition-all shadow-sm">
+        <span id="icon-fuentes">📁</span>
+        <span id="label-fuentes">Fuentes (<span id="camaras-count">0</span>)</span>
+      </button>
+
+      <!-- Botón Eventos Live SSE -->
+      <button id="btn-toggle-eventos" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono bg-[color:var(--bg2)] hover:bg-[color:var(--bg3)] text-[color:var(--texto)] border border-[color:var(--borde2)] rounded-lg transition-all shadow-sm relative">
+        <span>⚡ Eventos IA</span>
+        <span id="events-badge" class="hidden absolute -top-1.5 -right-1.5 bg-rojo text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full border border-bg shadow-sm">0</span>
+      </button>
+
+      <!-- Botón Subir Video de Prueba -->
+      <button id="btn-subir-video" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono bg-[color:var(--bg2)] hover:bg-[color:var(--bg3)] text-[color:var(--texto)] border border-[color:var(--borde2)] rounded-lg transition-all shadow-sm">
+        <span>🎬</span> Subir Video
+      </button>
+
+      <!-- Botón Nueva Cámara -->
+      <button id="btn-nueva-camara" class="inline-flex items-center gap-1.5 bg-rojo hover:bg-rojo-oscuro text-white text-xs font-rajdhani font-bold px-3.5 py-1.5 rounded-lg transition-all uppercase tracking-wider shadow-sm">
+        <span>+</span> Nueva Cámara
+      </button>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 xl:grid-cols-[280px_1fr] gap-4 h-[calc(100vh-170px)] min-h-[500px]">
-    <div class="bg-[color:var(--bg2)] border border-[color:var(--borde2)] rounded-xl flex flex-col overflow-hidden h-full shadow-sm">
-      <div class="p-4 border-b border-[color:var(--borde2)] flex items-center justify-between shrink-0">
-        <span class="font-mono text-[9px] text-rojo tracking-widest uppercase">Fuentes Configuradas</span>
-        <span id="camaras-count" class="font-mono text-[10px] text-[color:var(--dim)]">—</span>
-      </div>
-      <div id="cameras-list" class="flex-1 overflow-y-auto divide-y divide-[color:var(--borde2)]">
-        <div class="p-6 text-center text-[color:var(--dim)] text-xs font-mono">
-          <div class="animate-pulse">Cargando cámaras...</div>
-        </div>
-      </div>
-      <div class="p-3 border-t border-[color:var(--borde2)] shrink-0">
-        <button id="btn-desconectar" class="w-full text-xs font-mono text-[color:var(--dim)] hover:text-rojo border border-[color:var(--borde2)] hover:border-rojo/40 py-1.5 rounded transition-all uppercase tracking-wider hidden">
-          ⏹ Desconectar Athena
-        </button>
-      </div>
-    </div>
-
-    <div class="bg-[color:var(--bg2)] border border-[color:var(--borde2)] rounded-xl flex flex-col overflow-hidden relative shadow-md h-full">
-      <div class="p-3 border-b border-[color:var(--borde2)] flex items-center justify-between gap-3 shrink-0 bg-[color:var(--bg2)] z-20">
+  <!-- CONTENEDOR FLEX PRINCIPAL (SIDEBAR FUENTES + CUADRÍCULA 2X2) -->
+  <div class="flex-1 flex gap-3.5 overflow-hidden relative min-h-0">
+    
+    <!-- PANEL LATERAL: FUENTES CONFIGURADAS (COLAPSABLE) -->
+    <aside id="panel-fuentes" class="w-[300px] shrink-0 bg-[color:var(--bg2)] border border-[color:var(--borde2)] rounded-xl flex flex-col overflow-hidden transition-all duration-300 z-10 shadow-lg">
+      <div class="p-3 border-b border-[color:var(--borde2)] flex items-center justify-between bg-[color:var(--bg3)]/60">
         <div class="flex items-center gap-2">
-          <div id="stream-live-dot" class="w-2 h-2 rounded-full bg-[color:var(--dim)]/30"></div>
-          <span id="stream-cam-label" class="font-mono text-[10px] text-[color:var(--dim)] uppercase tracking-widest">Sin cámara activa</span>
+          <span class="font-mono text-[9px] text-rojo tracking-widest uppercase font-bold">Cámaras Registradas</span>
         </div>
-        <div class="flex items-center gap-2">
-          <span class="font-mono text-[9px] text-[color:var(--dim)]/60" id="stream-source-label"></span>
-          <button id="btn-toggle-eventos" class="inline-flex items-center gap-1.5 bg-[color:var(--bg3)] border border-[color:var(--borde2)] text-[color:var(--dim)] hover:text-rojo hover:border-[color:var(--rojo)]/30 text-[10px] font-mono px-3 py-1 rounded transition-all uppercase relative tracking-wider group">
-            📋 Eventos
-            <span id="events-badge" class="absolute -top-1.5 -right-1.5 bg-rojo text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full hidden shadow border border-panel">0</span>
-          </button>
-          <select id="select-modo-athena" class="bg-[color:var(--bg3)] border border-[color:var(--borde2)] text-[color:var(--dim)] text-[10px] font-mono px-2 py-1 rounded outline-none focus:border-azul transition-colors" title="Modo de operación de Athena">
-            <option value="acceso">🔐 Acceso</option>
-            <option value="evasion">🚨 Evasión</option>
-          </select>
-          <button id="btn-conectar" disabled class="inline-flex items-center gap-1.5 bg-verde/10 border border-verde/30 text-verde hover:bg-verde hover:text-bg text-[10px] font-mono px-3 py-1 rounded transition-all uppercase tracking-wider disabled:opacity-40 disabled:cursor-not-allowed">
-            ▶ Conectar
-          </button>
-          <button id="btn-desconectar2" class="hidden inline-flex items-center gap-1.5 bg-rojo/10 border border-rojo/30 text-rojo hover:bg-rojo hover:text-white text-[10px] font-mono px-3 py-1 rounded transition-all uppercase tracking-wider">
-            ⏹ Detener
-          </button>
+        <div class="flex items-center gap-1">
+          <button id="btn-refrescar-camaras" title="Recargar lista" class="text-[11px] text-[color:var(--dim)] hover:text-white p-1">↻</button>
+          <button id="btn-close-fuentes" title="Ocultar panel" class="text-[14px] text-[color:var(--dim)] hover:text-rojo p-1 leading-none">&times;</button>
         </div>
-        <div id="hint-seleccionar" class="absolute top-[60px] right-3 text-[9px] font-mono text-amarillo/70 animate-pulse text-right pr-1 z-30 drop-shadow-md">
-          ← Seleccione y presione Conectar
-        </div>
+      </div>
+      
+      <!-- Lista de Fuentes -->
+      <div id="cameras-list" class="flex-1 overflow-y-auto p-2.5 flex flex-col gap-2">
+        <div class="p-4 text-center text-xs text-[color:var(--dim)] font-mono opacity-60">Cargando cámaras...</div>
       </div>
 
-      <div class="relative w-full flex-1 bg-black overflow-hidden flex items-center justify-center">
-        <div id="stream-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-black/90 gap-3">
-          <div class="w-16 h-16 border-2 border-[color:var(--borde2)] rounded-lg flex items-center justify-center">
-            <svg class="w-8 h-8 text-[color:var(--borde2)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.277A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
-            </svg>
-          </div>
-          <div class="text-xs text-[color:var(--dim)] font-mono uppercase tracking-widest">Monitor Desconectado</div>
-        </div>
-        <img id="athena-stream" class="absolute inset-0 w-full h-full object-contain hidden" alt="Athena Stream" src="" />
-        <div id="stream-hud" class="absolute top-2 left-2 right-2 flex items-center justify-between pointer-events-none hidden">
-          <div class="flex items-center gap-1.5 px-2 py-0.5 bg-black/60 backdrop-blur rounded font-mono text-[8px] text-verde tracking-widest uppercase border border-verde/30">
-            <div class="w-1.5 h-1.5 rounded-full bg-verde pulse-dot"></div>
-            ATHENA · LIVE
-          </div>
-          <div id="hud-fps" class="px-2 py-0.5 bg-black/60 backdrop-blur rounded font-mono text-[8px] text-[color:var(--dim)] border border-[color:var(--borde2)]"></div>
-        </div>
-        <div id="stream-estado-ia" class="absolute bottom-2 left-2 flex flex-wrap gap-1.5 pointer-events-none hidden"></div>
+      <!-- Ayuda informativa -->
+      <div class="p-2.5 border-t border-[color:var(--borde2)] bg-[color:var(--bg3)]/30 text-[9px] font-mono text-[color:var(--dim)] leading-relaxed">
+        💡 Asigna cada cámara a un slot o enciéndela desde el recuadro correspondiente.
       </div>
+    </aside>
 
-      <div class="p-3 border-t border-[color:var(--borde2)] flex items-center gap-3 shrink-0 bg-[color:var(--bg2)] z-20">
-        <div class="flex items-center gap-2">
-          <span class="text-[10px] text-[color:var(--dim)] font-mono uppercase">Confianza IA:</span>
-          <span id="cam-confidence-val" class="text-[10px] font-mono text-amarillo font-bold">—</span>
-        </div>
-        <div class="ml-auto text-[9px] font-mono text-[color:var(--dim)]/60" id="stream-ts">—</div>
+    <!-- ÁREA CUADRÍCULA 2X2 -->
+    <main id="contenedor-matriz" class="flex-1 flex flex-col h-full overflow-hidden min-w-0">
+      <div id="grid-slots" class="grid grid-cols-1 md:grid-cols-2 gap-3.5 h-full flex-1 overflow-y-auto pr-0.5">
+        <!-- 4 Recuadros de Video independientes -->
       </div>
+    </main>
 
-      <div id="drawer-eventos" class="absolute top-[48px] right-0 bottom-[48px] w-[280px] sm:w-[320px] bg-[color:var(--bg2)]/95 backdrop-blur-md border-l border-[color:var(--borde2)] flex flex-col transform translate-x-full transition-transform duration-300 z-10 shadow-[-10px_0_20px_rgba(0,0,0,0.5)]">
-        <div class="p-3 border-b border-[color:var(--borde2)] flex items-center justify-between shrink-0 bg-[color:var(--bg3)]/80">
-          <span class="font-mono text-[9px] text-rojo tracking-widest uppercase flex items-center gap-2">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-            Historial de Detecciones
-          </span>
-          <button id="btn-close-eventos" class="text-[16px] text-[color:var(--dim)] hover:text-rojo transition-colors leading-none focus:outline-none">&times;</button>
-        </div>
-        <div id="eventos-feed" class="flex-1 overflow-y-auto p-3 flex flex-col gap-2 scroll-smooth">
-          <div class="text-center text-[color:var(--dim)] text-[10px] font-mono py-8 opacity-50" id="eventos-empty">
-            Sin eventos en memoria operativa.<br>A la espera de detecciones de Athena.
-          </div>
-        </div>
-        <div class="p-2 border-t border-[color:var(--borde2)] flex items-center justify-between shrink-0 bg-[color:var(--bg3)]/80">
-          <span class="font-mono text-[9px] text-[color:var(--dim)]">Total capturados: <strong id="eventos-count" class="text-rojo">0</strong></span>
-          <button id="btn-clear-eventos" class="text-[9px] font-mono text-[color:var(--dim)] hover:text-rojo border border-transparent hover:border-rojo/30 px-2 py-0.5 rounded transition-colors uppercase">Limpiar</button>
+    <!-- PANEL LATERAL DERECHO: EVENTOS LIVE SSE (COLAPSABLE) -->
+    <aside id="panel-eventos" class="hidden w-0 opacity-0 shrink-0 bg-[color:var(--bg2)] border border-[color:var(--borde2)] rounded-xl flex flex-col overflow-hidden transition-all duration-300 z-10 shadow-lg">
+      <div class="p-3 border-b border-[color:var(--borde2)] flex items-center justify-between shrink-0 bg-[color:var(--bg3)]/60">
+        <span class="font-mono text-[9px] text-rojo tracking-widest uppercase flex items-center gap-2 font-bold">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          Detecciones IA
+        </span>
+        <button id="btn-close-eventos" title="Ocultar panel" class="text-[14px] text-[color:var(--dim)] hover:text-rojo p-1 leading-none">&times;</button>
+      </div>
+      <div id="eventos-feed" class="flex-1 overflow-y-auto p-2.5 flex flex-col gap-2 scroll-smooth">
+        <div class="text-center text-[color:var(--dim)] text-[10px] font-mono py-8 opacity-50" id="eventos-empty">
+          Sin eventos en memoria operativa.<br>A la espera de detecciones de Athena.
         </div>
       </div>
-    </div>
+      <div class="p-2.5 border-t border-[color:var(--borde2)] flex items-center justify-between shrink-0 bg-[color:var(--bg3)]/50">
+        <span class="font-mono text-[9px] text-[color:var(--dim)]">Total: <strong id="eventos-count" class="text-rojo">0</strong></span>
+        <button id="btn-clear-eventos" class="text-[9px] font-mono text-[color:var(--dim)] hover:text-rojo border border-transparent hover:border-rojo/30 px-2 py-0.5 rounded transition-colors uppercase">Limpiar</button>
+      </div>
+    </aside>
   </div>
 </div>
 
+<!-- Modal Cámara (Crear / Editar) -->
 <div id="modal-camara" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-  <div class="bg-[color:var(--bg2)] border border-[color:var(--borde2)] rounded-2xl w-full max-w-lg shadow-2xl">
+  <div class="bg-[color:var(--bg2)] border border-[color:var(--borde2)] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-[fadeIn_0.2s_ease-out]">
     <div class="flex items-center justify-between p-5 border-b border-[color:var(--borde2)]">
       <div>
-        <div class="font-mono text-[9px] tracking-widest text-rojo uppercase mb-0.5">Gestión</div>
+        <div class="font-mono text-[9px] tracking-widest text-rojo uppercase mb-0.5">Gestión de Red</div>
         <h3 id="modal-title" class="font-rajdhani text-lg font-bold text-[color:var(--texto)]">Nueva Cámara</h3>
       </div>
       <button id="modal-close" class="text-[color:var(--dim)] hover:text-rojo text-2xl leading-none">&times;</button>
@@ -163,7 +138,7 @@
       <div>
         <label class="text-[9px] font-mono text-[color:var(--dim)] uppercase tracking-widest mb-1 block">
           Fuente de Video
-          <span class="text-[color:var(--dim)]/60 ml-2 normal-case">(0 = cámara local del servidor · rtsp://... = IP · webcam = cliente)</span>
+          <span class="text-[color:var(--dim)]/60 ml-2 normal-case">(0 = servidor · rtsp://... = IP · webcam = navegador cliente)</span>
         </label>
         <div class="flex gap-2">
           <input id="modal-ip" type="text" placeholder="0  ó  rtsp://192.168.1.10:554/stream" class="flex-1 bg-bg border border-white/10 focus:border-rojo rounded px-3 py-2 text-sm text-[color:var(--texto)] outline-none transition-colors font-mono">
@@ -180,75 +155,93 @@
   </div>
 </div>
 
+<!-- Modal Subir Video -->
 <div id="modal-video" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-  <div class="bg-[color:var(--bg2)] border border-[color:var(--borde2)] rounded-2xl w-full max-w-lg shadow-2xl">
+  <div class="bg-[color:var(--bg2)] border border-[color:var(--borde2)] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-[fadeIn_0.2s_ease-out]">
     <div class="flex items-center justify-between p-5 border-b border-[color:var(--borde2)]">
       <div>
-        <div class="font-mono text-[9px] tracking-widest text-azul uppercase mb-0.5">Athena IA</div>
-        <h3 class="font-rajdhani text-lg font-bold text-[color:var(--texto)]">Subir Video para Análisis</h3>
+        <div class="font-mono text-[9px] tracking-widest text-rojo uppercase mb-0.5">Simulación & Testing</div>
+        <h3 class="font-rajdhani text-lg font-bold text-[color:var(--texto)]">Subir Video de Prueba</h3>
       </div>
       <button id="modal-video-close" class="text-[color:var(--dim)] hover:text-rojo text-2xl leading-none">&times;</button>
     </div>
     <div class="p-5 flex flex-col gap-4">
-      <label id="video-dropzone" class="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-[color:var(--borde2)] hover:border-azul rounded-xl py-8 px-4 cursor-pointer transition-colors group">
-        <div class="text-4xl group-hover:scale-110 transition-transform">📹</div>
-        <div class="text-center">
-          <div class="text-sm font-rajdhani font-bold text-[color:var(--texto)] group-hover:text-azul transition-colors">Arrastra tu video aquí o haz clic para seleccionar</div>
-          <div class="text-[10px] text-[color:var(--dim)] font-mono mt-1">.mp4 · .avi · .mkv · .mov · .webm</div>
-        </div>
-        <input id="video-file-input" type="file" accept=".mp4,.avi,.mkv,.mov,.webm,.ts,.flv" class="hidden">
-      </label>
-      <div id="video-selected-info" class="hidden flex items-center gap-3 bg-azul/5 border border-azul/20 rounded-lg px-4 py-3">
-        <span class="text-xl">🎬</span>
-        <div class="flex-1 min-w-0">
-          <div id="video-selected-name" class="text-sm font-mono text-azul truncate"></div>
-          <div id="video-selected-size" class="text-[10px] text-[color:var(--dim)]"></div>
-        </div>
-        <button id="video-clear-file" class="text-[color:var(--dim)] hover:text-rojo text-lg leading-none">&times;</button>
+      <p class="text-xs text-[color:var(--dim)]">Carga videos MP4 grabados en estaciones para pruebas offline y calibración de Athena.</p>
+      
+      <div id="video-dropzone" class="border-2 border-dashed border-white/20 hover:border-rojo/60 rounded-xl p-6 text-center cursor-pointer transition-colors bg-bg/40">
+        <div class="text-3xl mb-2">📁</div>
+        <div class="text-xs text-[color:var(--texto)] font-mono mb-1">Arrastra tu video MP4 aquí</div>
+        <div class="text-[10px] text-[color:var(--dim)] font-mono">o haz clic para seleccionar (Máx. 100MB)</div>
+        <input type="file" id="video-file-input" accept="video/mp4,video/avi,video/mkv,video/webm" class="hidden">
       </div>
-      <div id="video-progress-wrap" class="hidden">
-        <div class="flex items-center justify-between mb-1">
-          <span class="text-[10px] font-mono text-[color:var(--dim)]">Subiendo...</span>
-          <span id="video-progress-pct" class="text-[10px] font-mono text-azul">0%</span>
+
+      <div id="video-selected-info" class="hidden bg-white/5 border border-white/10 rounded-lg p-3 flex items-center justify-between">
+        <div class="flex items-center gap-2 overflow-hidden">
+          <span class="text-lg">🎬</span>
+          <div class="truncate">
+            <div id="video-filename" class="text-xs font-mono text-[color:var(--texto)] truncate">video.mp4</div>
+            <div id="video-filesize" class="text-[10px] font-mono text-[color:var(--dim)]">0 MB</div>
+          </div>
         </div>
-        <div class="w-full h-1.5 bg-[color:var(--borde2)] rounded-full overflow-hidden"><div id="video-progress-bar" class="h-full bg-azul rounded-full transition-all duration-300" style="width:0%"></div></div>
+        <button id="btn-quitar-video" class="text-xs text-rojo hover:underline font-mono">Quitar</button>
       </div>
-      <div id="video-upload-result" class="hidden rounded-lg px-4 py-3 text-xs font-mono"></div>
-      <div class="border-t border-[color:var(--borde2)] pt-3">
-        <div class="font-mono text-[9px] text-[color:var(--dim)] uppercase tracking-widest mb-2 flex items-center justify-between">
-          <span>Videos disponibles en el servidor</span>
-          <button id="btn-refrescar-videos" class="text-[9px] hover:text-azul transition-colors">↻</button>
+
+      <div id="video-upload-progress" class="hidden flex flex-col gap-1.5">
+        <div class="flex justify-between text-[10px] font-mono text-[color:var(--dim)]">
+          <span id="upload-status-text">Subiendo...</span>
+          <span id="upload-percentage">0%</span>
         </div>
-        <div id="video-list" class="flex flex-col gap-1.5 max-h-44 overflow-y-auto"><div class="text-[10px] text-[color:var(--dim)]/50 font-mono text-center py-3">Cargando...</div></div>
+        <div class="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+          <div id="upload-progress-bar" class="bg-rojo h-full w-0 transition-all duration-200"></div>
+        </div>
+      </div>
+
+      <div id="video-upload-error" class="hidden text-xs text-rojo bg-rojo/10 border border-rojo/20 rounded px-3 py-2 font-mono"></div>
+
+      <!-- Videos en el servidor -->
+      <div class="mt-2">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[9px] font-mono text-[color:var(--dim)] uppercase tracking-widest">Videos Disponibles en Servidor</span>
+          <button id="btn-refrescar-videos" class="text-[10px] font-mono text-azul hover:underline">Refrescar</button>
+        </div>
+        <div id="video-list" class="max-h-36 overflow-y-auto flex flex-col gap-1.5 pr-1">
+          <div class="text-[10px] font-mono text-[color:var(--dim)] text-center py-3">Cargando lista...</div>
+        </div>
       </div>
     </div>
     <div class="flex justify-end gap-3 px-5 pb-5">
       <button id="modal-video-cancel" class="text-xs font-mono text-[color:var(--dim)] hover:text-rojo border border-[color:var(--borde2)] px-4 py-2 rounded transition-colors uppercase">Cerrar</button>
-      <button id="btn-upload-video" class="inline-flex items-center gap-2 bg-azul hover:bg-azul/80 text-white text-xs font-rajdhani font-bold px-5 py-2 rounded transition-colors uppercase tracking-wider disabled:opacity-40 disabled:cursor-not-allowed" disabled>↑ Subir Video</button>
+      <button id="btn-upload-video" disabled class="bg-rojo/50 text-white/50 cursor-not-allowed text-xs font-rajdhani font-bold px-5 py-2 rounded transition-colors uppercase tracking-wider">Subir Video</button>
     </div>
   </div>
 </div>
+
 <script>
-(function () {
-  'use strict';
+(() => {
+  // ══════════════════════════════════════════════════════════════════════════
+  // MODELO DE DATOS Y ESTADO DE 4 SLOTS (CUADRÍCULA 2X2)
+  // ══════════════════════════════════════════════════════════════════════════
+  const slots = [
+    { id: 0, camId: null, camData: null, mode: 'acceso', isOnline: false, isConnecting: false, confidence: 0.5, ts: '—', fps: 0 },
+    { id: 1, camId: null, camData: null, mode: 'acceso', isOnline: false, isConnecting: false, confidence: 0.5, ts: '—', fps: 0 },
+    { id: 2, camId: null, camData: null, mode: 'acceso', isOnline: false, isConnecting: false, confidence: 0.5, ts: '—', fps: 0 },
+    { id: 3, camId: null, camData: null, mode: 'acceso', isOnline: false, isConnecting: false, confidence: 0.5, ts: '—', fps: 0 }
+  ];
 
-  // ── Estado ───────────────────────────────────────────────────────────────
-  let cameras      = [];
-  let selectedCam  = null;
-  let athenaActive = false;
-  let eventCount   = 0;
-  let sseSource    = null;
+  let cameras = [];
+  let sseSource = null;
+  let syncInterval = null;
+  let panelFuentesAbierto = localStorage.getItem('argos_fuentes_open') !== 'false';
 
-  // ── Estado Webcam ────────────────────────────────────────────────────────
-  let webcamActive    = false;
-  let webcamStream    = null;
-  let webcamWs        = null;
-  let webcamInterval  = null;
-  let webcamCanvas    = null;
-  let webcamVideo     = null;
-  let webcamClientId  = null;
-  let webcamCamId     = null;
-  let streamCamId     = null;
+  // Control Webcam Local
+  let webcamStream   = null;
+  let webcamActive   = false;
+  let webcamWs       = null;
+  let webcamInterval = null;
+  let webcamCanvas   = null;
+  let webcamVideo    = null;
+  let webcamClientId = null;
+  let webcamCamId    = null;
 
   const TOKEN = () =>
     sessionStorage.getItem('argos_token') ||
@@ -256,70 +249,63 @@
     '';
 
   // ── Referencias DOM ──────────────────────────────────────────────────────
-  const $list         = document.getElementById('cameras-list');
-  const $count        = document.getElementById('camaras-count');
-  const $streamImg    = document.getElementById('athena-stream');
-  const $placeholder  = document.getElementById('stream-placeholder');
-  const $hud          = document.getElementById('stream-hud');
-  const $estadoIa     = document.getElementById('stream-estado-ia');
-  const $camLabel     = document.getElementById('stream-cam-label');
-  const $srcLabel     = document.getElementById('stream-source-label');
-  const $btnConectar  = document.getElementById('btn-conectar');
-  const btnsDesconectar = document.querySelectorAll(
-    '#btn-desconectar, #btn-desconectar2'
-  );
-  const $hint         = document.getElementById('hint-seleccionar');
-  const $athenaBadge  = document.getElementById('athena-badge');
-  const $athenaDot    = document.getElementById('athena-dot');
-  const $athenaLabel  = document.getElementById('athena-label');
-  const $eventsFeed   = document.getElementById('eventos-feed');
-  const $eventsEmpty  = document.getElementById('eventos-empty');
-  const $eventsCount  = document.getElementById('eventos-count');
-  const $ts           = document.getElementById('stream-ts');
-  const $confidence   = document.getElementById('cam-confidence-val');
+  const $gridSlots        = document.getElementById('grid-slots');
+  const $panelFuentes     = document.getElementById('panel-fuentes');
+  const $btnToggleFuentes = document.getElementById('btn-toggle-fuentes');
+  const $btnCloseFuentes  = document.getElementById('btn-close-fuentes');
+  const $labelFuentes     = document.getElementById('label-fuentes');
+  const $iconFuentes      = document.getElementById('icon-fuentes');
+  const $camerasList      = document.getElementById('cameras-list');
+  const $camCount         = document.getElementById('camaras-count');
+  const $athenaBadge      = document.getElementById('athena-badge');
+  const $athenaDot        = document.getElementById('athena-dot');
+  const $athenaLabel      = document.getElementById('athena-label');
 
-  // Drawer Eventos
-  const $drawerEventos = document.getElementById('drawer-eventos');
-  const $btnToggleEvt  = document.getElementById('btn-toggle-eventos');
-  const $btnCloseEvt   = document.getElementById('btn-close-eventos');
-  const $evtBadge      = document.getElementById('events-badge');
+  // Panel Eventos
+  const $panelEventos     = document.getElementById('panel-eventos');
+  const $btnToggleEvt     = document.getElementById('btn-toggle-eventos');
+  const $btnCloseEvt      = document.getElementById('btn-close-eventos');
+  const $eventsFeed       = document.getElementById('eventos-feed');
+  const $eventsEmpty      = document.getElementById('eventos-empty');
+  const $eventsCount      = document.getElementById('eventos-count');
+  const $eventsBadge      = document.getElementById('events-badge');
+  const $btnClearEventos  = document.getElementById('btn-clear-eventos');
+  let panelEventosAbierto = localStorage.getItem('argos_eventos_open') === 'true';
+  let totalEventos        = 0;
 
-  let drawerOpen = false;
+  // Modal Cámara
+  const $modalCamara      = document.getElementById('modal-camara');
+  const $modalTitle       = document.getElementById('modal-title');
+  const $modalId          = document.getElementById('modal-cam-id');
+  const $modalCodigo      = document.getElementById('modal-codigo');
+  const $modalEstado      = document.getElementById('modal-estado');
+  const $modalEstac       = document.getElementById('modal-estacion');
+  const $modalUbic        = document.getElementById('modal-ubicacion');
+  const $modalIp          = document.getElementById('modal-ip');
+  const $modalErr         = document.getElementById('modal-error');
+  const $btnNuevaCamara   = document.getElementById('btn-nueva-camara');
+  const $btnRefrescarCam  = document.getElementById('btn-refrescar-camaras');
 
-  function updateDrawer() {
-    if (drawerOpen) {
-      $drawerEventos.classList.remove('translate-x-full');
-      $evtBadge.classList.add('hidden');
-      $evtBadge.textContent = '0';
-      $btnToggleEvt.classList.add('border-rojo', 'text-rojo');
-    } else {
-      $drawerEventos.classList.add('translate-x-full');
-      $btnToggleEvt.classList.remove('border-rojo', 'text-rojo');
-    }
-  }
+  // Modal Video
+  const $modalVideo       = document.getElementById('modal-video');
+  const $btnSubirVideo    = document.getElementById('btn-subir-video');
+  const $videoDropzone    = document.getElementById('video-dropzone');
+  const $videoFileInput   = document.getElementById('video-file-input');
+  const $videoSelInfo     = document.getElementById('video-selected-info');
+  const $videoFilename    = document.getElementById('video-filename');
+  const $videoFilesize    = document.getElementById('video-filesize');
+  const $btnQuitarVideo   = document.getElementById('btn-quitar-video');
+  const $videoProgress    = document.getElementById('video-upload-progress');
+  const $uploadStatusText = document.getElementById('upload-status-text');
+  const $uploadPercentage = document.getElementById('upload-percentage');
+  const $uploadBar        = document.getElementById('upload-progress-bar');
+  const $videoError       = document.getElementById('video-upload-error');
+  const $videoList        = document.getElementById('video-list');
+  const $btnUploadVideo   = document.getElementById('btn-upload-video');
+  const $btnRefrescarVid  = document.getElementById('btn-refrescar-videos');
+  let selectedVideoFile   = null;
 
-  $btnToggleEvt.addEventListener('click', () => {
-    drawerOpen = !drawerOpen;
-    updateDrawer();
-  });
-
-  $btnCloseEvt.addEventListener('click', () => {
-    drawerOpen = false;
-    updateDrawer();
-  });
-
-  // ── Modal Cámara ─────────────────────────────────────────────────────────
-  const $modal        = document.getElementById('modal-camara');
-  const $modalTitle   = document.getElementById('modal-title');
-  const $modalId      = document.getElementById('modal-cam-id');
-  const $modalCodigo  = document.getElementById('modal-codigo');
-  const $modalEstado  = document.getElementById('modal-estado');
-  const $modalEstac   = document.getElementById('modal-estacion');
-  const $modalUbic    = document.getElementById('modal-ubicacion');
-  const $modalIp      = document.getElementById('modal-ip');
-  const $modalErr     = document.getElementById('modal-error');
-
-  // ── API helpers ──────────────────────────────────────────────────────────
+  // ── Helper API ────────────────────────────────────────────────────────────
   async function api(method, path, body) {
     const options = {
       method,
@@ -328,155 +314,620 @@
         'X-Token': TOKEN()
       }
     };
-
     if (body !== undefined) {
       options.body = JSON.stringify(body);
     }
-
     const res = await fetch(path, options);
-
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || `HTTP ${res.status}`);
     }
-
     return res.json();
   }
 
   // ══════════════════════════════════════════════════════════════════════════
-  // CÁMARAS
+  // GESTIÓN DE ASIGNACIONES EN LOCALSTORAGE
   // ══════════════════════════════════════════════════════════════════════════
+  function guardarAsignacionesSlots() {
+    const map = slots.map(s => s.camId);
+    localStorage.setItem('argos_slot_cameras', JSON.stringify(map));
+  }
 
+  function cargarAsignacionesSlots() {
+    try {
+      const raw = localStorage.getItem('argos_slot_cameras');
+      if (raw) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) {
+          arr.forEach((cId, idx) => {
+            if (slots[idx] && cId) {
+              const cam = cameras.find(c => c.id === cId);
+              if (cam) {
+                slots[idx].camId = cId;
+                slots[idx].camData = cam;
+              }
+            }
+          });
+          return;
+        }
+      }
+    } catch (e) {}
+
+    // Asignación por defecto: primeras 4 cámaras a slots 0..3
+    cameras.slice(0, 4).forEach((c, idx) => {
+      if (slots[idx] && !slots[idx].camId) {
+        slots[idx].camId = c.id;
+        slots[idx].camData = c;
+      }
+    });
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // RENDERIZADO DE LA CUADRÍCULA 2X2
+  // ══════════════════════════════════════════════════════════════════════════
+  function renderAllSlots() {
+    $gridSlots.innerHTML = slots.map(slot => renderSlotHtml(slot)).join('');
+    slots.forEach(slot => attachSlotListeners(slot.id));
+    actualizarBadgeGlobal();
+  }
+
+  function renderSlotHtml(slot) {
+    const isOnline = slot.isOnline && slot.camData;
+    const isConnecting = slot.isConnecting;
+    const isAssigned = !!slot.camData;
+    const cam = slot.camData;
+    const slotNum = slot.id + 1;
+
+    const modoLabel = slot.mode === 'evasion' ? '🚨 Evasión' : '🔐 Acceso';
+    const borderClass = isOnline
+      ? (slot.mode === 'evasion' ? 'border-rojo/50 shadow-[0_0_15px_rgba(230,57,70,0.15)]' : 'border-verde/50 shadow-[0_0_15px_rgba(46,213,115,0.15)]')
+      : (isAssigned ? 'border-[color:var(--borde2)]' : 'border-dashed border-[color:var(--borde2)]/80');
+
+    const esWebcam = isAssigned && (cam.ip || '').trim().toLowerCase() === 'webcam';
+
+    return `
+      <div id="slot-card-${slot.id}" class="bg-[color:var(--bg2)] border ${borderClass} rounded-xl flex flex-col overflow-hidden relative shadow-md h-full min-h-[270px] transition-all duration-200">
+        
+        <!-- Header del Slot -->
+        <div class="p-2.5 px-3 border-b border-[color:var(--borde2)] flex items-center justify-between gap-2 shrink-0 bg-[color:var(--bg3)]/80 z-20">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-black/40 border border-white/10 text-rojo">SLOT ${slotNum}</span>
+            <div class="w-2 h-2 rounded-full ${isOnline ? 'bg-verde pulse-dot' : (isConnecting ? 'bg-amarillo animate-ping' : (isAssigned ? 'bg-texto-dim/40' : 'bg-transparent'))} shrink-0"></div>
+            <span class="font-mono text-[10px] text-[color:var(--texto)] font-bold truncate">
+              ${isAssigned ? `${cam.codigo} · ${cam.estacion}` : 'Sin Asignar'}
+            </span>
+          </div>
+
+          <div class="flex items-center gap-1.5 shrink-0">
+            ${isOnline ? `
+              <!-- Selector de modo activo -->
+              <select id="slot-mode-${slot.id}" class="bg-black/60 border border-[color:var(--borde2)] text-[color:var(--dim)] hover:text-white text-[9px] font-mono px-1.5 py-0.5 rounded outline-none focus:border-azul">
+                <option value="acceso" ${slot.mode === 'acceso' ? 'selected' : ''}>🔐 Acceso</option>
+                <option value="evasion" ${slot.mode === 'evasion' ? 'selected' : ''}>🚨 Evasión</option>
+              </select>
+              <!-- Botón Apagar/Desconectar -->
+              <button id="slot-btn-stop-${slot.id}" title="Apagar transmisión de este slot" class="text-[9px] font-mono bg-rojo/15 hover:bg-rojo hover:text-white text-rojo border border-rojo/30 px-2 py-0.5 rounded transition-all uppercase flex items-center gap-1 font-bold">
+                ⏹ Apagar
+              </button>
+            ` : (isAssigned ? `
+              <span class="text-[8px] font-mono px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[color:var(--dim)] uppercase">Apagada</span>
+              <button id="slot-btn-unassign-${slot.id}" title="Liberar este recuadro" class="text-[10px] text-[color:var(--dim)] hover:text-rojo p-1 hover:bg-white/5 rounded transition-colors">&times;</button>
+            ` : `
+              <span class="text-[8px] font-mono text-[color:var(--dim)]/50 uppercase">Libre</span>
+            `)}
+            <!-- Maximizar / Pantalla completa de slot -->
+            <button id="slot-btn-max-${slot.id}" title="Maximizar recuadro" class="text-[10px] text-[color:var(--dim)] hover:text-white p-1 hover:bg-white/5 rounded transition-colors">
+              ⛶
+            </button>
+          </div>
+        </div>
+
+        <!-- Cuerpo del Slot (Stream / Standby / Selección) -->
+        <div class="relative w-full flex-1 bg-black overflow-hidden flex items-center justify-center">
+          ${isOnline ? `
+            <!-- Video Frame Activo -->
+            <img id="slot-img-${slot.id}" class="w-full h-full object-contain" alt="${cam.codigo}" src="/api/camaras/${cam.id}/stream?t=${encodeURIComponent(TOKEN())}&ts=${Date.now()}" onerror="window.handleStreamError(${slot.id})" />
+            
+            <!-- HUD Overlay -->
+            <div class="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
+              <div class="flex items-center gap-1.5 px-2 py-0.5 bg-black/70 backdrop-blur rounded font-mono text-[8px] text-verde tracking-widest uppercase border border-verde/40 shadow-sm">
+                <div class="w-1.5 h-1.5 rounded-full bg-verde pulse-dot"></div>
+                LIVE
+              </div>
+              <div class="px-2 py-0.5 bg-black/70 backdrop-blur rounded font-mono text-[8px] text-[color:var(--dim)] border border-white/10">
+                ${cam.ubicacion || 'Acceso'}
+              </div>
+            </div>
+
+            <div class="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none text-[8px] font-mono text-white/80">
+              <span class="px-2 py-0.5 bg-black/70 backdrop-blur rounded border border-white/10">${modoLabel}</span>
+              <span class="px-2 py-0.5 bg-black/70 backdrop-blur rounded border border-white/10">${slot.ts || 'Athena Activa'}</span>
+            </div>
+          ` : (isAssigned ? `
+            <!-- Estado ASIGNADA PERO APAGADA (Standby) -->
+            <div class="absolute inset-0 flex flex-col items-center justify-center bg-[color:var(--bg)]/90 p-4 gap-2.5 text-center">
+              <div class="w-12 h-12 rounded-full bg-[color:var(--bg3)] border border-white/10 flex items-center justify-center text-xl text-[color:var(--dim)]">
+                ${esWebcam ? '📷' : '📹'}
+              </div>
+              
+              <div>
+                <div class="text-xs font-mono font-bold text-[color:var(--texto)] mb-0.5">${cam.codigo} · ${cam.estacion}</div>
+                <div class="text-[9px] text-[color:var(--dim)]">${cam.ubicacion} &bull; <span class="font-mono text-azul/80">${esWebcam ? 'Webcam Local' : (cam.ip || 'Fuente 0')}</span></div>
+              </div>
+
+              <div class="mt-1 flex flex-col sm:flex-row items-center gap-2">
+                <button id="slot-btn-start-${slot.id}" class="inline-flex items-center gap-1.5 bg-verde/15 hover:bg-verde hover:text-bg text-verde border border-verde/40 text-xs font-rajdhani font-bold px-4 py-2 rounded-lg transition-all uppercase shadow-sm">
+                  ${esWebcam ? '📷 Iniciar mi Cámara' : '▶ Encender Cámara'}
+                </button>
+                <button id="slot-btn-change-${slot.id}" class="text-[10px] font-mono text-[color:var(--dim)] hover:text-white border border-[color:var(--borde2)] px-2.5 py-1.5 rounded-lg transition-colors">
+                  Cambiar
+                </button>
+              </div>
+
+              <div class="text-[8px] font-mono text-[color:var(--dim)]/60">
+                ${esWebcam ? 'Haz clic para transmitir tu cámara web a la red ARGOS.' : 'Cámara en espera. Haz clic para conectar Athena.'}
+              </div>
+            </div>
+          ` : `
+            <!-- Estado SIN ASIGNAR (Recuadro Libre) -->
+            <div class="absolute inset-0 flex flex-col items-center justify-center bg-black/70 p-4 gap-2.5 text-center">
+              <div class="w-10 h-10 border border-dashed border-[color:var(--borde2)] rounded-lg flex items-center justify-center text-[color:var(--dim)] text-base">
+                ➕
+              </div>
+              <div class="text-[10px] text-[color:var(--dim)] font-mono uppercase tracking-wider">
+                Recuadro ${slotNum} Libre
+              </div>
+              
+              <div class="flex flex-col sm:flex-row items-center gap-1.5 w-full max-w-xs mt-1">
+                <select id="slot-select-cam-${slot.id}" class="w-full bg-[color:var(--bg3)] border border-[color:var(--borde2)] text-[color:var(--texto)] text-xs font-mono px-2.5 py-1.5 rounded outline-none focus:border-rojo">
+                  <option value="">-- Seleccionar Cámara --</option>
+                  ${cameras.map(c => `
+                    <option value="${c.id}">${c.codigo} · ${c.estacion} (${c.ubicacion})</option>
+                  `).join('')}
+                </select>
+                <button id="slot-btn-assign-${slot.id}" class="w-full sm:w-auto bg-azul/15 hover:bg-azul hover:text-white text-azul border border-azul/40 text-xs font-rajdhani font-bold px-3 py-1.5 rounded transition-all uppercase whitespace-nowrap">
+                  Asignar
+                </button>
+              </div>
+            </div>
+          `)}
+        </div>
+
+        <!-- Footer del Slot -->
+        <div class="p-1.5 px-3 border-t border-[color:var(--borde2)] flex items-center justify-between shrink-0 bg-[color:var(--bg3)]/50 text-[9px] font-mono text-[color:var(--dim)]">
+          <span>Fuente: ${isAssigned ? (esWebcam ? '📷 Webcam Cliente' : (cam.ip || 'Servidor 0')) : '—'}</span>
+          <span>${isOnline ? '🟢 Transmitiendo' : (isAssigned ? '⚪ Apagada' : '—')}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // Manejador global de error en stream MJPEG
+  window.handleStreamError = (slotId) => {
+    const slot = slots[slotId];
+    if (slot && slot.isOnline) {
+      console.warn(`[Slot ${slotId + 1}] Stream interrumpido.`);
+      // No desconectar bruscamente, pero verificar en la siguiente sincronización
+    }
+  };
+
+  function attachSlotListeners(slotId) {
+    const slot = slots[slotId];
+    if (!slot) return;
+
+    // Botón Asignar desde slot vacío
+    const $btnAssign = document.getElementById(`slot-btn-assign-${slotId}`);
+    const $selCam    = document.getElementById(`slot-select-cam-${slotId}`);
+    if ($btnAssign && $selCam) {
+      $btnAssign.addEventListener('click', () => {
+        const camId = parseInt($selCam.value);
+        if (!camId) {
+          alert('Por favor selecciona una cámara.');
+          return;
+        }
+        asignarCamaraASlot(slotId, camId);
+      });
+    }
+
+    // Botón Iniciar/Encender Cámara
+    const $btnStart = document.getElementById(`slot-btn-start-${slotId}`);
+    if ($btnStart && slot.camId) {
+      $btnStart.addEventListener('click', () => {
+        conectarSlot(slotId, slot.camId, slot.mode || 'acceso');
+      });
+    }
+
+    // Botón Cambiar Cámara asignada
+    const $btnChange = document.getElementById(`slot-btn-change-${slotId}`);
+    if ($btnChange) {
+      $btnChange.addEventListener('click', () => {
+        liberarSlot(slotId);
+      });
+    }
+
+    // Botón Liberar/Quitar Cámara
+    const $btnUnassign = document.getElementById(`slot-btn-unassign-${slotId}`);
+    if ($btnUnassign) {
+      $btnUnassign.addEventListener('click', () => {
+        liberarSlot(slotId);
+      });
+    }
+
+    // Botón Apagar/Desconectar del slot
+    const $btnStop = document.getElementById(`slot-btn-stop-${slotId}`);
+    if ($btnStop) {
+      $btnStop.addEventListener('click', () => {
+        desconectarSlot(slotId);
+      });
+    }
+
+    // Selector de modo dentro del slot
+    const $selMode = document.getElementById(`slot-mode-${slotId}`);
+    if ($selMode) {
+      $selMode.addEventListener('change', async (e) => {
+        const nuevoModo = e.target.value;
+        if (slot.camId) {
+          conectarSlot(slotId, slot.camId, nuevoModo);
+        }
+      });
+    }
+
+    // Botón Maximizar / Restaurar slot
+    const $btnMax = document.getElementById(`slot-btn-max-${slotId}`);
+    const $card   = document.getElementById(`slot-card-${slotId}`);
+    if ($btnMax && $card) {
+      $btnMax.addEventListener('click', () => {
+        toggleMaximizarSlot(slotId);
+      });
+    }
+  }
+
+  let slotMaximizado = null;
+
+  function toggleMaximizarSlot(slotId) {
+    if (slotMaximizado === slotId) {
+      restaurarSlotMaximizado();
+    } else {
+      if (slotMaximizado !== null) {
+        restaurarSlotMaximizado();
+      }
+      const $card = document.getElementById(`slot-card-${slotId}`);
+      if (!$card) return;
+
+      $card.classList.add('fixed', 'inset-0', 'z-[100]', 'w-screen', 'h-screen', 'rounded-none', 'border-0', 'm-0', 'bg-black');
+      $card.classList.remove('h-full', 'min-h-[270px]', 'rounded-xl');
+      
+      const $btn = document.getElementById(`slot-btn-max-${slotId}`);
+      if ($btn) {
+        $btn.innerHTML = '✕ Salir';
+        $btn.title = 'Salir de pantalla completa (ESC)';
+        $btn.classList.add('bg-rojo', 'text-white', 'px-2.5', 'py-1', 'font-bold', 'text-xs');
+      }
+
+      slotMaximizado = slotId;
+
+      // Intentar API nativa de pantalla completa
+      try {
+        if (document.fullscreenEnabled && !document.fullscreenElement) {
+          $card.requestFullscreen().catch(() => {});
+        }
+      } catch (e) {}
+    }
+  }
+
+  function restaurarSlotMaximizado() {
+    if (slotMaximizado === null) return;
+    const prevId = slotMaximizado;
+    const $card = document.getElementById(`slot-card-${prevId}`);
+    if ($card) {
+      $card.classList.remove('fixed', 'inset-0', 'z-[100]', 'w-screen', 'h-screen', 'rounded-none', 'border-0', 'm-0', 'bg-black');
+      $card.classList.add('h-full', 'min-h-[270px]', 'rounded-xl');
+      const $btn = document.getElementById(`slot-btn-max-${prevId}`);
+      if ($btn) {
+        $btn.innerHTML = '⛶';
+        $btn.title = 'Maximizar recuadro';
+        $btn.classList.remove('bg-rojo', 'text-white', 'px-2.5', 'py-1', 'font-bold', 'text-xs');
+      }
+    }
+    if (document.fullscreenElement) {
+      try { document.exitFullscreen().catch(() => {}); } catch(e){}
+    }
+    slotMaximizado = null;
+  }
+
+  // Tecla ESC y cambio de Fullscreen nativo
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && slotMaximizado !== null) {
+      restaurarSlotMaximizado();
+    }
+  });
+
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement && slotMaximizado !== null) {
+      restaurarSlotMaximizado();
+    }
+  });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // ASIGNACIÓN Y CONTROL DE CADA SLOT
+  // ══════════════════════════════════════════════════════════════════════════
+  async function asignarCamaraASlot(slotId, camId) {
+    const slot = slots[slotId];
+    if (!slot) return;
+
+    const cam = cameras.find(c => c.id === camId);
+    if (!cam) return;
+
+    // Verificar si esta cámara ya está en otro slot
+    const otroSlot = slots.find(s => s.id !== slotId && s.camId === camId);
+    if (otroSlot) {
+      if (!confirm(`La cámara "${cam.codigo}" ya está asignada al Slot ${otroSlot.id + 1}. ¿Deseas moverla al Slot ${slotId + 1}?`)) {
+        return;
+      }
+      liberarSlot(otroSlot.id);
+    }
+
+    slot.camId = camId;
+    slot.camData = cam;
+    slot.isConnecting = false;
+    guardarAsignacionesSlots();
+
+    // Consultar si ya está corriendo en el servidor (ej: prendida desde otro PC)
+    const runningStatus = await getAthenaCameraStatus(camId);
+    if (runningStatus) {
+      slot.isOnline = true;
+      slot.mode = runningStatus.mode || 'acceso';
+    } else {
+      slot.isOnline = false;
+    }
+
+    renderSlotHtmlDirect(slotId);
+    renderList();
+    actualizarBadgeGlobal();
+  }
+
+  function liberarSlot(slotId) {
+    const slot = slots[slotId];
+    if (!slot) return;
+
+    if (slot.isOnline && webcamCamId === slot.camId) {
+      desactivarWebcam();
+    }
+
+    slot.camId = null;
+    slot.camData = null;
+    slot.isOnline = false;
+    slot.isConnecting = false;
+    guardarAsignacionesSlots();
+    renderSlotHtmlDirect(slotId);
+    renderList();
+    actualizarBadgeGlobal();
+  }
+
+  async function conectarSlot(slotId, camId, modo = 'acceso') {
+    const slot = slots[slotId];
+    if (!slot) return;
+
+    const cam = cameras.find(c => c.id === camId);
+    if (!cam) return;
+
+    slot.isConnecting = true;
+    slot.camId = camId;
+    slot.camData = cam;
+    slot.mode = modo;
+    guardarAsignacionesSlots();
+    renderSlotHtmlDirect(slotId);
+
+    const esWebcam = (cam.ip || '').trim().toLowerCase() === 'webcam';
+    let clientId = null;
+
+    try {
+      // Si la cámara es webcam, iniciamos la captura local desde este navegador
+      if (esWebcam) {
+        clientId = await activarWebcam(camId);
+      }
+
+      const body = { mode: modo };
+      if (modo === 'evasion') body.tripwire = 0.55;
+      if (clientId) body.client_id = clientId;
+
+      // Consulta si ya está corriendo en Athena
+      const activeStatus = await getAthenaCameraStatus(camId);
+      if (!activeStatus) {
+        await api('POST', `/api/camaras/${camId}/connect`, body);
+      }
+
+      slot.isOnline = true;
+      slot.isConnecting = false;
+      slot.confidence = 0.95;
+      renderSlotHtmlDirect(slotId);
+      renderList();
+      actualizarBadgeGlobal();
+
+    } catch (e) {
+      console.error(`[Slot ${slotId + 1}] Error al conectar:`, e);
+      alert(`No se pudo encender la cámara "${cam.codigo}": ${e.message}`);
+      slot.isOnline = false;
+      slot.isConnecting = false;
+      renderSlotHtmlDirect(slotId);
+    }
+  }
+
+  async function desconectarSlot(slotId, llamarBackend = true) {
+    const slot = slots[slotId];
+    if (!slot || !slot.camId) return;
+
+    const camId = slot.camId;
+    const esWebcam = (slot.camData?.ip || '').trim().toLowerCase() === 'webcam';
+
+    if (llamarBackend) {
+      try {
+        await api('POST', `/api/camaras/${camId}/disconnect`);
+      } catch (e) {
+        console.warn(`[Slot ${slotId + 1}] Error al desconectar en backend:`, e.message);
+      }
+    }
+
+    if (esWebcam && webcamCamId === camId) {
+      desactivarWebcam();
+    }
+
+    slot.isOnline = false;
+    slot.isConnecting = false;
+    renderSlotHtmlDirect(slotId);
+    renderList();
+    actualizarBadgeGlobal();
+  }
+
+  function renderSlotHtmlDirect(slotId) {
+    const slot = slots[slotId];
+    const $card = document.getElementById(`slot-card-${slotId}`);
+    if ($card) {
+      $card.outerHTML = renderSlotHtml(slot);
+      attachSlotListeners(slotId);
+    } else {
+      renderAllSlots();
+    }
+  }
+
+  function actualizarBadgeGlobal() {
+    const activas = slots.filter(s => s.isOnline).length;
+    if (activas > 0) {
+      $athenaDot.className = 'w-2 h-2 rounded-full bg-verde pulse-dot';
+      $athenaLabel.textContent = `${activas} Activa${activas > 1 ? 's' : ''}`;
+      $athenaBadge.className = 'inline-flex items-center gap-2 px-2.5 py-1 rounded border text-[11px] font-mono bg-verde/5 border-verde/30 text-verde';
+    } else {
+      $athenaDot.className = 'w-2 h-2 rounded-full bg-texto-dim/40';
+      $athenaLabel.textContent = '0 Activas';
+      $athenaBadge.className = 'inline-flex items-center gap-2 px-2.5 py-1 rounded border text-[11px] font-mono bg-bg/60 border-[color:var(--borde2)] text-[color:var(--dim)]';
+    }
+  }
+
+  async function getAthenaCameraStatus(camId) {
+    try {
+      const status = await api('GET', '/api/camaras/athena/status');
+      const info = status?.cameras?.[String(camId)] || status?.cameras?.[camId] || null;
+      return info && info.running ? info : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // PANEL FUENTES CONFIGURADAS (Colapsable / Sidebar)
+  // ══════════════════════════════════════════════════════════════════════════
+  function togglePanelFuentes(forzarEstado) {
+    if (typeof forzarEstado === 'boolean') {
+      panelFuentesAbierto = forzarEstado;
+    } else {
+      panelFuentesAbierto = !panelFuentesAbierto;
+    }
+
+    if (panelFuentesAbierto) {
+      $panelFuentes.classList.remove('hidden', 'w-0', 'opacity-0');
+      $panelFuentes.classList.add('w-[300px]', 'opacity-100');
+      $labelFuentes.innerHTML = `Fuentes (<span id="camaras-count">${cameras.length}</span>)`;
+      $iconFuentes.textContent = '👁️';
+      $btnToggleFuentes.classList.add('border-rojo', 'text-rojo');
+    } else {
+      $panelFuentes.classList.add('hidden', 'w-0', 'opacity-0');
+      $panelFuentes.classList.remove('w-[300px]', 'opacity-100');
+      $labelFuentes.innerHTML = `Fuentes (<span id="camaras-count">${cameras.length}</span>)`;
+      $iconFuentes.textContent = '📁';
+      $btnToggleFuentes.classList.remove('border-rojo', 'text-rojo');
+    }
+    localStorage.setItem('argos_fuentes_open', String(panelFuentesAbierto));
+  }
+
+  $btnToggleFuentes.addEventListener('click', () => togglePanelFuentes());
+  $btnCloseFuentes.addEventListener('click', () => togglePanelFuentes(false));
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // LISTA DE CÁMARAS Y FUENTES
+  // ══════════════════════════════════════════════════════════════════════════
   async function loadCameras() {
     try {
       const data = await api('GET', '/api/camaras');
       cameras = data.camaras || [];
+      cargarAsignacionesSlots();
       renderList();
+      renderAllSlots();
+      await sincronizarEstadoAthena();
     } catch (e) {
-      $list.innerHTML =
-        `<div class="p-4 text-xs text-rojo font-mono">
-          Error: ${e.message}
-        </div>`;
+      $camerasList.innerHTML = `<div class="p-4 text-xs text-rojo font-mono">Error al cargar cámaras: ${e.message}</div>`;
     }
   }
 
   function renderList() {
-    $count.textContent = cameras.length + ' cám.';
+    $camCount.textContent = `${cameras.length}`;
 
     if (!cameras.length) {
-      $list.innerHTML = `
+      $camerasList.innerHTML = `
         <div class="p-6 text-center text-xs text-[color:var(--dim)] font-mono opacity-60">
-          Sin cámaras registradas.<br>
-          Presione "+ Nueva Cámara".
-        </div>
-      `;
+          Sin cámaras registradas.<br>Presione "+ Nueva Cámara".
+        </div>`;
       return;
     }
 
-    $list.innerHTML = cameras.map(cam => {
-      const isSelected =
-        selectedCam && selectedCam.id === cam.id;
-
-      const estadoClr =
-        cam.estado === 'activa'
-          ? 'verde'
-          : cam.estado === 'offline'
-            ? 'rojo'
-            : 'amarillo';
+    $camerasList.innerHTML = cameras.map(cam => {
+      const slotAsignado = slots.find(s => s.camId === cam.id);
+      const isOnline = slotAsignado && slotAsignado.isOnline;
+      
+      const badgeEstado = isOnline
+        ? `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-mono bg-verde/15 border border-verde/30 text-verde">LIVE · Slot ${slotAsignado.id + 1}</span>`
+        : (slotAsignado
+          ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-mono bg-white/5 text-[color:var(--dim)] border border-white/10">Slot ${slotAsignado.id + 1} &bull; Standby</span>`
+          : (cam.estado === 'activa'
+            ? '<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-mono bg-azul/10 text-azul border border-azul/20">Listo</span>'
+            : `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-mono bg-white/5 text-[color:var(--dim)] border border-white/10">${cam.estado}</span>`));
 
       return `
-        <div
-          data-cam-id="${cam.id}"
-          class="cam-item p-3 cursor-pointer hover:bg-white/3 transition-all group
-          ${isSelected
-            ? 'bg-white/5 border-l-2 border-rojo'
-            : 'border-l-2 border-transparent'}"
-        >
-          <div class="flex items-start justify-between gap-2">
-
-            <div class="min-w-0">
-              <div class="font-mono text-[10px] text-rojo font-bold truncate">
-                ${cam.codigo}
-              </div>
-
-              <div class="text-[11px] text-[color:var(--texto)] truncate">
-                ${cam.ubicacion}
-              </div>
-
-              <div class="font-mono text-[9px] text-[color:var(--dim)]/70 truncate">
-                ${cam.estacion}
-              </div>
-
-              ${
-                cam.ip
-                  ? `<div class="font-mono text-[8px] text-[color:var(--dim)]/50 truncate mt-0.5">
-                       ${cam.ip}
-                     </div>`
-                  : ''
-              }
+        <div class="cam-item p-2.5 rounded-lg bg-[color:var(--bg3)]/40 hover:bg-[color:var(--bg3)] border border-white/5 hover:border-rojo/30 transition-all group" data-cam-id="${cam.id}">
+          <div class="flex items-center justify-between gap-1 mb-1">
+            <span class="font-mono text-[11px] font-bold text-[color:var(--texto)] group-hover:text-rojo transition-colors">${cam.codigo}</span>
+            ${badgeEstado}
+          </div>
+          
+          <div class="text-[10px] text-[color:var(--texto)]/80 font-rajdhani truncate font-semibold">${cam.estacion || 'Estación N/A'}</div>
+          <div class="text-[9px] text-[color:var(--dim)]/70 truncate">${cam.ubicacion || 'Acceso'}</div>
+          
+          <!-- Asignar a Slot -->
+          <div class="mt-2 pt-1.5 border-t border-white/5 flex items-center justify-between gap-1">
+            <div class="flex items-center gap-1">
+              <span class="text-[8px] font-mono text-[color:var(--dim)]">Slot:</span>
+              <button class="btn-slot-assign px-1.5 py-0.5 text-[8px] font-mono rounded ${slotAsignado?.id === 0 ? 'bg-rojo text-white font-bold' : 'bg-white/5 hover:bg-rojo hover:text-white'} transition-colors" data-cam="${cam.id}" data-slot="0">1</button>
+              <button class="btn-slot-assign px-1.5 py-0.5 text-[8px] font-mono rounded ${slotAsignado?.id === 1 ? 'bg-rojo text-white font-bold' : 'bg-white/5 hover:bg-rojo hover:text-white'} transition-colors" data-cam="${cam.id}" data-slot="1">2</button>
+              <button class="btn-slot-assign px-1.5 py-0.5 text-[8px] font-mono rounded ${slotAsignado?.id === 2 ? 'bg-rojo text-white font-bold' : 'bg-white/5 hover:bg-rojo hover:text-white'} transition-colors" data-cam="${cam.id}" data-slot="2">3</button>
+              <button class="btn-slot-assign px-1.5 py-0.5 text-[8px] font-mono rounded ${slotAsignado?.id === 3 ? 'bg-rojo text-white font-bold' : 'bg-white/5 hover:bg-rojo hover:text-white'} transition-colors" data-cam="${cam.id}" data-slot="3">4</button>
             </div>
 
-            <div class="flex flex-col items-end gap-1 shrink-0">
-
-              <span
-                class="px-1.5 py-0.5 bg-${estadoClr}/10
-                border border-${estadoClr}/20 text-${estadoClr}
-                font-mono text-[8px] rounded uppercase"
-              >
-                ${cam.estado}
-              </span>
-
-              <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-
-                <button
-                  data-edit-id="${cam.id}"
-                  class="text-[9px] font-mono text-[color:var(--dim)]
-                  hover:text-amarillo px-1"
-                  title="Editar"
-                >
-                  ✎
-                </button>
-
-                <button
-                  data-del-id="${cam.id}"
-                  class="text-[9px] font-mono text-[color:var(--dim)]
-                  hover:text-rojo px-1"
-                  title="Eliminar"
-                >
-                  ✕
-                </button>
-
-              </div>
+            <div class="flex items-center gap-1">
+              <button data-edit-id="${cam.id}" title="Editar cámara" class="text-[10px] text-[color:var(--dim)] hover:text-azul p-1">✏️</button>
+              <button data-del-id="${cam.id}" title="Eliminar cámara" class="text-[10px] text-[color:var(--dim)] hover:text-rojo p-1">🗑️</button>
             </div>
-
           </div>
         </div>
       `;
     }).join('');
 
-    $list.querySelectorAll('.cam-item').forEach(el => {
-      el.addEventListener('click', e => {
-
-        if (
-          e.target.closest('[data-edit-id]') ||
-          e.target.closest('[data-del-id]')
-        ) {
-          return;
-        }
-
-        const id = parseInt(el.dataset.camId);
-        selectCamera(id);
+    // Listeners para asignación rápida
+    $camerasList.querySelectorAll('.btn-slot-assign').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const camId = parseInt(btn.dataset.cam);
+        const slotId = parseInt(btn.dataset.slot);
+        asignarCamaraASlot(slotId, camId);
       });
     });
 
-    $list.querySelectorAll('[data-edit-id]').forEach(btn => {
+    $camerasList.querySelectorAll('[data-edit-id]').forEach(btn => {
       btn.addEventListener('click', e => {
         e.stopPropagation();
         openModalEdit(parseInt(btn.dataset.editId));
       });
     });
 
-    $list.querySelectorAll('[data-del-id]').forEach(btn => {
+    $camerasList.querySelectorAll('[data-del-id]').forEach(btn => {
       btn.addEventListener('click', e => {
         e.stopPropagation();
         deleteCamera(parseInt(btn.dataset.delId));
@@ -484,2064 +935,621 @@
     });
   }
 
-  // ── Seleccionar cámara ────────────────────────────────────────────────────
-  async function selectCamera(id) {
-    const previousId = selectedCam ? selectedCam.id : null;
-
-    selectedCam = cameras.find(c => c.id === id) || null;
-
-    renderList();
-
-    if (!selectedCam) return;
-
-    const cameraId = selectedCam.id;
-
-    // Cambiar de cámara solo cambia la visualización. No desconecta
-    // ni detiene el worker Athena de ninguna cámara.
-    if (previousId !== cameraId) {
-      clearDisplayedStream();
-    }
-
-    $camLabel.textContent =
-      `${selectedCam.codigo} · ${selectedCam.ubicacion}`;
-
-    $srcLabel.textContent =
-      selectedCam.ip || 'índice 0';
-
-    $btnConectar.disabled = false;
-
-    if ($hint) {
-      $hint.classList.add('hidden');
-    }
-
-    // Si esta cámara ya está corriendo en Athena, recuperamos
-    // inmediatamente su stream existente. No hacemos /connect otra vez.
-    if (previousId !== cameraId) {
-      const activeInfo = await getAthenaCameraStatus(cameraId);
-
-      // Evita que una consulta lenta de una cámara anterior
-      // sobrescriba la cámara que el usuario acaba de seleccionar.
-      if (!selectedCam || selectedCam.id !== cameraId) return;
-
-      if (activeInfo) {
-        const esWebcam =
-          (selectedCam.ip || '').trim().toLowerCase() === 'webcam';
-
-        setAthenaOnline(
-          {
-            cam_id: cameraId,
-            confidence: activeInfo.confidence || 0.5,
-            client_id: activeInfo.client_id || null
-          },
-          esWebcam,
-          activeInfo.mode || 'acceso'
-        );
-      }
-    }
-  }
-
-  function clearDisplayedStream() {
-    athenaActive = false;
-    streamCamId = null;
-
-    if (sseSource) {
-      sseSource.close();
-      sseSource = null;
-    }
-
-    $streamImg.src = '';
-    $streamImg.classList.add('hidden');
-    $placeholder.classList.remove('hidden');
-    $hud.classList.add('hidden');
-    $estadoIa.classList.add('hidden');
-
-    $athenaDot.className =
-      'w-2 h-2 rounded-full bg-texto-dim/40';
-
-    $athenaLabel.textContent =
-      'Athena · OFFLINE';
-
-    $athenaBadge.className =
-      'inline-flex items-center gap-2 px-3 py-1.5 rounded border text-xs font-mono bg-bg/60 border-[color:var(--borde2)] text-[color:var(--dim)]';
-
-    $btnConectar.textContent = '▶ Conectar';
-    $btnConectar.disabled = !selectedCam;
-
-    btnsDesconectar.forEach(btn => {
-      btn.classList.add('hidden');
-    });
-
-    $confidence.textContent = '—';
-    $ts.textContent = '—';
-  }
-
   // ══════════════════════════════════════════════════════════════════════════
-  // CONEXIÓN ATHENA
+  // SINCRONIZACIÓN DE ESTADO MULTI-PC / ATHENA
   // ══════════════════════════════════════════════════════════════════════════
-
-  async function getAthenaCameraStatus(camId) {
+  async function sincronizarEstadoAthena() {
     try {
-      const status = await api(
-        'GET',
-        '/api/camaras/athena/status'
-      );
+      const status = await api('GET', '/api/camaras/athena/status');
+      if (!status || !status.cameras) return;
 
-      const info =
-        status?.cameras?.[String(camId)] ||
-        status?.cameras?.[camId] ||
-        null;
+      let huboCambio = false;
 
-      return info && info.running ? info : null;
-    } catch (e) {
-      console.warn(
-        '[Athena] No se pudo consultar el estado:',
-        e.message
-      );
-      return null;
-    }
-  }
+      // 1. Revisar cada slot asignado y actualizar su estado respecto a Athena
+      slots.forEach(slot => {
+        if (slot.camId) {
+          const info = status.cameras[String(slot.camId)] || status.cameras[slot.camId];
+          const isRunningInBackend = info && info.running;
 
-  $btnConectar.addEventListener('click', async () => {
-    if (!selectedCam) return;
-
-    $btnConectar.disabled = true;
-    $btnConectar.textContent = '…';
-
-    const camId = selectedCam.id;
-    const esWebcam =
-      (selectedCam.ip || '').trim().toLowerCase() === 'webcam';
-
-    const modo =
-      (document.getElementById('select-modo-athena') || {}).value ||
-      'acceso';
-
-    let startedLocalWebcam = false;
-
-    try {
-      /*
-       * Si la cámara ya está activa en Athena, no volvemos a conectarla
-       * ni reasignamos la webcam local. Solo nos conectamos a su stream.
-       * Esto permite ver cámaras activas desde otros computadores.
-       */
-      const activeInfo = await getAthenaCameraStatus(camId);
-
-      if (activeInfo) {
-        setAthenaOnline(
-          {
-            cam_id: camId,
-            confidence: activeInfo.confidence || 0.5,
-            client_id: activeInfo.client_id || null
-          },
-          !!activeInfo.webcam_mode,
-          activeInfo.mode || modo
-        );
-        return;
-      }
-
-      let clientId = null;
-
-      if (esWebcam) {
-        /*
-         * Si esta computadora ya está enviando su webcam a otra cámara,
-         * no la reasignamos automáticamente. La otra cámara puede seguir
-         * activa en Athena sin ser desconectada por cambiar de selección.
-         */
-        if (
-          webcamActive &&
-          webcamClientId &&
-          webcamCamId !== camId
-        ) {
-          throw new Error(
-            'La webcam de este navegador ya está asignada a otra cámara. ' +
-            'Desconecta esa cámara primero si deseas reasignarla.'
-          );
+          if (isRunningInBackend && !slot.isOnline) {
+            // Se prendió desde otro PC (o servidor)
+            slot.isOnline = true;
+            slot.mode = info.mode || slot.mode || 'acceso';
+            huboCambio = true;
+          } else if (!isRunningInBackend && slot.isOnline) {
+            // Se apagó en el servidor
+            // Solo lo marcamos offline si este navegador no está enviando frames activamente
+            if (!webcamActive || webcamCamId !== slot.camId) {
+              slot.isOnline = false;
+              huboCambio = true;
+            }
+          }
         }
+      });
 
-        if (
-          webcamActive &&
-          webcamClientId &&
-          webcamCamId === camId
-        ) {
-          clientId = webcamClientId;
-        } else {
-          clientId = await activarWebcam(camId);
-          startedLocalWebcam = true;
+      // 2. Si hay cámaras corriendo en Athena que no estén en ningún slot, asignarlas a un slot libre
+      Object.keys(status.cameras).forEach(cIdStr => {
+        const info = status.cameras[cIdStr];
+        if (info && info.running) {
+          const numId = parseInt(cIdStr);
+          const yaAsignada = slots.some(s => s.camId === numId);
+          if (!yaAsignada) {
+            const slotLibre = slots.find(s => !s.camId) || slots.find(s => !s.isOnline);
+            if (slotLibre) {
+              const camData = cameras.find(c => c.id === numId);
+              if (camData) {
+                slotLibre.camId = numId;
+                slotLibre.camData = camData;
+                slotLibre.mode = info.mode || 'acceso';
+                slotLibre.isOnline = true;
+                huboCambio = true;
+              }
+            }
+          }
+        }
+      });
+
+      // Auto-selección desde el Mapa TransMilenio
+      const autoCamId = sessionStorage.getItem('argos_auto_connect_cam');
+      if (autoCamId) {
+        sessionStorage.removeItem('argos_auto_connect_cam');
+        const target = cameras.find(c => String(c.id) === String(autoCamId) || c.codigo === autoCamId);
+        if (target) {
+          asignarCamaraASlot(0, target.id);
+          conectarSlot(0, target.id, 'acceso');
+          return;
         }
       }
 
-      const body = {
-        mode: modo
-      };
-
-      if (modo === 'evasion') {
-        body.tripwire = 0.55;
+      if (huboCambio) {
+        renderAllSlots();
+        renderList();
+      } else {
+        actualizarBadgeGlobal();
       }
-
-      if (clientId) {
-        body.client_id = clientId;
-      }
-
-      const res = await api(
-        'POST',
-        `/api/camaras/${camId}/connect`,
-        body
-      );
-
-      // Garantiza que el stream corresponda a la cámara seleccionada.
-      res.cam_id = camId;
-
-      setAthenaOnline(
-        res,
-        esWebcam,
-        modo
-      );
 
     } catch (e) {
-
-      console.error('[Athena] Error de conexión:', e);
-
-      if (startedLocalWebcam) {
-        desactivarWebcam();
-      }
-
-      alert(`No se pudo conectar: ${e.message}`);
-
-      $btnConectar.disabled = false;
-      $btnConectar.textContent = '▶ Conectar';
-    }
-  });
-
-  // ── Athena Online ────────────────────────────────────────────────────────
-  function setAthenaOnline(
-    info,
-    esWebcam = false,
-    modo = 'acceso'
-  ) {
-    const cameraForStream = cameras.find(
-      c => c.id === Number(info?.cam_id)
-    ) || selectedCam;
-
-    if (!cameraForStream) return;
-
-    const cameraId = cameraForStream.id;
-
-    athenaActive = true;
-    streamCamId = cameraId;
-
-    /*
-     * El stream pertenece a la cámara que respondió al /connect.
-     * No usamos selectedCam dentro del callback porque el usuario
-     * puede seleccionar otra cámara mientras el stream arranca.
-     */
-    const startStream = () => {
-
-      if (streamCamId !== cameraId) return;
-
-      $streamImg.src =
-        `/api/camaras/${cameraId}/stream` +
-        `?t=${encodeURIComponent(TOKEN())}` +
-        `&ts=${Date.now()}`;
-
-      $streamImg.classList.remove('hidden');
-      $placeholder.classList.add('hidden');
-      $hud.classList.remove('hidden');
-      $estadoIa.classList.remove('hidden');
-
-      $camLabel.textContent =
-        `${cameraForStream.codigo} · ${cameraForStream.ubicacion}`;
-
-      $srcLabel.textContent =
-        cameraForStream.ip || 'índice 0';
-    };
-
-    /*
-     * Para webcam ya está enviando frames por WebSocket.
-     * No hay que volver a llamar activarWebcam().
-     */
-    if (esWebcam) {
-      setTimeout(startStream, 600);
-    } else {
-      startStream();
-    }
-
-    const modoLabel =
-      modo === 'evasion'
-        ? '🚨 Evasión'
-        : '🔐 Acceso';
-
-    const badgeLabel =
-      esWebcam
-        ? `📷 Webcam · ${modoLabel}`
-        : `Athena · ${modoLabel}`;
-
-    $athenaDot.className =
-      'w-2 h-2 rounded-full bg-verde pulse-dot';
-
-    $athenaLabel.textContent = badgeLabel;
-
-    $athenaBadge.className =
-      'inline-flex items-center gap-2 px-3 py-1.5 rounded border text-xs font-mono bg-verde/5 border-verde/30 text-verde';
-
-    $btnConectar.textContent =
-      esWebcam
-        ? '📷 Activo'
-        : modo === 'evasion'
-          ? '🚨 Activo'
-          : '▶ Activo';
-
-    btnsDesconectar.forEach(btn => {
-      btn.classList.remove('hidden');
-    });
-
-    $confidence.textContent =
-      esWebcam
-        ? 'Webcam'
-        : `${((info.confidence || 0.5) * 100).toFixed(0)}%`;
-
-    startSSE();
-    updateTsLoop();
-  }
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // DESCONEXIÓN
-  // ══════════════════════════════════════════════════════════════════════════
-
-  btnsDesconectar.forEach(btn => {
-
-    btn.addEventListener('click', async () => {
-
-      if (!selectedCam) return;
-
-      const camId = selectedCam.id;
-
-      const esWebcam =
-        (selectedCam.ip || '').trim().toLowerCase() === 'webcam';
-
-      /*
-       * Si es una webcam remota, este navegador solo deja de verla.
-       * Nunca desconecta la cámara que está transmitiendo desde otro PC.
-       */
-      if (esWebcam && webcamCamId !== camId) {
-        clearDisplayedStream();
-        return;
-      }
-
-      try {
-        await api(
-          'POST',
-          `/api/camaras/${camId}/disconnect`
-        );
-      } catch (e) {
-        console.warn(
-          '[Athena] Error al detener cámara:',
-          e.message
-        );
-      }
-
-      if (esWebcam && webcamCamId === camId) {
-        desactivarWebcam();
-      }
-
-      setAthenaOffline();
-    });
-
-  });
-
-  function setAthenaOffline() {
-
-    athenaActive = false;
-    streamCamId = null;
-
-    if (sseSource) {
-      sseSource.close();
-      sseSource = null;
-    }
-
-    if (webcamCamId === selectedCam?.id) {
-      desactivarWebcam();
-    }
-
-    $streamImg.src = '';
-    $streamImg.classList.add('hidden');
-
-    $placeholder.classList.remove('hidden');
-    $hud.classList.add('hidden');
-    $estadoIa.classList.add('hidden');
-
-    $athenaDot.className =
-      'w-2 h-2 rounded-full bg-texto-dim/40';
-
-    $athenaLabel.textContent =
-      'Athena · OFFLINE';
-
-    $athenaBadge.className =
-      'inline-flex items-center gap-2 px-3 py-1.5 rounded border text-xs font-mono bg-bg/60 border-[color:var(--borde2)] text-[color:var(--dim)]';
-
-    $btnConectar.disabled =
-      !selectedCam;
-
-    $btnConectar.textContent =
-      '▶ Conectar';
-
-    btnsDesconectar.forEach(btn => {
-      btn.classList.add('hidden');
-    });
-
-    $confidence.textContent = '—';
-
-    if (!selectedCam && $hint) {
-      $hint.classList.remove('hidden');
+      console.warn('[Athena Sync] Error al sincronizar:', e.message);
     }
   }
 
-  // ── Limpieza al cambiar de vista ─────────────────────────────────────────
-  document.addEventListener(
-    'argos:navaway',
-    () => {
-
-      if (sseSource) {
-        sseSource.close();
-        sseSource = null;
-      }
-
-      if ($streamImg) {
-        $streamImg.src = '';
-      }
-
-      desactivarWebcam();
-
-    },
-    { once: true }
-  );
-
   // ══════════════════════════════════════════════════════════════════════════
-  // SSE EVENTOS
+  // EVENTOS HISTÓRICOS Y LIVE SSE
   // ══════════════════════════════════════════════════════════════════════════
+  async function loadRecentEvents() {
+    try {
+      const data = await api('GET', '/api/eventos?limite=30');
+      const evList = data.eventos || [];
+      if (evList.length > 0) {
+        $eventsFeed.innerHTML = '';
+        $eventsEmpty.classList.add('hidden');
+        totalEventos = evList.length;
+        $eventsCount.textContent = totalEventos;
+        if (!panelEventosAbierto) {
+          $eventsBadge.textContent = totalEventos > 99 ? '99+' : totalEventos;
+          $eventsBadge.classList.remove('hidden');
+        }
+        // Los eventos vienen del más reciente al más antiguo
+        evList.forEach(ev => {
+          addEventToPanel(ev, false);
+        });
+      }
+    } catch (e) {
+      console.warn('[Eventos] No se pudieron cargar eventos históricos:', e.message);
+    }
+  }
 
   function startSSE() {
-
     if (sseSource) {
       sseSource.close();
+      sseSource = null;
     }
 
-    const url =
-      `/api/camaras/eventos/stream?t=` +
-      encodeURIComponent(TOKEN());
-
-    sseSource = new EventSource(url);
-
-    sseSource.onmessage = e => {
-
-      try {
-
-        const ev = JSON.parse(e.data);
-
-        if (ev.error) return;
-
-        appendEvent(ev);
-
-      } catch (_) {}
-    };
-
-    sseSource.onerror = () => {
-      // EventSource reconecta automáticamente.
-    };
-  }
-
-  const EVENT_STYLES = {
-
-    PERSONA_DETECTADA: {
-      icon: '👤',
-      color: 'azul',
-      label: 'Persona Detectada'
-    },
-
-    BRAZO_ARRIBA: {
-      icon: '🖐',
-      color: 'amarillo',
-      label: 'Brazo Levantado'
-    },
-
-    MANO_ABIERTA: {
-      icon: '✋',
-      color: 'verde',
-      label: 'Mano Abierta'
-    },
-
-    MANO_CERRADA: {
-      icon: '✊',
-      color: 'texto',
-      label: 'Mano Cerrada'
-    },
-
-    TARJETA_VALIDA: {
-      icon: '💳',
-      color: 'verde',
-      label: 'Tarjeta Válida'
-    },
-
-    TARJETA_INVALIDA: {
-      icon: '🚫',
-      color: 'rojo',
-      label: 'Tarjeta Inválida'
-    },
-
-    ACCESO_CONCEDIDO: {
-      icon: '✅',
-      color: 'verde',
-      label: 'Acceso Concedido'
-    },
-
-    POSE_ANOMALA: {
-      icon: '⚠️',
-      color: 'amarillo',
-      label: 'Pose Anómala'
-    },
-
-    EVASION_DETECTADA: {
-      icon: '🚨',
-      color: 'rojo',
-      label: 'Evasión Detectada'
-    }
-
-  };
-
-  function appendEvent(ev) {
-
-    if ($eventsEmpty) {
-      $eventsEmpty.classList.add('hidden');
-    }
-
-    eventCount++;
-
-    $eventsCount.textContent = eventCount;
-
-    if (!drawerOpen) {
-
-      $evtBadge.classList.remove('hidden');
-
-      $evtBadge.textContent =
-        parseInt($evtBadge.textContent) + 1;
-    }
-
-    const style =
-      EVENT_STYLES[ev.tipo] || {
-        icon: '📡',
-        color: 'texto-dim',
-        label: ev.tipo
+    try {
+      // El endpoint correcto en el backend es /api/camaras/eventos/stream
+      sseSource = new EventSource(`/api/camaras/eventos/stream?t=${encodeURIComponent(TOKEN())}`);
+      
+      sseSource.onmessage = e => {
+        try {
+          const ev = JSON.parse(e.data);
+          if (ev && !ev.heartbeat && !ev.error) {
+            addEventToPanel(ev, true);
+          }
+        } catch (err) {}
       };
 
-    const ts =
-      new Date(ev.ts * 1000).toLocaleTimeString(
-        'es-CO',
-        {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit'
-        }
-      );
+      sseSource.onerror = () => {
+        // Reconexión automática de EventSource
+      };
+    } catch (err) {
+      console.warn('[SSE] Error al iniciar stream de eventos:', err);
+    }
+  }
+
+  function addEventToPanel(ev, isLive = true) {
+    if (isLive) {
+      totalEventos++;
+      $eventsCount.textContent = totalEventos;
+      if (!panelEventosAbierto) {
+        $eventsBadge.textContent = totalEventos > 99 ? '99+' : totalEventos;
+        $eventsBadge.classList.remove('hidden');
+      }
+    }
+    
+    $eventsEmpty.classList.add('hidden');
+
+    const tipo = (ev.tipo || ev.type || 'evasion').toLowerCase();
+    const styleMap = {
+      evasion:         { icon: '🚨', color: 'rojo',     label: 'Evasión Detectada' },
+      acceso:          { icon: '🔐', color: 'verde',    label: 'Acceso Concedido' },
+      intrusion:       { icon: '⚠️', color: 'amarillo', label: 'Intrusión' },
+      persona:         { icon: '👤', color: 'azul',     label: 'Persona Detectada' },
+      brazo:           { icon: '🦾', color: 'amarillo', label: 'Brazo Arriba' },
+      mano_abierta:    { icon: '✋', color: 'verde',    label: 'Mano Abierta' },
+      mano_cerrada:    { icon: '✊', color: 'amarillo', label: 'Mano Cerrada' },
+      tarjeta_valida:  { icon: '💳', color: 'verde',    label: 'Tarjeta Válida' },
+      tarjeta_invalida:{ icon: '⛔', color: 'rojo',     label: 'Tarjeta Inválida' },
+      pose_anomala:    { icon: '⚠️', color: 'amarillo', label: 'Pose Anómala' }
+    };
+
+    const style = styleMap[tipo] || { icon: '⚡', color: 'rojo', label: ev.tipo || 'Detección IA' };
+    
+    let ts = '';
+    if (ev.detectado_en) {
+      try {
+        const d = new Date(ev.detectado_en.replace(' ', 'T'));
+        ts = d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      } catch (e) {
+        ts = ev.detectado_en;
+      }
+    } else {
+      ts = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    const camCodigo = ev.camara_codigo || (ev.cam_id ? `CAM-${String(ev.cam_id).padStart(2, '0')}` : 'Cámara');
+    const estacion = ev.estacion || '';
+    const confianza = ev.confianza ? `${(parseFloat(ev.confianza) * 100).toFixed(0)}% conf.` : '';
+    const descripcion = ev.observaciones || ev.descripcion || `${style.label} identificada por Athena`;
+
+    // Normalizar ruta de la captura de evidencia
+    let evidenciaHtml = '';
+    if (ev.evidencia) {
+      const rawPath = String(ev.evidencia).split('\\').join('/').replace(/^evidence\//, '');
+      const imgUrl = `/api/camaras/evidencia/${rawPath}`;
+      evidenciaHtml = `
+        <div class="mt-1 relative rounded overflow-hidden border border-white/10 bg-black/60 group cursor-pointer" onclick="window.open('${imgUrl}', '_blank')">
+          <img src="${imgUrl}" class="w-full max-h-32 object-cover transition-transform group-hover:scale-105" alt="Captura Evidencia" onerror="this.parentElement.style.display='none'">
+          <div class="absolute bottom-1 right-1 bg-black/80 backdrop-blur-sm px-1.5 py-0.5 rounded text-[7px] font-mono text-white/90">
+            🔍 Ver Captura
+          </div>
+        </div>
+      `;
+    }
 
     const item = document.createElement('div');
-
-    item.className =
-      `evento-item flex items-start gap-2.5 p-2.5 rounded-lg
-       bg-white/3 border border-${style.color}/15
-       animate-[fadeInUp_0.25s_ease-out]`;
-
-    // Issue #21 · Evidencia de eventos en Dashboard:
-    // si el evento trae 'evidencia' (path relativo devuelto por
-    // capture_manager.save_capture), mostramos la miniatura servida
-    // desde /api/camaras/evidencia/<path:filepath>
-    const evidenciaHtml = ev.evidencia
-      ? `<img src="/api/camaras/evidencia/${ev.evidencia}"
-              class="w-full rounded mt-1.5 border border-${style.color}/20 max-h-32 object-cover cursor-pointer"
-              alt="Evidencia del evento"
-              loading="lazy"
-              onclick="window.open(this.src, '_blank')">`
-      : '';
+    item.className = `p-2.5 rounded-lg bg-[color:var(--bg3)]/60 hover:bg-[color:var(--bg3)] border border-${style.color}/20 flex flex-col gap-1.5 transition-colors ${isLive ? 'animate-[fadeIn_0.2s_ease-out]' : ''}`;
 
     item.innerHTML = `
-      <span class="text-base mt-0.5 shrink-0">
-        ${style.icon}
-      </span>
-
-      <div class="min-w-0 flex-1">
-
-        <div class="text-[10px] font-mono text-${style.color}
-                    font-bold truncate">
-          ${style.label}
-        </div>
-
-        <div class="text-[9px] text-[color:var(--dim)]/70 truncate">
-          ${ev.descripcion || ''}
-        </div>
-
-        ${evidenciaHtml}
-
-        <div class="text-[8px] font-mono
-                    text-[color:var(--dim)]/40 mt-0.5">
-          ${ts} · cam ${ev.cam_id ?? '—'}
-        </div>
-
+      <div class="flex items-center justify-between text-[10px] font-mono">
+        <span class="font-bold text-${style.color} flex items-center gap-1">${style.icon} ${style.label}</span>
+        <span class="text-[color:var(--dim)] text-[8px]">${ts}</span>
+      </div>
+      <div class="text-[9px] text-[color:var(--texto)]/80 leading-snug">${descripcion}</div>
+      ${evidenciaHtml}
+      <div class="flex items-center justify-between text-[8px] font-mono text-[color:var(--dim)] pt-0.5">
+        <span class="truncate">${camCodigo}${estacion ? ` &bull; ${estacion}` : ''}</span>
+        ${confianza ? `<span class="text-verde/80">${confianza}</span>` : ''}
       </div>
     `;
 
-    $eventsFeed.prepend(item);
-
-    const items =
-      $eventsFeed.querySelectorAll('.evento-item');
-
-    if (items.length > 50) {
-      items[items.length - 1].remove();
+    if (isLive) {
+      $eventsFeed.prepend(item);
+    } else {
+      $eventsFeed.appendChild(item);
     }
 
-    $eventsFeed.scrollTop = 0;
-  }
-
-  // ── Limpiar eventos ──────────────────────────────────────────────────────
-  document
-    .getElementById('btn-clear-eventos')
-    .addEventListener('click', () => {
-
-      $eventsFeed
-        .querySelectorAll('.evento-item')
-        .forEach(el => el.remove());
-
-      $eventsEmpty.classList.remove('hidden');
-
-      eventCount = 0;
-
-      $eventsCount.textContent = '0';
-    });
-
-  // ── Timestamp ────────────────────────────────────────────────────────────
-  function updateTsLoop() {
-
-    if (!athenaActive) return;
-
-    $ts.textContent =
-      new Date().toLocaleTimeString('es-CO');
-
-    setTimeout(updateTsLoop, 1000);
-  }
-
-  // ── Refrescar cámaras ────────────────────────────────────────────────────
-  document
-    .getElementById('btn-refrescar-camaras')
-    .addEventListener('click', loadCameras);
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // MODAL NUEVA / EDITAR CÁMARA
-  // ══════════════════════════════════════════════════════════════════════════
-
-  document
-    .getElementById('btn-nueva-camara')
-    .addEventListener('click', openModalNew);
-
-  document
-    .getElementById('modal-close')
-    .addEventListener('click', closeModal);
-
-  document
-    .getElementById('modal-cancel')
-    .addEventListener('click', closeModal);
-
-  $modal.addEventListener('click', e => {
-    if (e.target === $modal) {
-      closeModal();
+    // Actualizar timestamp en el HUD del slot correspondiente
+    const camIdNum = ev.camara_id || ev.cam_id;
+    if (camIdNum) {
+      const slotTarget = slots.find(s => s.camId === parseInt(camIdNum) && s.isOnline);
+      if (slotTarget) {
+        slotTarget.ts = ts;
+      }
     }
+  }
+
+
+  function togglePanelEventos(forzarEstado) {
+    if (typeof forzarEstado === 'boolean') {
+      panelEventosAbierto = forzarEstado;
+    } else {
+      panelEventosAbierto = !panelEventosAbierto;
+    }
+
+    if (panelEventosAbierto) {
+      $panelEventos.classList.remove('hidden', 'w-0', 'opacity-0');
+      $panelEventos.classList.add('w-[300px]', 'opacity-100');
+      $eventsBadge.classList.add('hidden');
+      $eventsBadge.textContent = '0';
+      $btnToggleEvt.classList.add('border-rojo', 'text-rojo');
+    } else {
+      $panelEventos.classList.add('hidden', 'w-0', 'opacity-0');
+      $panelEventos.classList.remove('w-[300px]', 'opacity-100');
+      $btnToggleEvt.classList.remove('border-rojo', 'text-rojo');
+    }
+    localStorage.setItem('argos_eventos_open', String(panelEventosAbierto));
+  }
+
+  $btnToggleEvt.addEventListener('click', () => togglePanelEventos());
+  $btnCloseEvt.addEventListener('click', () => togglePanelEventos(false));
+
+  $btnClearEventos.addEventListener('click', () => {
+    $eventsFeed.innerHTML = '<div class="text-center text-[color:var(--dim)] text-[10px] font-mono py-8 opacity-50" id="eventos-empty">Sin eventos en memoria operativa.<br>A la espera de detecciones de Athena.</div>';
+    totalEventos = 0;
+    $eventsCount.textContent = '0';
   });
 
-  function openModalNew() {
-
-    $modalTitle.textContent = 'Nueva Cámara';
-    $modalId.value = '';
-    $modalCodigo.value = '';
-    $modalEstado.value = 'activa';
-    $modalEstac.value = '';
-    $modalUbic.value = '';
-    $modalIp.value = '';
-
-    $modalCodigo.removeAttribute('readonly');
-
-    hideModalErr();
-    openModal();
-  }
-
-  function openModalEdit(id) {
-
-    const cam =
-      cameras.find(c => c.id === id);
-
-    if (!cam) return;
-
-    $modalTitle.textContent = 'Editar Cámara';
-
-    $modalId.value = cam.id;
-    $modalCodigo.value = cam.codigo;
-    $modalEstado.value = cam.estado;
-    $modalEstac.value = cam.estacion;
-    $modalUbic.value = cam.ubicacion;
-    $modalIp.value = cam.ip || '';
-
-    $modalCodigo.setAttribute(
-      'readonly',
-      true
-    );
-
-    hideModalErr();
-    openModal();
-  }
-
-  function openModal() {
-    $modal.classList.remove('hidden');
-    $modal.classList.add('flex');
-  }
-
-  function closeModal() {
-    $modal.classList.add('hidden');
-    $modal.classList.remove('flex');
-  }
-
-  function hideModalErr() {
-    $modalErr.classList.add('hidden');
-    $modalErr.textContent = '';
-  }
-
-  function showModalErr(msg) {
-    $modalErr.textContent = msg;
-    $modalErr.classList.remove('hidden');
-  }
-
-  document
-    .getElementById('modal-save')
-    .addEventListener('click', async () => {
-
-      const id = $modalId.value;
-
-      const payload = {
-        codigo: $modalCodigo.value.trim(),
-        estacion: $modalEstac.value.trim(),
-        ubicacion: $modalUbic.value.trim(),
-        estado: $modalEstado.value,
-        ip: $modalIp.value.trim()
-      };
-
-      if (
-        !payload.codigo ||
-        !payload.estacion ||
-        !payload.ubicacion
-      ) {
-        showModalErr(
-          'Código, estación y ubicación son requeridos.'
-        );
-        return;
-      }
-
-      try {
-
-        if (id) {
-
-          await api(
-            'PUT',
-            `/api/camaras/${id}`,
-            payload
-          );
-
-        } else {
-
-          await api(
-            'POST',
-            '/api/camaras',
-            payload
-          );
-        }
-
-        closeModal();
-
-        await loadCameras();
-
-      } catch (e) {
-
-        showModalErr(e.message);
-      }
-
-    });
 
   // ══════════════════════════════════════════════════════════════════════════
-  // ELIMINAR CÁMARA
+  // GESTIÓN DE WEBCAM DEL NAVEGADOR
   // ══════════════════════════════════════════════════════════════════════════
-
-  async function deleteCamera(id) {
-
-    const cam =
-      cameras.find(c => c.id === id);
-
-    if (
-      !confirm(
-        `¿Eliminar "${cam?.codigo}"? Esta acción no se puede deshacer.`
-      )
-    ) {
-      return;
-    }
-
-    try {
-
-      await api(
-        'DELETE',
-        `/api/camaras/${id}`
-      );
-
-      if (selectedCam?.id === id) {
-
-        setAthenaOffline();
-
-        selectedCam = null;
-
-        $camLabel.textContent =
-          'Sin cámara activa';
-
-        $srcLabel.textContent = '';
-
-        $btnConectar.disabled = true;
-      }
-
-      await loadCameras();
-
-    } catch (e) {
-
-      alert(
-        `Error al eliminar: ${e.message}`
-      );
-    }
-  }
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // WEBCAM
-  // ══════════════════════════════════════════════════════════════════════════
-
   async function activarWebcam(camId) {
-
-    // Nunca reutilizar el client_id de otra cámara.
-    if (
-      webcamActive &&
-      webcamClientId &&
-      webcamCamId === camId
-    ) {
+    if (webcamActive && webcamClientId && webcamCamId === camId) {
       return webcamClientId;
     }
-
-    if (webcamActive) {
-      desactivarWebcam();
-    }
-
-    // ────────────────────────────────────────────────────────────────────────
-    // 1. Solicitar cámara del navegador
-    // ────────────────────────────────────────────────────────────────────────
+    if (webcamActive) desactivarWebcam();
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      throw new Error(
-        'El navegador no permite el acceso a la cámara en conexiones HTTP no seguras. ' +
-        'Si accedes desde otra PC por IP de red, debes usar HTTPS o habilitar en Chrome: ' +
-        'chrome://flags/#unsafely-treat-insecure-origin-as-secure agregando la URL de este servidor.'
-      );
+      throw new Error('El navegador no permite el acceso a la cámara por HTTP en IP remota. Habilita HTTPS o chrome://flags/#unsafely-treat-insecure-origin-as-secure');
     }
 
-    webcamStream =
-      await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 640 },
-          height: { ideal: 480 },
-          frameRate: { ideal: 15 }
-        },
-        audio: false
-      });
+    webcamStream = await navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 15 } },
+      audio: false
+    });
 
-    // ────────────────────────────────────────────────────────────────────────
-    // 2. Crear video oculto
-    // ────────────────────────────────────────────────────────────────────────
-
-    webcamVideo =
-      document.createElement('video');
-
-    webcamVideo.srcObject =
-      webcamStream;
-
+    webcamVideo = document.createElement('video');
+    webcamVideo.srcObject = webcamStream;
     webcamVideo.playsInline = true;
     webcamVideo.muted = true;
     webcamVideo.style.display = 'none';
-
-    document.body.appendChild(
-      webcamVideo
-    );
-
+    document.body.appendChild(webcamVideo);
     await webcamVideo.play();
 
-    // ────────────────────────────────────────────────────────────────────────
-    // 3. Canvas
-    // ────────────────────────────────────────────────────────────────────────
-
-    webcamCanvas =
-      document.createElement('canvas');
-
+    webcamCanvas = document.createElement('canvas');
     webcamCanvas.width = 640;
     webcamCanvas.height = 480;
 
-    // ────────────────────────────────────────────────────────────────────────
-    // 4. WebSocket
-    // ────────────────────────────────────────────────────────────────────────
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${proto}//${location.host}/api/camaras/client/push`;
+    webcamWs = new WebSocket(wsUrl);
 
-    const proto =
-      location.protocol === 'https:'
-        ? 'wss:'
-        : 'ws:';
+    webcamClientId = await new Promise((resolve, reject) => {
+      let settled = false;
+      const timeout = setTimeout(() => {
+        if (!settled) { settled = true; reject(new Error('Timeout de conexión WebSocket')); }
+      }, 8000);
 
-    const wsUrl =
-      `${proto}//${location.host}/api/camaras/client/push`;
+      webcamWs.onopen = () => {
+        webcamWs.send(JSON.stringify({ token: TOKEN(), cam_id: camId }));
+      };
 
-    webcamWs =
-      new WebSocket(wsUrl);
-
-    /*
-     * El backend ahora necesita:
-     *
-     * {
-     *   token: "...",
-     *   cam_id: 123
-     * }
-     *
-     * para asociar el cliente con la cámara.
-     */
-
-    webcamClientId =
-      await new Promise((resolve, reject) => {
-
-        let settled = false;
-
-        const timeout =
-          setTimeout(() => {
-
-            if (settled) return;
-
-            settled = true;
-
-            reject(
-              new Error(
-                'Timeout de conexión WebSocket'
-              )
-            );
-
-          }, 8000);
-
-        webcamWs.onopen = () => {
-
-          webcamWs.send(
-            JSON.stringify({
-              token: TOKEN(),
-              cam_id: camId
-            })
-          );
-        };
-
-        webcamWs.onmessage = e => {
-
-          try {
-
-            const msg =
-              JSON.parse(e.data);
-
-            if (msg.type === 'ok') {
-
-              if (settled) return;
-
-              settled = true;
-
-              clearTimeout(timeout);
-
-              if (!msg.client_id) {
-
-                reject(
-                  new Error(
-                    'El servidor no devolvió client_id'
-                  )
-                );
-
-                return;
-              }
-
-              resolve(
-                msg.client_id
-              );
-
-            } else if (msg.type === 'error') {
-
-              if (settled) return;
-
-              settled = true;
-
-              clearTimeout(timeout);
-
-              reject(
-                new Error(
-                  msg.message ||
-                  'Error del WebSocket'
-                )
-              );
-            }
-
-          } catch (err) {
-
+      webcamWs.onmessage = e => {
+        try {
+          const msg = JSON.parse(e.data);
+          if (msg.type === 'ok') {
             if (!settled) {
-
               settled = true;
-
               clearTimeout(timeout);
-
-              reject(
-                new Error(
-                  'Respuesta WS inválida'
-                )
-              );
+              if (!msg.client_id) { reject(new Error('El servidor no devolvió client_id')); return; }
+              resolve(msg.client_id);
             }
+          } else if (msg.type === 'error') {
+            if (!settled) { settled = true; clearTimeout(timeout); reject(new Error(msg.message || 'Error del WebSocket')); }
           }
-        };
+        } catch (err) {
+          if (!settled) { settled = true; clearTimeout(timeout); reject(new Error('Respuesta WS inválida')); }
+        }
+      };
 
-        webcamWs.onerror = () => {
-
-          if (settled) return;
-
-          settled = true;
-
-          clearTimeout(timeout);
-
-          reject(
-            new Error(
-              'WebSocket no pudo conectar'
-            )
-          );
-        };
-
-        webcamWs.onclose = () => {
-
-          if (settled) return;
-
-          settled = true;
-
-          clearTimeout(timeout);
-
-          reject(
-            new Error(
-              'WebSocket se cerró antes del handshake'
-            )
-          );
-        };
-      });
-
-    // ────────────────────────────────────────────────────────────────────────
-    // 5. Iniciar envío de frames
-    // ────────────────────────────────────────────────────────────────────────
+      webcamWs.onerror = () => { if (!settled) { settled = true; clearTimeout(timeout); reject(new Error('WebSocket no pudo conectar')); } };
+      webcamWs.onclose = () => { if (!settled) { settled = true; clearTimeout(timeout); reject(new Error('WebSocket se cerró antes del handshake')); } };
+    });
 
     webcamActive = true;
     webcamCamId = camId;
 
-    const ctx =
-      webcamCanvas.getContext('2d');
-
-    webcamInterval =
-      setInterval(() => {
-
-        if (
-          !webcamActive ||
-          !webcamWs ||
-          webcamWs.readyState !== WebSocket.OPEN
-        ) {
-          return;
-        }
-
-        ctx.drawImage(
-          webcamVideo,
-          0,
-          0,
-          640,
-          480
-        );
-
-        webcamCanvas.toBlob(
-          blob => {
-
-            if (
-              !blob ||
-              !webcamActive
-            ) {
-              return;
-            }
-
-            const reader =
-              new FileReader();
-
-            reader.onload = () => {
-
-              if (
-                webcamWs &&
-                webcamWs.readyState === WebSocket.OPEN
-              ) {
-
-                webcamWs.send(
-                  JSON.stringify({
-                    type: 'frame',
-                    data: reader.result,
-                    ts: Date.now()
-                  })
-                );
-              }
-            };
-
-            reader.readAsDataURL(blob);
-
-          },
-          'image/jpeg',
-          0.7
-        );
-
-      }, 83);
-
-    const hudDot =
-      document.querySelector(
-        '#stream-hud .pulse-dot'
-      );
-
-    if (hudDot) {
-      hudDot.classList.add(
-        'bg-amarillo'
-      );
-    }
-
-    console.log(
-      '[Webcam] Activa',
-      'cam_id =',
-      camId,
-      'client_id =',
-      webcamClientId
-    );
+    const ctx = webcamCanvas.getContext('2d');
+    webcamInterval = setInterval(() => {
+      if (!webcamActive || !webcamWs || webcamWs.readyState !== WebSocket.OPEN) return;
+      if (!webcamVideo || webcamVideo.readyState < 2) return;
+      try {
+        ctx.drawImage(webcamVideo, 0, 0, 640, 480);
+        const b64 = webcamCanvas.toDataURL('image/jpeg', 0.65);
+        webcamWs.send(JSON.stringify({ type: 'frame', data: b64, ts: Date.now() }));
+      } catch (err) {}
+    }, 66);
 
     return webcamClientId;
   }
 
   function desactivarWebcam() {
+    if (webcamInterval) { clearInterval(webcamInterval); webcamInterval = null; }
+    if (webcamWs) { try { webcamWs.close(); } catch(e){} webcamWs = null; }
+    if (webcamStream) { webcamStream.getTracks().forEach(t => t.stop()); webcamStream = null; }
+    if (webcamVideo) { try { webcamVideo.remove(); } catch(e){} webcamVideo = null; }
+    webcamActive = false;
+    webcamClientId = null;
+    webcamCamId = null;
+  }
 
-    if (
-      !webcamActive &&
-      !webcamWs &&
-      !webcamStream
-    ) {
+  // ══════════════════════════════════════════════════════════════════════════
+  // MODAL CRUD CÁMARA
+  // ══════════════════════════════════════════════════════════════════════════
+  function openModalCreate() {
+    $modalTitle.textContent = 'Nueva Cámara';
+    $modalId.value = '';
+    $modalCodigo.value = `CAM-0${cameras.length + 1}`;
+    $modalEstado.value = 'activa';
+    $modalEstac.value = '';
+    $modalUbic.value = '';
+    $modalIp.value = '0';
+    $modalErr.classList.add('hidden');
+    document.getElementById('modal-webcam-hint').classList.add('hidden');
+    $modalCamara.classList.remove('hidden');
+    $modalCamara.classList.add('flex');
+    $modalCodigo.focus();
+  }
+
+  function openModalEdit(camId) {
+    const cam = cameras.find(c => c.id === camId);
+    if (!cam) return;
+    $modalTitle.textContent = 'Editar Cámara';
+    $modalId.value = cam.id;
+    $modalCodigo.value = cam.codigo || '';
+    $modalEstado.value = cam.estado || 'activa';
+    $modalEstac.value = cam.estacion || '';
+    $modalUbic.value = cam.ubicacion || '';
+    $modalIp.value = cam.ip || '';
+    $modalErr.classList.add('hidden');
+    const isWebcam = (cam.ip || '').trim().toLowerCase() === 'webcam';
+    document.getElementById('modal-webcam-hint').classList.toggle('hidden', !isWebcam);
+    $modalCamara.classList.remove('hidden');
+    $modalCamara.classList.add('flex');
+  }
+
+  function closeModalCamara() {
+    $modalCamara.classList.add('hidden');
+    $modalCamara.classList.remove('flex');
+  }
+
+  document.getElementById('btn-usar-webcam').addEventListener('click', () => {
+    $modalIp.value = 'webcam';
+    document.getElementById('modal-webcam-hint').classList.remove('hidden');
+  });
+
+  $modalIp.addEventListener('input', () => {
+    const isWebcam = ($modalIp.value || '').trim().toLowerCase() === 'webcam';
+    document.getElementById('modal-webcam-hint').classList.toggle('hidden', !isWebcam);
+  });
+
+  async function saveCamera() {
+    const id = $modalId.value ? parseInt($modalId.value) : null;
+    const codigo = $modalCodigo.value.trim();
+    const estacion = $modalEstac.value.trim();
+    const ubicacion = $modalUbic.value.trim();
+    const estado = $modalEstado.value;
+    const ip = $modalIp.value.trim();
+
+    if (!codigo || !estacion || !ubicacion) {
+      $modalErr.textContent = 'Código, Estación y Ubicación son campos obligatorios.';
+      $modalErr.classList.remove('hidden');
       return;
     }
 
-    webcamActive = false;
-
-    if (webcamInterval) {
-
-      clearInterval(
-        webcamInterval
-      );
-
-      webcamInterval = null;
+    try {
+      const payload = { codigo, estacion, ubicacion, estado, ip };
+      if (id) {
+        await api('PUT', `/api/camaras/${id}`, payload);
+      } else {
+        await api('POST', '/api/camaras', payload);
+      }
+      closeModalCamara();
+      await loadCameras();
+    } catch (e) {
+      $modalErr.textContent = e.message;
+      $modalErr.classList.remove('hidden');
     }
-
-    if (webcamWs) {
-
-      try {
-        webcamWs.close();
-      } catch (_) {}
-
-      webcamWs = null;
-    }
-
-    if (webcamStream) {
-
-      webcamStream
-        .getTracks()
-        .forEach(t => t.stop());
-
-      webcamStream = null;
-    }
-
-    if (webcamVideo) {
-
-      webcamVideo.srcObject = null;
-
-      webcamVideo.remove();
-
-      webcamVideo = null;
-    }
-
-    webcamCanvas = null;
-    webcamClientId = null;
-    webcamCamId = null;
-
-    console.log(
-      '[Webcam] Detenida'
-    );
   }
 
-  // ── Botón usar webcam ────────────────────────────────────────────────────
-  document
-    .getElementById('btn-usar-webcam')
-    .addEventListener('click', () => {
-
-      const $ip =
-        document.getElementById(
-          'modal-ip'
-        );
-
-      const $hintWebcam =
-        document.getElementById(
-          'modal-webcam-hint'
-        );
-
-      const $btn =
-        document.getElementById(
-          'btn-usar-webcam'
-        );
-
-      if (
-        $ip.value.trim().toLowerCase() ===
-        'webcam'
-      ) {
-
-        $ip.value = '';
-
-        $hintWebcam.classList.add(
-          'hidden'
-        );
-
-        $btn.classList.replace(
-          'bg-azul',
-          'bg-azul/10'
-        );
-
-        $btn.classList.remove(
-          'text-white'
-        );
-
-      } else {
-
-        $ip.value = 'webcam';
-
-        $hintWebcam.classList.remove(
-          'hidden'
-        );
-
-        $btn.classList.replace(
-          'bg-azul/10',
-          'bg-azul'
-        );
-
-        $btn.classList.add(
-          'text-white'
-        );
-      }
-    });
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // INICIALIZACIÓN ATHENA
-  // ══════════════════════════════════════════════════════════════════════════
-
-  (async () => {
-
-    await loadCameras();
-
-    // Auto-selección si venimos desde el Mapa TransMilenio (C4)
-    const autoCamId = sessionStorage.getItem('argos_auto_connect_cam');
-    if (autoCamId) {
-      sessionStorage.removeItem('argos_auto_connect_cam');
-      const target = cameras.find(c => String(c.id) === String(autoCamId) || c.codigo === autoCamId);
-      if (target) {
-        selectCamera(target.id);
-      }
-    }
+  async function deleteCamera(camId) {
+    const cam = cameras.find(c => c.id === camId);
+    if (!confirm(`¿Eliminar la cámara "${cam?.codigo || camId}"?`)) return;
 
     try {
-
-      const s =
-        await api(
-          'GET',
-          '/api/camaras/athena/status'
-        );
-
-      /*
-       * Compatibilidad con el nuevo AthenaManager.
-       *
-       * El backend nuevo administra varias cámaras.
-       * Buscamos primero la cámara seleccionada/activa.
-       */
-
-      let activeCamId = null;
-      let activeInfo = null;
-
-      if (s.cameras && typeof s.cameras === 'object') {
-
-        const ids =
-          Object.keys(s.cameras);
-
-        if (ids.length) {
-
-          activeCamId =
-            parseInt(ids[0]);
-
-          activeInfo =
-            s.cameras[ids[0]];
-        }
-      }
-
-      /*
-       * Compatibilidad adicional si el backend devuelve
-       * una cámara principal.
-       */
-
-      if (!activeCamId && s.cam_id) {
-
-        activeCamId =
-          parseInt(s.cam_id);
-
-        activeInfo = s;
-      }
-
-      if (activeCamId) {
-
-        const cam =
-          cameras.find(
-            c => c.id === activeCamId
-          );
-
-        if (cam) {
-
-          selectedCam = cam;
-
-          renderList();
-
-          $camLabel.textContent =
-            `${cam.codigo} · ${cam.ubicacion}`;
-
-          $srcLabel.textContent =
-            cam.ip || 'índice 0';
-
-          const esWebcam =
-            (cam.ip || '')
-              .trim()
-              .toLowerCase() ===
-            'webcam';
-
-          const modoActual =
-            activeInfo?.mode ||
-            s.mode ||
-            'acceso';
-
-          const selModo =
-            document.getElementById(
-              'select-modo-athena'
-            );
-
-          if (selModo) {
-            selModo.value =
-              modoActual;
-          }
-
-          /*
-           * Si la cámara es webcam, después de recargar
-           * la página no podemos reutilizar el WebSocket
-           * anterior. Por eso NO intentamos marcarla como
-           * conectada automáticamente.
-           */
-
-          if (!esWebcam) {
-
-            setAthenaOnline(
-              {
-                cam_id: activeCamId,
-                confidence:
-                  activeInfo?.confidence ||
-                  0.5
-              },
-              false,
-              modoActual
-            );
-          }
-        }
-      }
-
+      await api('DELETE', `/api/camaras/${camId}`);
+      // Liberar cualquier slot que tenga esta cámara
+      slots.forEach(s => {
+        if (s.camId === camId) liberarSlot(s.id);
+      });
+      await loadCameras();
     } catch (e) {
-
-      console.warn(
-        '[Athena] No se pudo consultar estado:',
-        e.message
-      );
+      alert(`No se pudo eliminar: ${e.message}`);
     }
+  }
 
-  })();
+  $btnNuevaCamara.addEventListener('click', openModalCreate);
+  $btnRefrescarCam.addEventListener('click', loadCameras);
+  document.getElementById('modal-close').addEventListener('click', closeModalCamara);
+  document.getElementById('modal-cancel').addEventListener('click', closeModalCamara);
+  document.getElementById('modal-save').addEventListener('click', saveCamera);
 
   // ══════════════════════════════════════════════════════════════════════════
-  // MODAL SUBIR VIDEO
+  // MODAL VIDEO TESTING / OFFLINE
   // ══════════════════════════════════════════════════════════════════════════
-
-  const $modalVideo       = document.getElementById('modal-video');
-  const $btnSubirVideo    = document.getElementById('btn-subir-video');
-  const $modalVideoClose  = document.getElementById('modal-video-close');
-  const $modalVideoCancel = document.getElementById('modal-video-cancel');
-  const $videoFileInput   = document.getElementById('video-file-input');
-  const $videoDropzone    = document.getElementById('video-dropzone');
-  const $videoSelInfo     = document.getElementById('video-selected-info');
-  const $videoSelName     = document.getElementById('video-selected-name');
-  const $videoSelSize     = document.getElementById('video-selected-size');
-  const $videoClearFile   = document.getElementById('video-clear-file');
-  const $videoProgressW   = document.getElementById('video-progress-wrap');
-  const $videoProgressBar = document.getElementById('video-progress-bar');
-  const $videoProgressPct = document.getElementById('video-progress-pct');
-  const $videoResult      = document.getElementById('video-upload-result');
-  const $videoList        = document.getElementById('video-list');
-  const $btnUploadVideo   = document.getElementById('btn-upload-video');
-  const $btnRefreshVideos = document.getElementById('btn-refrescar-videos');
-
-  let selectedVideoFile = null;
-
   function openModalVideo() {
-
+    selectedVideoFile = null;
+    $videoSelectedInfoReset();
+    $videoFileInput.value = '';
     $modalVideo.classList.remove('hidden');
     $modalVideo.classList.add('flex');
-
-    resetVideoModal();
     loadVideoList();
   }
 
   function closeModalVideo() {
-
     $modalVideo.classList.add('hidden');
     $modalVideo.classList.remove('flex');
-
-    resetVideoModal();
   }
 
-  function resetVideoModal() {
+  function $videoSelectedInfoReset() {
+    $videoSelInfo.classList.add('hidden');
+    $videoDropzone.classList.remove('hidden');
+    $videoProgress.classList.add('hidden');
+    $videoError.classList.add('hidden');
+    $btnUploadVideo.disabled = true;
+    $btnUploadVideo.className = 'bg-rojo/50 text-white/50 cursor-not-allowed text-xs font-rajdhani font-bold px-5 py-2 rounded transition-colors uppercase tracking-wider';
+  }
 
+  $btnSubirVideo.addEventListener('click', openModalVideo);
+  document.getElementById('modal-video-close').addEventListener('click', closeModalVideo);
+  document.getElementById('modal-video-cancel').addEventListener('click', closeModalVideo);
+  $btnRefrescarVid.addEventListener('click', loadVideoList);
+
+  $videoDropzone.addEventListener('click', () => $videoFileInput.click());
+  $videoDropzone.addEventListener('dragover', e => { e.preventDefault(); $videoDropzone.classList.add('border-rojo'); });
+  $videoDropzone.addEventListener('dragleave', () => $videoDropzone.classList.remove('border-rojo'));
+  $videoDropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    $videoDropzone.classList.remove('border-rojo');
+    if (e.dataTransfer.files.length) handleVideoFileSelected(e.dataTransfer.files[0]);
+  });
+
+  $videoFileInput.addEventListener('change', e => {
+    if (e.target.files.length) handleVideoFileSelected(e.target.files[0]);
+  });
+
+  $btnQuitarVideo.addEventListener('click', () => {
     selectedVideoFile = null;
+    $videoSelectedInfoReset();
+  });
 
-    if ($videoFileInput) {
-      $videoFileInput.value = '';
-    }
+  function handleVideoFileSelected(file) {
+    selectedVideoFile = file;
+    $videoFilename.textContent = file.name;
+    $videoFilesize.textContent = `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+    $videoDropzone.classList.add('hidden');
+    $videoSelInfo.classList.remove('hidden');
+    $btnUploadVideo.disabled = false;
+    $btnUploadVideo.className = 'bg-rojo hover:bg-rojo-oscuro text-white text-xs font-rajdhani font-bold px-5 py-2 rounded transition-colors uppercase tracking-wider shadow-sm';
+  }
 
-    $videoSelInfo.classList.add(
-      'hidden'
-    );
+  $btnUploadVideo.addEventListener('click', async () => {
+    if (!selectedVideoFile) return;
 
-    $videoProgressW.classList.add(
-      'hidden'
-    );
-
-    $videoResult.classList.add(
-      'hidden'
-    );
-
-    $videoResult.textContent = '';
-
+    $videoProgress.classList.remove('hidden');
+    $uploadBar.style.width = '0%';
+    $uploadPercentage.textContent = '0%';
+    $uploadStatusText.textContent = 'Subiendo video...';
     $btnUploadVideo.disabled = true;
 
-    $videoProgressBar.style.width =
-      '0%';
-
-    $videoProgressPct.textContent =
-      '0%';
-
-    $videoDropzone.classList.remove(
-      'border-azul',
-      'bg-azul/5'
-    );
-
-    $videoDropzone.classList.add(
-      'border-[color:var(--borde2)]'
-    );
-  }
-
-  function onFileSelected(file) {
-
-    if (!file) return;
-
-    const ext =
-      file.name
-        .split('.')
-        .pop()
-        .toLowerCase();
-
-    const allowed = [
-      'mp4',
-      'avi',
-      'mkv',
-      'mov',
-      'webm',
-      'ts',
-      'flv'
-    ];
-
-    if (!allowed.includes(ext)) {
-
-      showVideoResult(
-        'error',
-        `Formato no permitido: .${ext}. Use: ${allowed.map(e => '.' + e).join(', ')}`
-      );
-
-      return;
-    }
-
-    selectedVideoFile = file;
-
-    $videoSelName.textContent =
-      file.name;
-
-    $videoSelSize.textContent =
-      (file.size / (1024 * 1024))
-        .toFixed(2) +
-      ' MB';
-
-    $videoSelInfo.classList.remove(
-      'hidden'
-    );
-
-    $videoResult.classList.add(
-      'hidden'
-    );
-
-    $btnUploadVideo.disabled = false;
-
-    $videoDropzone.classList.add(
-      'border-azul',
-      'bg-azul/5'
-    );
-
-    $videoDropzone.classList.remove(
-      'border-[color:var(--borde2)]'
-    );
-  }
-
-  function showVideoResult(
-    tipo,
-    msg
-  ) {
-
-    $videoResult.classList.remove(
-      'hidden',
-      'bg-verde/10',
-      'border-verde/20',
-      'text-verde',
-      'bg-rojo/10',
-      'border-rojo/20',
-      'text-rojo'
-    );
-
-    if (tipo === 'ok') {
-
-      $videoResult.classList.add(
-        'bg-verde/10',
-        'border',
-        'border-verde/20',
-        'text-verde'
-      );
-
-    } else {
-
-      $videoResult.classList.add(
-        'bg-rojo/10',
-        'border',
-        'border-rojo/20',
-        'text-rojo'
-      );
-    }
-
-    $videoResult.textContent = msg;
-  }
-
-  async function loadVideoList() {
-
-    $videoList.innerHTML =
-      '<div class="text-[10px] text-[color:var(--dim)]/50 font-mono text-center py-3">Cargando...</div>';
+    const formData = new FormData();
+    formData.append('video', selectedVideoFile);
 
     try {
-
-      const res =
-        await fetch(
-          '/api/camaras/videos',
-          {
-            headers: {
-              'X-Token': TOKEN()
-            }
-          }
-        );
-
-      const data =
-        await res.json();
-
-      const videos =
-        data.videos || [];
-
-      if (!videos.length) {
-
-        $videoList.innerHTML =
-          '<div class="text-[10px] text-[color:var(--dim)]/40 font-mono text-center py-3">Sin videos subidos aún.</div>';
-
-        return;
-      }
-
-      $videoList.innerHTML =
-        videos.map(v => `
-          <div class="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-white/3 border border-[color:var(--borde2)] hover:border-azul/40 group transition-all">
-
-            <span class="text-lg shrink-0">
-              🎬
-            </span>
-
-            <div class="flex-1 min-w-0">
-
-              <div class="text-[11px] font-mono text-[color:var(--texto)] truncate font-semibold">
-                ${v.nombre}
-              </div>
-
-              <div class="text-[9px] text-[color:var(--dim)]">
-                ${v.tamano_mb} MB · Video Grabado
-              </div>
-
-            </div>
-
-            <div class="flex items-center gap-1.5 shrink-0">
-
-              <button
-                class="btn-probar-video inline-flex items-center gap-1 bg-rojo hover:bg-rojo-oscuro text-white text-[10px] font-mono px-2.5 py-1 rounded transition-colors font-bold uppercase tracking-wider"
-                data-video-nombre="${v.nombre}"
-                title="Crear cámara y analizar este video inmediatamente"
-              >
-                ▶ Analizar
-              </button>
-
-              <button
-                class="btn-copiar-video text-[9px] font-mono text-[color:var(--dim)] hover:text-azul border border-[color:var(--borde2)] hover:border-azul/40 px-2 py-1 rounded transition-colors"
-                data-video-nombre="${v.nombre}"
-                title="Copiar nombre del archivo"
-              >
-                Copiar
-              </button>
-
-            </div>
-          </div>
-        `).join('');
-
-      $videoList
-        .querySelectorAll('.btn-probar-video')
-        .forEach(btn => {
-
-          btn.addEventListener(
-            'click',
-            async () => {
-
-              const nombre =
-                btn.dataset.videoNombre;
-
-              btn.disabled = true;
-              btn.textContent = '…';
-
-              try {
-
-                await reproducirVideoDirecto(
-                  nombre
-                );
-
-              } catch (err) {
-
-                alert(
-                  'Error al iniciar análisis: ' +
-                  err.message
-                );
-
-                btn.disabled = false;
-                btn.textContent =
-                  '▶ Analizar';
-              }
-            }
-          );
-        });
-
-      $videoList
-        .querySelectorAll('.btn-copiar-video')
-        .forEach(btn => {
-
-          btn.addEventListener(
-            'click',
-            () => {
-
-              const nombre =
-                btn.dataset.videoNombre;
-
-              if (
-                navigator.clipboard
-              ) {
-
-                navigator.clipboard
-                  .writeText(nombre);
-              }
-
-              showVideoResult(
-                'ok',
-                `✓ Nombre copiado: "${nombre}"`
-              );
-            }
-          );
-        });
-
-    } catch (e) {
-
-      $videoList.innerHTML =
-        `<div class="text-[10px] text-rojo font-mono text-center py-2">
-          Error: ${e.message}
-        </div>`;
-    }
-  }
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // ANALIZAR VIDEO
-  // ══════════════════════════════════════════════════════════════════════════
-
-  async function reproducirVideoDirecto(
-    nombreArchivo
-  ) {
-
-    showVideoResult(
-      'ok',
-      'Configurando cámara para el video...'
-    );
-
-    let cam =
-      cameras.find(
-        c =>
-          (c.ip || '').trim() ===
-          nombreArchivo
-      );
-
-    if (!cam) {
-
-      const codigoAuto =
-        'VID-' +
-        Math.floor(
-          100 +
-          Math.random() * 900
-        );
-
-      const nuevaCam =
-        await api(
-          'POST',
-          '/api/camaras',
-          {
-            codigo: codigoAuto,
-            estacion: 'Estación Virtual',
-            ubicacion:
-              'Torniquetes Video (' +
-              nombreArchivo.substring(
-                0,
-                15
-              ) +
-              '...)',
-            estado: 'activa',
-            ip: nombreArchivo
-          }
-        );
-
-      await loadCameras();
-
-      cam =
-        cameras.find(
-          c =>
-            c.id === nuevaCam.id ||
-            c.codigo === codigoAuto
-        );
-    }
-
-    if (!cam) {
-
-      throw new Error(
-        'No se pudo inicializar la cámara para el video.'
-      );
-    }
-
-    closeModalVideo();
-
-    selectCamera(cam.id);
-
-    const selModo =
-      document.getElementById(
-        'select-modo-athena'
-      );
-
-    if (selModo) {
-      selModo.value = 'evasion';
-    }
-
-    $btnConectar.disabled = true;
-    $btnConectar.textContent = '…';
-
-    const res =
-      await api(
-        'POST',
-        `/api/camaras/${cam.id}/connect`,
-        {
-          mode: 'evasion',
-          tripwire: 0.55
-        }
-      );
-
-    setAthenaOnline(
-      res,
-      false,
-      'evasion'
-    );
-  }
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // DRAG & DROP VIDEO
-  // ══════════════════════════════════════════════════════════════════════════
-
-  $videoDropzone.addEventListener(
-    'dragover',
-    e => {
-
-      e.preventDefault();
-
-      $videoDropzone.classList.add(
-        'border-azul',
-        'bg-azul/5'
-      );
-    }
-  );
-
-  $videoDropzone.addEventListener(
-    'dragleave',
-    () => {
-
-      if (!selectedVideoFile) {
-
-        $videoDropzone.classList.remove(
-          'border-azul',
-          'bg-azul/5'
-        );
-      }
-    }
-  );
-
-  $videoDropzone.addEventListener(
-    'drop',
-    e => {
-
-      e.preventDefault();
-
-      const file =
-        e.dataTransfer.files[0];
-
-      if (file) {
-        onFileSelected(file);
-      }
-    }
-  );
-
-  $videoFileInput.addEventListener(
-    'change',
-    () => {
-
-      if (
-        $videoFileInput.files[0]
-      ) {
-
-        onFileSelected(
-          $videoFileInput.files[0]
-        );
-      }
-    }
-  );
-
-  $videoClearFile.addEventListener(
-    'click',
-    e => {
-
-      e.preventDefault();
-
-      resetVideoModal();
-    }
-  );
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // SUBIR VIDEO
-  // ══════════════════════════════════════════════════════════════════════════
-
-  $btnUploadVideo.addEventListener(
-    'click',
-    () => {
-
-      if (!selectedVideoFile) return;
-
-      const formData =
-        new FormData();
-
-      formData.append(
-        'video',
-        selectedVideoFile
-      );
-
-      $btnUploadVideo.disabled = true;
-
-      $videoProgressW.classList.remove(
-        'hidden'
-      );
-
-      $videoResult.classList.add(
-        'hidden'
-      );
-
-      const xhr =
-        new XMLHttpRequest();
-
-      xhr.open(
-        'POST',
-        '/api/camaras/upload-video'
-      );
-
-      xhr.setRequestHeader(
-        'X-Token',
-        TOKEN()
-      );
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', '/api/camaras/video/upload');
+      xhr.setRequestHeader('X-Token', TOKEN());
 
       xhr.upload.onprogress = e => {
-
         if (e.lengthComputable) {
-
-          const pct =
-            Math.round(
-              e.loaded /
-              e.total *
-              100
-            );
-
-          $videoProgressBar.style.width =
-            pct + '%';
-
-          $videoProgressPct.textContent =
-            pct + '%';
+          const percent = Math.round((e.loaded / e.total) * 100);
+          $uploadBar.style.width = `${percent}%`;
+          $uploadPercentage.textContent = `${percent}%`;
         }
       };
 
       xhr.onload = () => {
-
-        $videoProgressW.classList.add(
-          'hidden'
-        );
-
-        try {
-
-          const data =
-            JSON.parse(
-              xhr.responseText
-            );
-
-          if (xhr.status === 201) {
-
-            showVideoResult(
-              'ok',
-              `✓ Video guardado: "${data.nombre}" (${data.tamano_mb} MB). Asigna este nombre como IP de la cámara y conecta en modo Evasión.`
-            );
-
+        if (xhr.status >= 200 && xhr.status < 300) {
+          $uploadStatusText.textContent = '¡Video cargado con éxito!';
+          setTimeout(() => {
+            $videoSelectedInfoReset();
             loadVideoList();
-
-            resetVideoModal();
-
-          } else {
-
-            showVideoResult(
-              'error',
-              data.error ||
-              `Error HTTP ${xhr.status}`
-            );
-
-            $btnUploadVideo.disabled =
-              false;
-          }
-
-        } catch (_) {
-
-          showVideoResult(
-            'error',
-            `Error inesperado (HTTP ${xhr.status})`
-          );
-
-          $btnUploadVideo.disabled =
-            false;
+          }, 1000);
+        } else {
+          $videoError.textContent = `Error al subir: ${xhr.responseText}`;
+          $videoError.classList.remove('hidden');
+          $btnUploadVideo.disabled = false;
         }
       };
 
       xhr.onerror = () => {
-
-        $videoProgressW.classList.add(
-          'hidden'
-        );
-
-        showVideoResult(
-          'error',
-          'Error de red al subir el video.'
-        );
-
-        $btnUploadVideo.disabled =
-          false;
+        $videoError.textContent = 'Error de conexión durante la subida.';
+        $videoError.classList.remove('hidden');
+        $btnUploadVideo.disabled = false;
       };
 
       xhr.send(formData);
+    } catch (err) {
+      $videoError.textContent = err.message;
+      $videoError.classList.remove('hidden');
+      $btnUploadVideo.disabled = false;
     }
-  );
+  });
 
-  // ── Abrir / cerrar modal video ───────────────────────────────────────────
-
-  if ($btnSubirVideo) {
-
-    $btnSubirVideo.addEventListener(
-      'click',
-      openModalVideo
-    );
-  }
-
-  if ($modalVideoClose) {
-
-    $modalVideoClose.addEventListener(
-      'click',
-      closeModalVideo
-    );
-  }
-
-  if ($modalVideoCancel) {
-
-    $modalVideoCancel.addEventListener(
-      'click',
-      closeModalVideo
-    );
-  }
-
-  if ($btnRefreshVideos) {
-
-    $btnRefreshVideos.addEventListener(
-      'click',
-      loadVideoList
-    );
-  }
-
-  $modalVideo.addEventListener(
-    'click',
-    e => {
-
-      if (e.target === $modalVideo) {
-        closeModalVideo();
+  async function loadVideoList() {
+    try {
+      const data = await api('GET', '/api/camaras/video/list');
+      const files = data.files || [];
+      if (!files.length) {
+        $videoList.innerHTML = '<div class="text-[10px] font-mono text-[color:var(--dim)] text-center py-3">Sin videos subidos en el servidor.</div>';
+        return;
       }
+      $videoList.innerHTML = files.map(f => `
+        <div class="p-2 rounded bg-bg/50 border border-white/5 flex items-center justify-between text-xs font-mono">
+          <div class="truncate flex items-center gap-2">
+            <span>🎬</span>
+            <span class="text-[color:var(--texto)] truncate">${f.name || f}</span>
+          </div>
+          <button class="btn-use-video text-[10px] text-azul hover:underline px-2 py-0.5" data-filename="${f.name || f}">Usar como Cámara</button>
+        </div>
+      `).join('');
+
+      $videoList.querySelectorAll('.btn-use-video').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const filename = btn.dataset.filename;
+          closeModalVideo();
+          openModalCreate();
+          $modalIp.value = `video:${filename}`;
+          $modalCodigo.value = `VID-${filename.substring(0, 8).toUpperCase()}`;
+          $modalEstac.value = 'Estación de Pruebas';
+          $modalUbic.value = 'Simulación Offline';
+        });
+      });
+    } catch (e) {
+      $videoList.innerHTML = `<div class="text-[10px] font-mono text-rojo py-2">Error: ${e.message}</div>`;
     }
-  );
+  }
 
+  // ══════════════════════════════════════════════════════════════════════════
+  // INICIALIZACIÓN
+  // ══════════════════════════════════════════════════════════════════════════
+  async function init() {
+    togglePanelFuentes(panelFuentesAbierto);
+    togglePanelEventos(panelEventosAbierto);
+    await loadCameras();
+    await loadRecentEvents();
+    startSSE();
+    // Bucle de sincronización de estado en tiempo real (cada 3 seg)
+    syncInterval = setInterval(sincronizarEstadoAthena, 3000);
+  }
+
+  // Desmontar recursos si se abandona la vista
+  window.addEventListener('hashchange', () => {
+    if (syncInterval) clearInterval(syncInterval);
+    if (sseSource) sseSource.close();
+    if (webcamActive) desactivarWebcam();
+  }, { once: true });
+
+  init();
 })();
-
 </script>
