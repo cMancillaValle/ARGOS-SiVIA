@@ -966,4 +966,7 @@ html.light .toggle-thumb {
   body.sidebar-collapsed #main-content {
     margin-left: 0 !important;
   }
+  body.sidebar-collapsed #topbar {
+    margin-left: 0 !important;
+  }
 }
