@@ -51,7 +51,7 @@ def list_events():
 
     query = '''
         SELECT e.id, e.tipo, e.confianza, e.estado, e.observaciones,
-               e.detectado_en, e.revisado_en,
+               e.evidencia, e.detectado_en, e.revisado_en,
                c.codigo as camara_codigo, c.estacion, c.ubicacion,
                u.nombre as operador_nombre
         FROM eventos e
@@ -95,7 +95,7 @@ def list_events():
 def pending_events():
     conn = get_conn()
     rows = conn.execute(
-        '''SELECT e.id, e.tipo, e.confianza, e.detectado_en,
+        '''SELECT e.id, e.tipo, e.confianza, e.evidencia, e.detectado_en,
                   c.codigo as camara_codigo, c.estacion, c.ubicacion
            FROM eventos e
            JOIN camaras c ON c.id = e.camara_id
@@ -140,9 +140,15 @@ def create_event():
 
     conn = get_conn()
     cursor = conn.execute(
-        '''INSERT INTO eventos (camara_id, tipo, confianza, estado)
-           VALUES (?, ?, ?, 'pendiente')''',
-        (data['camara_id'], data.get('tipo', 'evasion'), data['confianza'])
+        '''INSERT INTO eventos (camara_id, tipo, confianza, estado, evidencia, observaciones)
+           VALUES (?, ?, ?, 'pendiente', ?, ?)''',
+        (
+            data['camara_id'],
+            data.get('tipo', 'evasion'),
+            data['confianza'],
+            data.get('evidencia'),
+            data.get('observaciones')
+        )
     )
     conn.commit()
     ev = conn.execute('SELECT * FROM eventos WHERE id=?', (cursor.lastrowid,)).fetchone()

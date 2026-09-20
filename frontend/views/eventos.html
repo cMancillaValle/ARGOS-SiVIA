@@ -7,23 +7,40 @@
     <span class="text-texto">Eventos y Alertas</span>
   </div>
 
-  <div class="bg-panel border border-panelBorde rounded-xl p-7 mb-5 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-5">
+  <div class="bg-panel border border-panelBorde rounded-xl p-6 mb-5 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-5">
     <div class="absolute top-0 left-0 bottom-0 w-1 bg-rojo rounded-l-lg"></div>
     <div>
-      <div class="font-mono text-[9px] tracking-[2px] text-rojo uppercase mb-2">Historial</div>
-      <h2 class="font-rajdhani text-2xl md:text-3xl font-bold tracking-wide mb-2">Centro de Eventos IA</h2>
-      <p class="text-sm text-texto-dim font-light max-w-xl leading-relaxed">
-        Registro cronológico de detecciones de evasión y anomalías confirmadas por el modelo de inferencia.
+      <div class="font-mono text-[9px] tracking-[2px] text-rojo uppercase mb-1">Registro de Evidencias</div>
+      <h2 class="font-rajdhani text-2xl md:text-3xl font-bold tracking-wide mb-1">Centro de Eventos IA</h2>
+      <p class="text-xs text-texto-dim font-light max-w-xl leading-relaxed">
+        Registro cronológico con capturas fotográficas de evasiones y anomalías detectadas en estaciones.
       </p>
     </div>
     
-    <div class="flex items-center gap-3">
+    <!-- Filtros de búsqueda -->
+    <div class="flex flex-wrap items-center gap-2.5">
+      <select id="filtro-estado" class="bg-bg-tertiary border border-panelBorde rounded px-3 py-2 text-xs font-mono text-texto focus:outline-none focus:border-rojo transition-colors">
+        <option value="">Estado: Todos</option>
+        <option value="pendiente">Pendientes</option>
+        <option value="confirmado">Confirmados</option>
+        <option value="descartado">Descartados</option>
+      </select>
+
+      <select id="filtro-tipo" class="bg-bg-tertiary border border-panelBorde rounded px-3 py-2 text-xs font-mono text-texto focus:outline-none focus:border-rojo transition-colors">
+        <option value="">Tipo: Todos</option>
+        <option value="evasion">Evasión</option>
+        <option value="intrusion">Intrusión</option>
+        <option value="caida">Caída</option>
+        <option value="otro">Otro</option>
+      </select>
+
       <div class="relative">
-        <input type="text" placeholder="Buscar ID o Estación..." class="bg-bg-tertiary border border-panelBorde rounded px-3 py-2 text-xs font-mono text-texto placeholder:text-texto-dim focus:outline-none focus:border-rojo w-48 transition-colors">
-        <span class="absolute right-2.5 top-2 text-texto-dim">🔍</span>
+        <input id="input-busqueda" type="text" placeholder="Estación / Cámara..." class="bg-bg-tertiary border border-panelBorde rounded pl-3 pr-8 py-2 text-xs font-mono text-texto placeholder:text-texto-dim focus:outline-none focus:border-rojo w-44 transition-colors">
+        <span class="absolute right-2.5 top-2 text-texto-dim text-xs">🔍</span>
       </div>
-      <button class="bg-bg/50 border border-panelBorde hover:border-rojo hover:text-rojo text-texto text-xs font-rajdhani font-semibold px-4 py-2 rounded transition-all uppercase tracking-wide">
-        Filtrar
+
+      <button id="btn-recargar" class="bg-bg/50 border border-panelBorde hover:border-rojo hover:text-rojo text-texto text-xs font-rajdhani font-semibold px-3 py-2 rounded transition-all uppercase tracking-wide flex items-center gap-1">
+        <span>↻</span> Refrescar
       </button>
     </div>
   </div>
@@ -34,67 +51,20 @@
       <table class="w-full text-left border-collapse">
         <thead>
           <tr class="bg-black/40 border-b border-white/10">
-            <th class="p-4 font-mono text-[10px] text-texto-dim uppercase tracking-[2px] font-normal w-24">ID Alerta</th>
-            <th class="p-4 font-mono text-[10px] text-texto-dim uppercase tracking-[2px] font-normal">Estación</th>
-            <th class="p-4 font-mono text-[10px] text-texto-dim uppercase tracking-[2px] font-normal w-36">Timestamp</th>
-            <th class="p-4 font-mono text-[10px] text-texto-dim uppercase tracking-[2px] font-normal w-28 text-center">Precisión</th>
-            <th class="p-4 font-mono text-[10px] text-texto-dim uppercase tracking-[2px] font-normal w-32 border-l border-white/5 text-center">Estado</th>
-            <th class="p-4 font-mono text-[10px] text-texto-dim uppercase tracking-[2px] font-normal w-24 text-center">Acción</th>
+            <th class="p-3.5 font-mono text-[10px] text-texto-dim uppercase tracking-[2px] font-normal w-24">ID</th>
+            <th class="p-3.5 font-mono text-[10px] text-texto-dim uppercase tracking-[2px] font-normal w-28 text-center">Evidencia</th>
+            <th class="p-3.5 font-mono text-[10px] text-texto-dim uppercase tracking-[2px] font-normal">Estación / Ubicación</th>
+            <th class="p-3.5 font-mono text-[10px] text-texto-dim uppercase tracking-[2px] font-normal w-32">Tipo</th>
+            <th class="p-3.5 font-mono text-[10px] text-texto-dim uppercase tracking-[2px] font-normal w-36">Fecha / Hora</th>
+            <th class="p-3.5 font-mono text-[10px] text-texto-dim uppercase tracking-[2px] font-normal w-24 text-center">Precisión</th>
+            <th class="p-3.5 font-mono text-[10px] text-texto-dim uppercase tracking-[2px] font-normal w-28 text-center">Estado</th>
+            <th class="p-3.5 font-mono text-[10px] text-texto-dim uppercase tracking-[2px] font-normal w-28 text-center">Acciones</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-white/5">
-          <!-- Row 1 -->
-          <tr class="hover:bg-rojo/5 transition-colors group">
-            <td class="p-4 font-mono text-xs text-texto">EVT-992</td>
-            <td class="p-4">
-              <div class="font-rajdhani font-bold text-sm text-texto tracking-wide mb-1">Torniquete Sur - Héroes</div>
-              <div class="text-[10px] text-rojo font-medium uppercase tracking-wider">Evasión (Salto)</div>
-            </td>
-            <td class="p-4 font-mono text-[10px] text-texto-dim">2026-03-30 08:14:22</td>
-            <td class="p-4 text-center"><span class="font-mono text-xs text-verde">98.2%</span></td>
-            <td class="p-4 text-center border-l border-white/5">
-              <span class="inline-block px-2 py-1 bg-rojo/20 border border-rojo/40 text-rojo font-mono text-[9px] rounded uppercase tracking-wider">Pendiente</span>
-            </td>
-            <td class="p-4 text-center">
-              <button class="text-texto-dim hover:text-rojo text-xs font-rajdhani border-b border-transparent hover:border-rojo font-bold uppercase transition-all tracking-wide">
-                Revisar
-              </button>
-            </td>
-          </tr>
-          <!-- Row 2 -->
-          <tr class="hover:bg-rojo/5 transition-colors group">
-            <td class="p-4 font-mono text-xs text-texto">EVT-991</td>
-            <td class="p-4">
-              <div class="font-rajdhani font-bold text-sm text-texto tracking-wide mb-1">Entrada Norte - C.100</div>
-              <div class="text-[10px] text-amarillo font-medium uppercase tracking-wider">Anomalía (Crowd)</div>
-            </td>
-            <td class="p-4 font-mono text-[10px] text-texto-dim">2026-03-30 08:11:05</td>
-            <td class="p-4 text-center"><span class="font-mono text-xs text-amarillo">89.4%</span></td>
-            <td class="p-4 text-center border-l border-white/5">
-              <span class="inline-block px-2 py-1 bg-verde/10 border border-verde/30 text-verde font-mono text-[9px] rounded uppercase tracking-wider">Validado</span>
-            </td>
-            <td class="p-4 text-center">
-              <button class="text-texto-dim hover:text-rojo text-xs font-rajdhani border-b border-transparent hover:border-rojo font-bold uppercase transition-all tracking-wide">
-                Ver
-              </button>
-            </td>
-          </tr>
-          <!-- Row 3 -->
-          <tr class="hover:bg-rojo/5 transition-colors group">
-            <td class="p-4 font-mono text-xs text-texto">EVT-990</td>
-            <td class="p-4">
-              <div class="font-rajdhani font-bold text-sm text-texto tracking-wide mb-1">Torniquete Ppal - Portal Sur</div>
-              <div class="text-[10px] text-rojo font-medium uppercase tracking-wider">Evasión (Subterránea)</div>
-            </td>
-            <td class="p-4 font-mono text-[10px] text-texto-dim">2026-03-30 07:44:12</td>
-            <td class="p-4 text-center"><span class="font-mono text-xs text-verde">95.1%</span></td>
-            <td class="p-4 text-center border-l border-white/5">
-              <span class="inline-block px-2 py-1 bg-texto-dim/10 border border-texto-dim/30 text-texto-dim font-mono text-[9px] rounded uppercase tracking-wider">Descartado</span>
-            </td>
-            <td class="p-4 text-center">
-              <button class="text-texto-dim hover:text-rojo text-xs font-rajdhani border-b border-transparent hover:border-rojo font-bold uppercase transition-all tracking-wide">
-                Ver
-              </button>
+        <tbody id="tabla-eventos-body" class="divide-y divide-white/5">
+          <tr>
+            <td colspan="8" class="p-8 text-center text-xs font-mono text-texto-dim">
+              Cargando eventos y evidencias...
             </td>
           </tr>
         </tbody>
@@ -102,15 +72,337 @@
     </div>
     
     <!-- Paginator -->
-    <div class="border-t border-white/10 p-4 flex items-center justify-between bg-black/20">
-      <div class="font-mono text-[10px] text-texto-dim">Mostrando 1 - 3 de 3500+</div>
-      <div class="flex gap-1">
-        <button class="w-7 h-7 flex items-center justify-center font-mono text-xs bg-bg-tertiary border border-panelBorde text-texto-dim rounded hover:bg-rojo hover:text-white transition-colors cursor-not-allowed opacity-50">&lt;</button>
-        <button class="w-7 h-7 flex items-center justify-center font-mono text-xs bg-rojo border border-rojo text-white rounded hover:bg-rojo-oscuro transition-colors">1</button>
-        <button class="w-7 h-7 flex items-center justify-center font-mono text-xs bg-bg-tertiary border border-panelBorde text-texto-dim rounded hover:bg-rojo hover:text-white transition-colors">2</button>
-        <button class="w-7 h-7 flex items-center justify-center font-mono text-xs bg-bg-tertiary border border-panelBorde text-texto-dim rounded hover:bg-rojo hover:text-white transition-colors">3</button>
-        <button class="w-7 h-7 flex items-center justify-center font-mono text-xs bg-bg-tertiary border border-panelBorde text-texto-dim rounded hover:bg-rojo hover:text-white transition-colors">&gt;</button>
+    <div class="border-t border-white/10 p-4 flex items-center justify-between bg-black/20 text-xs">
+      <div id="info-paginacion" class="font-mono text-[10px] text-texto-dim">Mostrando 0 de 0 eventos</div>
+      <div id="paginador-btns" class="flex gap-1.5 items-center">
+        <!-- Generado dinámicamente -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Detalle de Evidencia -->
+  <div id="modal-evidencia" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div class="bg-[color:var(--bg2)] border border-[color:var(--borde2)] rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden animate-[fadeIn_0.2s_ease-out]">
+      <div class="flex items-center justify-between p-4 border-b border-[color:var(--borde2)] bg-black/30">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-rojo animate-pulse"></span>
+          <h3 id="modal-ev-titulo" class="font-rajdhani text-lg font-bold text-[color:var(--texto)]">Detalle de Evento #—</h3>
+        </div>
+        <button id="modal-ev-close" class="text-[color:var(--dim)] hover:text-rojo text-2xl leading-none transition-colors">&times;</button>
+      </div>
+
+      <div class="p-5 flex flex-col md:flex-row gap-5">
+        <!-- Imagen de evidencia -->
+        <div class="w-full md:w-1/2 flex flex-col items-center justify-center bg-black/50 border border-white/5 rounded-xl p-2 relative min-h-[220px]">
+          <img id="modal-ev-img" src="" alt="Captura de evidencia" class="max-h-64 w-full object-contain rounded-lg hidden">
+          <div id="modal-ev-img-placeholder" class="text-center p-6 text-texto-dim text-xs font-mono">
+            📷 Sin imagen de evidencia disponible
+          </div>
+          <a id="modal-ev-link" href="#" target="_blank" class="mt-2 text-[10px] font-mono text-azul hover:underline hidden">
+            ↗ Abrir imagen en tamaño completo
+          </a>
+        </div>
+
+        <!-- Información y acciones -->
+        <div class="w-full md:w-1/2 flex flex-col justify-between gap-3 text-xs">
+          <div class="space-y-2 font-mono">
+            <div>
+              <span class="text-texto-dim text-[10px] uppercase block">Cámara / Estación</span>
+              <span id="modal-ev-camara" class="text-texto font-bold font-rajdhani text-base">—</span>
+            </div>
+            <div>
+              <span class="text-texto-dim text-[10px] uppercase block">Tipo de Infracción</span>
+              <span id="modal-ev-tipo" class="text-rojo font-bold uppercase tracking-wider">—</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <span class="text-texto-dim text-[10px] uppercase block">Precisión IA</span>
+                <span id="modal-ev-confianza" class="text-verde font-bold">—</span>
+              </div>
+              <div>
+                <span class="text-texto-dim text-[10px] uppercase block">Estado</span>
+                <span id="modal-ev-estado" class="text-texto font-bold">—</span>
+              </div>
+            </div>
+            <div>
+              <span class="text-texto-dim text-[10px] uppercase block">Detectado en</span>
+              <span id="modal-ev-fecha" class="text-texto-dim">—</span>
+            </div>
+            <div>
+              <span class="text-texto-dim text-[10px] uppercase block">Observaciones</span>
+              <input id="modal-ev-obs" type="text" placeholder="Nota u observación del operador..." class="w-full bg-bg border border-white/10 rounded px-2.5 py-1.5 text-xs text-texto outline-none focus:border-rojo mt-1 font-sans">
+            </div>
+          </div>
+
+          <!-- Botones de Acción -->
+          <div class="flex items-center gap-2 pt-3 border-t border-white/5">
+            <button id="btn-descartar-ev" class="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-texto-dim hover:text-texto font-rajdhani font-bold py-2 px-3 rounded text-xs uppercase tracking-wider transition-colors">
+              ✕ Descartar
+            </button>
+            <button id="btn-confirmar-ev" class="flex-1 bg-rojo hover:bg-rojo-oscuro text-white font-rajdhani font-bold py-2 px-3 rounded text-xs uppercase tracking-wider transition-colors shadow-lg shadow-rojo/20">
+              ✓ Confirmar
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </div>
+
+<script>
+(function() {
+  'use strict';
+
+  let paginaActual = 1;
+  const limite = 15;
+  let eventoSeleccionado = null;
+
+  const TOKEN = () =>
+    sessionStorage.getItem('argos_token') ||
+    localStorage.getItem('argos_token') ||
+    '';
+
+  const $tablaBody      = document.getElementById('tabla-eventos-body');
+  const $infoPaginacion = document.getElementById('info-paginacion');
+  const $paginadorBtns  = document.getElementById('paginador-btns');
+  const $filtroEstado   = document.getElementById('filtro-estado');
+  const $filtroTipo     = document.getElementById('filtro-tipo');
+  const $inputBusqueda  = document.getElementById('input-busqueda');
+  const $btnRecargar    = document.getElementById('btn-recargar');
+
+  // Modal Evidencia
+  const $modalEv        = document.getElementById('modal-evidencia');
+  const $modalEvClose   = document.getElementById('modal-ev-close');
+  const $modalEvTitulo  = document.getElementById('modal-ev-titulo');
+  const $modalEvImg     = document.getElementById('modal-ev-img');
+  const $modalEvPlh     = document.getElementById('modal-ev-img-placeholder');
+  const $modalEvLink    = document.getElementById('modal-ev-link');
+  const $modalEvCamara  = document.getElementById('modal-ev-camara');
+  const $modalEvTipo    = document.getElementById('modal-ev-tipo');
+  const $modalEvConf    = document.getElementById('modal-ev-confianza');
+  const $modalEvEstado  = document.getElementById('modal-ev-estado');
+  const $modalEvFecha   = document.getElementById('modal-ev-fecha');
+  const $modalEvObs     = document.getElementById('modal-ev-obs');
+  const $btnConfirmar   = document.getElementById('btn-confirmar-ev');
+  const $btnDescartar   = document.getElementById('btn-descartar-ev');
+
+  async function api(method, path, body) {
+    const options = {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Token': TOKEN()
+      }
+    };
+    if (body !== undefined) options.body = JSON.stringify(body);
+    const res = await fetch(path, options);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    return res.json();
+  }
+
+  function formatTipo(tipo) {
+    const t = (tipo || '').toLowerCase();
+    if (t === 'evasion') return '<span class="text-rojo font-bold uppercase tracking-wider text-[10px]">🚨 Evasión</span>';
+    if (t === 'intrusion') return '<span class="text-amarillo font-bold uppercase tracking-wider text-[10px]">⚠️ Intrusión</span>';
+    if (t === 'caida') return '<span class="text-azul font-bold uppercase tracking-wider text-[10px]">🩹 Caída</span>';
+    return `<span class="text-texto-dim uppercase tracking-wider text-[10px]">${tipo}</span>`;
+  }
+
+  function formatEstado(estado) {
+    const est = (estado || 'pendiente').toLowerCase();
+    if (est === 'confirmado') {
+      return '<span class="inline-block px-2 py-0.5 bg-verde/15 border border-verde/30 text-verde font-mono text-[9px] rounded uppercase">Confirmado</span>';
+    }
+    if (est === 'descartado') {
+      return '<span class="inline-block px-2 py-0.5 bg-white/5 border border-white/10 text-texto-dim font-mono text-[9px] rounded uppercase">Descartado</span>';
+    }
+    return '<span class="inline-block px-2 py-0.5 bg-rojo/20 border border-rojo/40 text-rojo font-mono text-[9px] rounded uppercase">Pendiente</span>';
+  }
+
+  async function cargarEventos(pagina = 1) {
+    paginaActual = pagina;
+    $tablaBody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-xs font-mono text-texto-dim">Cargando eventos...</td></tr>`;
+
+    try {
+      const params = new URLSearchParams({
+        pagina: paginaActual,
+        limite: limite
+      });
+      if ($filtroEstado.value) params.set('estado', $filtroEstado.value);
+      if ($filtroTipo.value) params.set('tipo', $filtroTipo.value);
+      if ($inputBusqueda.value.trim()) params.set('estacion', $inputBusqueda.value.trim());
+
+      const data = await api('GET', `/api/eventos?${params.toString()}`);
+      renderTabla(data.eventos || [], data.total || 0);
+    } catch (e) {
+      $tablaBody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-xs font-mono text-rojo">Error al cargar eventos: ${e.message}</td></tr>`;
+    }
+  }
+
+  function renderTabla(eventos, total) {
+    if (!eventos.length) {
+      $tablaBody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-xs font-mono text-texto-dim opacity-70">No se encontraron eventos con los filtros seleccionados.</td></tr>`;
+      $infoPaginacion.textContent = 'Mostrando 0 de 0 eventos';
+      $paginadorBtns.innerHTML = '';
+      return;
+    }
+
+    const start = (paginaActual - 1) * limite + 1;
+    const end = Math.min(start + eventos.length - 1, total);
+    $infoPaginacion.textContent = `Mostrando ${start} - ${end} de ${total} eventos`;
+
+    let html = '';
+    eventos.forEach(ev => {
+      const prec = typeof ev.confianza === 'number' ? (ev.confianza > 1 ? ev.confianza : ev.confianza * 100).toFixed(1) + '%' : '—';
+      const evImg = ev.evidencia
+        ? `<div class="relative group/thumb cursor-pointer inline-block" data-action="ver" data-id="${ev.id}">
+             <img src="/api/camaras/evidencia/${ev.evidencia}" class="w-14 h-10 object-cover rounded border border-white/10 group-hover/thumb:border-rojo transition-all" alt="Captura">
+             <span class="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center text-[10px] text-white rounded transition-opacity">🔍</span>
+           </div>`
+        : `<span class="text-[10px] font-mono text-texto-dim/50 italic">Sin captura</span>`;
+
+      html += `
+        <tr class="hover:bg-rojo/5 transition-colors group">
+          <td class="p-3.5 font-mono text-xs text-texto font-bold">EVT-${String(ev.id).padStart(3, '0')}</td>
+          <td class="p-2 text-center">${evImg}</td>
+          <td class="p-3.5">
+            <div class="font-rajdhani font-bold text-sm text-texto tracking-wide">${ev.estacion || 'Estación N/A'}</div>
+            <div class="text-[10px] font-mono text-texto-dim">${ev.camara_codigo || 'CAM-?'} · ${ev.ubicacion || 'Acceso'}</div>
+          </td>
+          <td class="p-3.5">${formatTipo(ev.tipo)}</td>
+          <td class="p-3.5 font-mono text-[10px] text-texto-dim">${ev.detectado_en || '—'}</td>
+          <td class="p-3.5 text-center font-mono text-xs text-verde">${prec}</td>
+          <td class="p-3.5 text-center">${formatEstado(ev.estado)}</td>
+          <td class="p-3.5 text-center">
+            <button data-action="ver" data-id="${ev.id}" class="text-xs font-rajdhani font-bold text-texto-dim hover:text-rojo border border-white/10 hover:border-rojo/40 px-2.5 py-1 rounded uppercase transition-all">
+              Revisar
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+
+    $tablaBody.innerHTML = html;
+
+    // Listeners para botones de revisar / miniaturas
+    $tablaBody.querySelectorAll('[data-action="ver"]').forEach(el => {
+      el.addEventListener('click', () => {
+        const id = Number(el.dataset.id);
+        const ev = eventos.find(item => item.id === id);
+        if (ev) abrirModalEvidencia(ev);
+      });
+    });
+
+    // Render paginador
+    renderPaginador(total);
+  }
+
+  function renderPaginador(total) {
+    const totalPaginas = Math.ceil(total / limite) || 1;
+    if (totalPaginas <= 1) {
+      $paginadorBtns.innerHTML = '';
+      return;
+    }
+
+    let btns = `
+      <button ${paginaActual === 1 ? 'disabled' : ''} class="px-2.5 py-1 text-xs font-mono bg-bg-tertiary border border-panelBorde text-texto-dim rounded hover:bg-rojo hover:text-white disabled:opacity-30 disabled:hover:bg-bg-tertiary transition-colors" data-page="${paginaActual - 1}">&lt;</button>
+    `;
+
+    for (let p = 1; p <= totalPaginas; p++) {
+      if (p === 1 || p === totalPaginas || (p >= paginaActual - 2 && p <= paginaActual + 2)) {
+        const activo = p === paginaActual ? 'bg-rojo text-white border-rojo font-bold' : 'bg-bg-tertiary text-texto-dim hover:bg-rojo/20';
+        btns += `<button class="px-2.5 py-1 text-xs font-mono border border-panelBorde rounded transition-colors ${activo}" data-page="${p}">${p}</button>`;
+      } else if (p === paginaActual - 3 || p === paginaActual + 3) {
+        btns += `<span class="px-1 text-xs text-texto-dim">...</span>`;
+      }
+    }
+
+    btns += `
+      <button ${paginaActual === totalPaginas ? 'disabled' : ''} class="px-2.5 py-1 text-xs font-mono bg-bg-tertiary border border-panelBorde text-texto-dim rounded hover:bg-rojo hover:text-white disabled:opacity-30 disabled:hover:bg-bg-tertiary transition-colors" data-page="${paginaActual + 1}">&gt;</button>
+    `;
+
+    $paginadorBtns.innerHTML = btns;
+    $paginadorBtns.querySelectorAll('button[data-page]').forEach(b => {
+      b.addEventListener('click', () => {
+        const p = Number(b.dataset.page);
+        if (p >= 1 && p <= totalPaginas && p !== paginaActual) {
+          cargarEventos(p);
+        }
+      });
+    });
+  }
+
+  function abrirModalEvidencia(ev) {
+    eventoSeleccionado = ev;
+    $modalEvTitulo.textContent = `Detalle de Evento #EVT-${String(ev.id).padStart(3, '0')}`;
+    $modalEvCamara.textContent = `${ev.estacion || 'Estación'} (${ev.camara_codigo || 'CAM-?'})`;
+    $modalEvTipo.innerHTML = formatTipo(ev.tipo);
+    const prec = typeof ev.confianza === 'number' ? (ev.confianza > 1 ? ev.confianza : ev.confianza * 100).toFixed(1) + '%' : '—';
+    $modalEvConf.textContent = prec;
+    $modalEvEstado.innerHTML = formatEstado(ev.estado);
+    $modalEvFecha.textContent = ev.detectado_en || '—';
+    $modalEvObs.value = ev.observaciones || '';
+
+    if (ev.evidencia) {
+      const src = `/api/camaras/evidencia/${ev.evidencia}`;
+      $modalEvImg.src = src;
+      $modalEvImg.classList.remove('hidden');
+      $modalEvPlh.classList.add('hidden');
+      $modalEvLink.href = src;
+      $modalEvLink.classList.remove('hidden');
+    } else {
+      $modalEvImg.src = '';
+      $modalEvImg.classList.add('hidden');
+      $modalEvPlh.classList.remove('hidden');
+      $modalEvLink.classList.add('hidden');
+    }
+
+    $modalEv.classList.remove('hidden');
+    $modalEv.classList.add('flex');
+  }
+
+  function cerrarModalEvidencia() {
+    $modalEv.classList.add('hidden');
+    $modalEv.classList.remove('flex');
+    eventoSeleccionado = null;
+  }
+
+  async function actualizarEstado(nuevoEstado) {
+    if (!eventoSeleccionado) return;
+    try {
+      await api('PUT', `/api/eventos/${eventoSeleccionado.id}/estado`, {
+        estado: nuevoEstado,
+        observaciones: $modalEvObs.value.trim()
+      });
+      cerrarModalEvidencia();
+      cargarEventos(paginaActual);
+    } catch (e) {
+      alert(`Error al actualizar estado: ${e.message}`);
+    }
+  }
+
+  // Event listeners
+  $modalEvClose.addEventListener('click', cerrarModalEvidencia);
+  $modalEv.addEventListener('click', (e) => {
+    if (e.target === $modalEv) cerrarModalEvidencia();
+  });
+
+  $btnConfirmar.addEventListener('click', () => actualizarEstado('confirmado'));
+  $btnDescartar.addEventListener('click', () => actualizarEstado('descartado'));
+
+  $filtroEstado.addEventListener('change', () => cargarEventos(1));
+  $filtroTipo.addEventListener('change', () => cargarEventos(1));
+  $inputBusqueda.addEventListener('input', () => {
+    clearTimeout(window._busqTimeout);
+    window._busqTimeout = setTimeout(() => cargarEventos(1), 400);
+  });
+  $btnRecargar.addEventListener('click', () => cargarEventos(paginaActual));
+
+  // Carga inicial
+  cargarEventos(1);
+
+})();
+</script>

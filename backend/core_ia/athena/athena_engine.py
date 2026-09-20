@@ -391,6 +391,57 @@ class AthenaThread(threading.Thread):
         except Exception:
             pass
 
+    @staticmethod
+    def _persistir_evento_db(ev: dict, cam_id: int):
+        """
+        Persiste el evento detectado por Athena en la base de datos argos.db.
+        """
+        try:
+            import sqlite3
+            db_path = os.path.normpath(
+                os.path.join(_PROJECT_ROOT, "database", "argos.db")
+            )
+            if not os.path.isfile(db_path):
+                return
+
+            conn = sqlite3.connect(db_path, timeout=5)
+            tipo_raw = str(ev.get("tipo", "evasion")).lower()
+
+            if "evasion" in tipo_raw:
+                tipo_db = "evasion"
+            elif "intrusion" in tipo_raw:
+                tipo_db = "intrusion"
+            elif "caida" in tipo_raw:
+                tipo_db = "caida"
+            else:
+                tipo_db = "otro"
+
+            try:
+                confianza = float(ev.get("confianza", ev.get("confidence", 0.95)))
+            except (ValueError, TypeError):
+                confianza = 0.95
+
+            observaciones = ev.get("descripcion", ev.get("mensaje", ""))
+            evidencia = ev.get("evidencia", None)
+
+            conn.execute(
+                """
+                INSERT INTO eventos (camara_id, tipo, confianza, estado, observaciones, evidencia)
+                VALUES (?, ?, ?, 'pendiente', ?, ?)
+                """,
+                (int(cam_id), tipo_db, confianza, observaciones, evidencia)
+            )
+            conn.commit()
+            conn.close()
+            logger.info(
+                f"[Athena DB] Evento persistido para cámara {cam_id} "
+                f"(tipo={tipo_db}, evidencia={evidencia})"
+            )
+        except Exception as e:
+            logger.warning(
+                f"[Athena DB] No se pudo guardar evento en BD: {e}"
+            )
+
     # ─────────────────────────────────────────────────────────────────
     # LECTURA EXACTA DEL PIPE
     # ─────────────────────────────────────────────────────────────────
@@ -602,6 +653,13 @@ class AthenaThread(threading.Thread):
                                     f"evento descartado "
                                     f"cam={self.cam_id}"
                                 )
+
+                            # Persistir evento en base de datos en segundo plano
+                            threading.Thread(
+                                target=self._persistir_evento_db,
+                                args=(ev, self.cam_id),
+                                daemon=True
+                            ).start()
 
                         except Exception as e:
 

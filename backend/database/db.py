@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS eventos (
     estado          TEXT    NOT NULL DEFAULT 'pendiente'
                             CHECK(estado IN ('pendiente','confirmado','descartado')),
     observaciones   TEXT,
+    evidencia       TEXT,                       -- ruta relativa a captura JPG (evidence/cam_X/...)
     operador_id     INTEGER REFERENCES usuarios(id),
     detectado_en    TEXT    NOT NULL DEFAULT (datetime('now')),
     revisado_en     TEXT
@@ -127,12 +128,26 @@ def _migrar_sesiones(conn):
         print(f'[DB] Advertencia en migración sesiones: {e}')
 
 
+def _migrar_eventos(conn):
+    """
+    Si la tabla 'eventos' ya existía, asegura que tenga la columna 'evidencia'.
+    """
+    try:
+        columnas = [row[1] for row in conn.execute('PRAGMA table_info(eventos)').fetchall()]
+        if 'evidencia' not in columnas:
+            conn.execute('ALTER TABLE eventos ADD COLUMN evidencia TEXT')
+            print('[DB] Migración: columna evidencia agregada a eventos')
+    except Exception as e:
+        print(f'[DB] Advertencia en migración eventos: {e}')
+
+
 def init_db(db_path: str):
     """Crea las tablas si no existen y aplica migraciones pendientes."""
     conn = get_conn(db_path)
     conn.executescript(SCHEMA)
 
     _migrar_sesiones(conn)
+    _migrar_eventos(conn)
 
     # Migración: asegurar que la columna codigo_estacion exista en camaras
     try:

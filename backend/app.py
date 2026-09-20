@@ -70,6 +70,7 @@ DB_PATH      = os.path.normpath(os.path.join(BASE_DIR, '..', 'database', 'argos.
 # Carpeta raíz de evidencias generadas por capture_manager
 # (backend/core_ia/athena/evidence/capture_manager.py guarda en BASE_DIR/evidence/...)
 EVIDENCE_DIR = os.path.join(BASE_DIR, 'evidence')
+os.makedirs(EVIDENCE_DIR, exist_ok=True)
 
 # Puerto configurable via variable de entorno (requerido por ngrok_tunnel.py)
 PORT = int(os.environ.get("ARGOS_PORT", 5000))
@@ -151,18 +152,20 @@ def login_page():
 def dashboard_page():
     return send_from_directory(FRONTEND_DIR, 'dashboard.html')
 
-# ── Evidencias (issue #21 · captura de eventos en Dashboard) ─────
+# ── Evidencias (captura de eventos en Dashboard) ─────────────────
 @app.route('/api/camaras/evidencia/<path:filepath>')
+@app.route('/api/evidencia/<path:filepath>')
 def get_evidencia(filepath):
     """
     Sirve las imágenes .jpg guardadas por capture_manager.save_capture().
-    El 'filepath' esperado ya viene con el prefijo 'evidence/...' porque
-    capture_manager calcula su relative_path relativo a BASE_DIR (backend/).
-
-    Ejemplo de filepath recibido:
-      evidence/cam_3/2026-09-06/20260906_141205_123_EVASION_general_persona_7.jpg
+    Soporta rutas relativas como 'evidence/cam_3/...' o 'cam_3/...'.
     """
-    full_path = os.path.join(BASE_DIR, filepath)
+    if filepath.startswith('evidence/') or filepath.startswith('evidence\\'):
+        full_path = os.path.join(BASE_DIR, filepath)
+    else:
+        full_path = os.path.join(EVIDENCE_DIR, filepath)
+
+    full_path = os.path.normpath(full_path)
 
     # Evita path traversal: el archivo resuelto debe quedar dentro de EVIDENCE_DIR
     if not os.path.abspath(full_path).startswith(os.path.abspath(EVIDENCE_DIR)):
@@ -171,7 +174,9 @@ def get_evidencia(filepath):
     if not os.path.isfile(full_path):
         abort(404)
 
-    return send_from_directory(BASE_DIR, filepath)
+    rel_dir = os.path.dirname(full_path)
+    filename = os.path.basename(full_path)
+    return send_from_directory(rel_dir, filename)
 
 # ── Health ──────────────────────────────────────────────────────
 @app.route('/api')

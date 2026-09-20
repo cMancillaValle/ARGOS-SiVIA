@@ -342,6 +342,10 @@ def main():
             draw_overlay(cv2, frame, estado, source, mode)
             if edge:
                 for ev in edge.process(estado, cam_id):
+                    ev['cam_id'] = cam_id
+                    evidencia = capture_manager.save_capture(frame, ev)
+                    if evidencia:
+                        ev['evidencia'] = evidencia
                     send_event(ev)
 
         ok, buf = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 60])
