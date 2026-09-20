@@ -687,6 +687,17 @@ def connect_camera(cam_id):
             client_id
         ).strip()
 
+    # Si es webcam y no se envió client_id en la petición,
+    # buscar si ya hay un cliente transmitiendo WebSocket para esta cámara.
+    if is_webcam and not client_id:
+        try:
+            from routes.camera_client import get_client_by_camera
+            client_id = get_client_by_camera(cam_id)
+        except Exception as e:
+            logger.warning(
+                f"[Connect] No se pudo buscar cliente WS para cámara {cam_id}: {e}"
+            )
+
     # Una webcam necesita identificar
     # el navegador que envía sus frames.
 
@@ -694,7 +705,8 @@ def connect_camera(cam_id):
 
         return jsonify({
             'error':
-                'Para una cámara webcam se requiere client_id.'
+                'No hay ninguna cámara/navegador transmitiendo para esta cámara. '
+                'Activa la cámara en el navegador o inicia la transmisión.'
         }), 400
 
     # ─────────────────────────────────────────────────────────────────────

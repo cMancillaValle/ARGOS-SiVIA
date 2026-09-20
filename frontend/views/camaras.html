@@ -1339,6 +1339,14 @@
     // 1. Solicitar cámara del navegador
     // ────────────────────────────────────────────────────────────────────────
 
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error(
+        'El navegador no permite el acceso a la cámara en conexiones HTTP no seguras. ' +
+        'Si accedes desde otra PC por IP de red, debes usar HTTPS o habilitar en Chrome: ' +
+        'chrome://flags/#unsafely-treat-insecure-origin-as-secure agregando la URL de este servidor.'
+      );
+    }
+
     webcamStream =
       await navigator.mediaDevices.getUserMedia({
         video: {

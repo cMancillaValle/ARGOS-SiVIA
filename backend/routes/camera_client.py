@@ -116,6 +116,28 @@ def get_client_camera(client_id):
     return _client_cameras.get(client_id)
 
 
+def get_client_by_camera(cam_id):
+    """
+    Devuelve el client_id del cliente activo que está transmitiendo para una cámara.
+    """
+    try:
+        target_id = int(cam_id)
+    except (ValueError, TypeError):
+        return None
+
+    buf = _get_client_buffer()
+    active_clients = buf.clients() if buf else []
+
+    for cid, c_id in list(_client_cameras.items()):
+        try:
+            if int(c_id) == target_id:
+                if not active_clients or cid in active_clients:
+                    return cid
+        except (ValueError, TypeError):
+            continue
+    return None
+
+
 def remove_client_camera(client_id):
     """
     Elimina la asociación cliente → cámara.
