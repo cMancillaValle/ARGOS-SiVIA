@@ -46,12 +46,14 @@ CREATE TABLE IF NOT EXISTS usuarios (
     creado_en   TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
--- Sesiones activas (tokens simples)
+-- Sesiones activas (tokens simples + seguimiento de módulo en tiempo real)
 CREATE TABLE IF NOT EXISTS sesiones (
-    token       TEXT    PRIMARY KEY,
-    usuario_id  INTEGER NOT NULL REFERENCES usuarios(id),
-    creado_en   TEXT    NOT NULL DEFAULT (datetime('now')),
-    expira_en   TEXT    NOT NULL
+    token             TEXT    PRIMARY KEY,
+    usuario_id        INTEGER NOT NULL REFERENCES usuarios(id),
+    creado_en         TEXT    NOT NULL DEFAULT (datetime('now')),
+    expira_en         TEXT    NOT NULL,
+    modulo_actual     TEXT,
+    ultima_actividad  TEXT    DEFAULT (datetime('now'))
 );
 
 -- Cámaras instaladas en estaciones
@@ -108,10 +110,29 @@ CREATE TABLE IF NOT EXISTS configuracion (
 #  INICIALIZAR BD
 # ══════════════════════════════════════════════════════
 
+def _migrar_sesiones(conn):
+    """
+    Si la tabla 'sesiones' ya existía, asegura que tenga modulo_actual y ultima_actividad.
+    """
+    try:
+        columnas = [row[1] for row in conn.execute('PRAGMA table_info(sesiones)').fetchall()]
+        if 'modulo_actual' not in columnas:
+            conn.execute('ALTER TABLE sesiones ADD COLUMN modulo_actual TEXT')
+            print('[DB] Migración: columna modulo_actual agregada a sesiones')
+        if 'ultima_actividad' not in columnas:
+            conn.execute('ALTER TABLE sesiones ADD COLUMN ultima_actividad TEXT')
+            conn.execute("UPDATE sesiones SET ultima_actividad = creado_en WHERE ultima_actividad IS NULL")
+            print('[DB] Migración: columna ultima_actividad agregada a sesiones')
+    except Exception as e:
+        print(f'[DB] Advertencia en migración sesiones: {e}')
+
+
 def init_db(db_path: str):
     """Crea las tablas si no existen y aplica migraciones pendientes."""
     conn = get_conn(db_path)
     conn.executescript(SCHEMA)
+
+    _migrar_sesiones(conn)
 
     # Migración: asegurar que la columna codigo_estacion exista en camaras
     try:

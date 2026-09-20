@@ -365,10 +365,29 @@ const Auditoria = {
 };
 
 // ══════════════════════════════════════════════════════
+//  SESIONES ACTIVAS (Monitoreo en tiempo real)
+// ══════════════════════════════════════════════════════
+
+const Sesiones = {
+  async activas() {
+    const res = await apiFetch('/sesiones/activas');
+    return res?.data || { sesiones: [], total: 0 };
+  },
+
+  async reportarModulo(modulo) {
+    // Fire-and-forget: no debe bloquear la navegación si falla
+    apiFetch('/sesiones/modulo', {
+      method: 'POST',
+      body: { modulo },
+    }).catch(() => {});
+  },
+};
+
+// ══════════════════════════════════════════════════════
 //  EXPORTAR (disponible globalmente)
 // ══════════════════════════════════════════════════════
 
-window.ARGOS = { Session, Auth, Camaras, Eventos, Stats, Usuarios, Auditoria, Hermes, UI };
+window.ARGOS = { Session, Auth, Camaras, Eventos, Stats, Usuarios, Auditoria, Hermes, UI, Sesiones };
 
 // Función global para mostrar/ocultar contraseñas
 window.togglePasswordVisibility = function(button, inputId) {

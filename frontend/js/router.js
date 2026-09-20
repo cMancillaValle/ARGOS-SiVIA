@@ -131,6 +131,11 @@ const AppRouter = (() => {
     setQueryModule(moduleName);
     updateSidebarActive(moduleName);
     await loadView(modDef.file);
+
+    // ── Reportar módulo activo al backend (monitoreo en tiempo real) ──────
+    if (window.ARGOS && ARGOS.Sesiones && ARGOS.Session && ARGOS.Session.isLoggedIn()) {
+      ARGOS.Sesiones.reportarModulo(moduleName);
+    }
   }
 
   // ─── Marcar enlace activo en sidebar (v1.5: clases del modelo nuevo) ─────────

@@ -23,6 +23,37 @@
     </div>
   </div>
 
+  <!-- ┌─ PANEL: USUARIOS CONECTADOS AHORA (tiempo real) ──────────────┐ -->
+  <div class="bg-panel border border-panelBorde rounded-xl p-4 mb-5">
+    <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center gap-2">
+        <span class="font-rajdhani text-sm font-bold text-texto uppercase tracking-wide">Usuarios conectados ahora</span>
+        <span class="w-2 h-2 rounded-full bg-verde animate-pulse"></span>
+        <span class="font-mono text-[10px] text-verde">Live</span>
+      </div>
+      <span id="ses-count" class="font-mono text-xs text-texto-dim">0 conectados</span>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs">
+        <thead>
+          <tr class="border-b border-panelBorde/60 text-texto-dim font-mono text-[9px] tracking-widest uppercase text-left">
+            <th class="px-4 py-2">Usuario</th>
+            <th class="px-4 py-2">Rol</th>
+            <th class="px-4 py-2">Módulo Actual</th>
+            <th class="px-4 py-2 hidden md:table-cell">Conectado Desde</th>
+            <th class="px-4 py-2 hidden md:table-cell">Última Actividad</th>
+          </tr>
+        </thead>
+        <tbody id="ses-tbody">
+          <tr>
+            <td colspan="5" class="text-center py-6 text-texto-dim text-xs">Consultando usuarios conectados...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- Filtros -->
   <div class="flex flex-wrap gap-2 mb-4">
     <input id="aud-q" placeholder="Buscar acción, usuario o IP..." oninput="audRefresh()"
@@ -145,8 +176,8 @@
       tb.innerHTML = logs.map(l => {
         const s = getStyle(l.accion);
         const fecha = l.fecha
-          ? new Date(new Date(l.fecha + 'Z').getTime() - 5 * 3600 * 1000)
-            .toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'medium' })
+          ? new Date(l.fecha + 'Z')
+            .toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'medium', timeZone: 'America/Bogota' })
           : '-';
 
         return `<tr class="border-b border-panelBorde/40 hover:bg-white/3 transition-colors">
@@ -186,5 +217,64 @@
     // Auto-refresh cada 30s
     _autoRefresh = setInterval(audRefresh, 30000);
     document.addEventListener('argos:navaway', () => clearInterval(_autoRefresh), { once: true });
+
+    // ── Panel de sesiones activas (usuarios conectados + módulo) ─────────
+    const MODULO_LABEL = {
+      home: 'Dashboard', camaras: 'Cámaras', eventos: 'Eventos',
+      mapa_transmilenio: 'Mapa TransMilenio',
+      estadisticas: 'Estadísticas', configuracion: 'Configuración',
+      auditoria: 'Auditoría', usuarios_rbac: 'Usuarios', infra_camaras: 'Infra. Cámaras',
+      infra_red: 'Infra. Red', infra_servidores: 'Infra. Servidores',
+      notificaciones: 'Notificaciones', parametros: 'Parámetros',
+      reportes: 'Reportes', torniquetes: 'Torniquetes',
+    };
+
+    function tiempoRelativo(fechaStr) {
+      if (!fechaStr) return '-';
+      const entonces = new Date(fechaStr + 'Z').getTime();
+      const segs = Math.max(0, Math.floor((Date.now() - entonces) / 1000));
+      if (segs < 60) return `hace ${segs}s`;
+      if (segs < 3600) return `hace ${Math.floor(segs / 60)}m`;
+      return `hace ${Math.floor(segs / 3600)}h`;
+    }
+
+    async function sesRefresh() {
+      try {
+        const r = await fetch('/api/sesiones/activas', { headers: { 'X-Token': token() } });
+        if (!r.ok) throw new Error(`API ${r.status}`);
+        const d = await r.json();
+        renderSesiones(d.sesiones || []);
+      } catch (e) {
+        document.getElementById('ses-tbody').innerHTML =
+          `<tr><td colspan="5" class="text-center py-6 text-rojo text-xs">${e.message}</td></tr>`;
+      }
+    }
+
+    function renderSesiones(sesiones) {
+      document.getElementById('ses-count').textContent = `${sesiones.length} conectado${sesiones.length === 1 ? '' : 's'}`;
+      const tb = document.getElementById('ses-tbody');
+      tb.innerHTML = sesiones.map(s => {
+        const modulo = MODULO_LABEL[s.modulo_actual] || s.modulo_actual || 'Sin actividad';
+        const conectadoDesde = s.conectado_desde
+          ? new Date(s.conectado_desde + 'Z')
+            .toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Bogota' })
+          : '-';
+        return `<tr class="border-b border-panelBorde/40 hover:bg-white/3 transition-colors">
+          <td class="px-4 py-2.5 text-sm text-texto font-medium">${s.nombre || s.username || '-'}</td>
+          <td class="px-4 py-2.5">
+            <span class="text-[10px] font-bold border px-2 py-0.5 rounded-full bg-panel border-panelBorde text-texto-dim">${s.rol || '-'}</span>
+          </td>
+          <td class="px-4 py-2.5">
+            <span class="text-[10px] font-bold border px-2 py-0.5 rounded-full bg-azul/10 text-azul border-azul/30">${modulo}</span>
+          </td>
+          <td class="px-4 py-2.5 font-mono text-xs text-texto-dim hidden md:table-cell whitespace-nowrap">${conectadoDesde}</td>
+          <td class="px-4 py-2.5 font-mono text-xs text-texto-dim hidden md:table-cell whitespace-nowrap">${tiempoRelativo(s.ultima_actividad)}</td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="5" class="text-center py-6 text-texto-dim text-xs">No hay usuarios conectados en este momento</td></tr>';
+    }
+
+    sesRefresh();
+    const _sesAutoRefresh = setInterval(sesRefresh, 8000);
+    document.addEventListener('argos:navaway', () => clearInterval(_sesAutoRefresh), { once: true });
   })();
 </script>

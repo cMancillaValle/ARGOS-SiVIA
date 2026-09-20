@@ -149,3 +149,47 @@ def registrar_auditoria(usuario_id, accion, detalle=None):
         conn.close()
     except Exception:
         pass
+
+
+# ── Sesiones activas (módulo actual + monitoreo en tiempo real) ────────────
+
+def actualizar_modulo_sesion(token: str, modulo: str):
+    """
+    Registra el módulo que el usuario está viendo ahora mismo.
+    Se llama desde el frontend cada vez que navega (router.js).
+    """
+    if not token or not modulo:
+        return False
+    conn = get_conn()
+    cur = conn.execute(
+        '''UPDATE sesiones
+           SET modulo_actual = ?, ultima_actividad = datetime('now')
+           WHERE token = ?''',
+        (modulo, token)
+    )
+    actualizado = cur.rowcount > 0
+    conn.commit()
+    conn.close()
+    return actualizado
+
+
+def listar_sesiones_activas():
+    """
+    Devuelve todas las sesiones vigentes (no expiradas) con el usuario
+    y el módulo que tienen abierto actualmente.
+    """
+    conn  = get_conn()
+    ahora = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    rows = conn.execute(
+        '''SELECT u.id AS usuario_id, u.username, u.nombre, u.rol,
+                  s.modulo_actual, s.creado_en AS conectado_desde,
+                  s.ultima_actividad
+           FROM sesiones s
+           JOIN usuarios u ON u.id = s.usuario_id
+           WHERE s.expira_en > ? AND u.activo = 1
+           ORDER BY s.ultima_actividad DESC''',
+        (ahora,)
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
