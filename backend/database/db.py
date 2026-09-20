@@ -56,16 +56,17 @@ CREATE TABLE IF NOT EXISTS sesiones (
 
 -- Cámaras instaladas en estaciones
 CREATE TABLE IF NOT EXISTS camaras (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    codigo      TEXT    NOT NULL UNIQUE,        -- ej. CAM-001
-    estacion    TEXT    NOT NULL,               -- ej. Portal Norte
-    ubicacion   TEXT    NOT NULL,               -- ej. Torniquete 3 - Entrada A
-    estado      TEXT    NOT NULL DEFAULT 'activa'
-                        CHECK(estado IN ('activa','offline','mantenimiento')),
-    ip          TEXT,
-    fps         INTEGER NOT NULL DEFAULT 15,
-    resolucion  TEXT    NOT NULL DEFAULT '1080p',
-    instalada   TEXT    NOT NULL DEFAULT (date('now'))
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    codigo          TEXT    NOT NULL UNIQUE,        -- ej. CAM-001
+    estacion        TEXT    NOT NULL,               -- ej. Portal Norte
+    codigo_estacion TEXT,                           -- ej. TM-B-01 (ID oficial de estación)
+    ubicacion       TEXT    NOT NULL,               -- ej. Torniquete 3 - Entrada A
+    estado          TEXT    NOT NULL DEFAULT 'activa'
+                            CHECK(estado IN ('activa','offline','mantenimiento')),
+    ip              TEXT,
+    fps             INTEGER NOT NULL DEFAULT 15,
+    resolucion      TEXT    NOT NULL DEFAULT '1080p',
+    instalada       TEXT    NOT NULL DEFAULT (date('now'))
 );
 
 -- Eventos de evasión detectados por la IA
@@ -108,9 +109,20 @@ CREATE TABLE IF NOT EXISTS configuracion (
 # ══════════════════════════════════════════════════════
 
 def init_db(db_path: str):
-    """Crea las tablas si no existen."""
+    """Crea las tablas si no existen y aplica migraciones pendientes."""
     conn = get_conn(db_path)
     conn.executescript(SCHEMA)
+
+    # Migración: asegurar que la columna codigo_estacion exista en camaras
+    try:
+        cur = conn.execute("PRAGMA table_info(camaras)")
+        columnas = [row[1] for row in cur.fetchall()]
+        if 'codigo_estacion' not in columnas:
+            conn.execute("ALTER TABLE camaras ADD COLUMN codigo_estacion TEXT")
+            print('[DB] Migración aplicada: columna codigo_estacion agregada a camaras')
+    except Exception as e:
+        print(f'[DB] Advertencia en migración camaras: {e}')
+
     conn.commit()
     conn.close()
     print(f'[DB] Base de datos inicializada: {db_path}')
@@ -130,31 +142,31 @@ USUARIOS_DEMO = [
 ]
 
 CAMARAS_DEMO = [
-    ('CAM-001','Portal Norte',   'Torniquete 1 - Entrada Principal',  'activa',        '192.168.1.101'),
-    ('CAM-002','Portal Norte',   'Torniquete 2 - Entrada Principal',  'activa',        '192.168.1.102'),
-    ('CAM-003','Portal Norte',   'Torniquete 3 - Salida',             'activa',        '192.168.1.103'),
-    ('CAM-004','Portal Norte',   'Torniquete 4 - Salida',             'activa',        '192.168.1.104'),
-    ('CAM-005','Portal Norte',   'Acceso Bicicarril',                 'mantenimiento', '192.168.1.105'),
-    ('CAM-006','Portal Sur',     'Torniquete 1 - Entrada A',          'activa',        '192.168.1.201'),
-    ('CAM-007','Portal Sur',     'Torniquete 2 - Entrada A',          'activa',        '192.168.1.202'),
-    ('CAM-008','Portal Sur',     'Torniquete 1 - Entrada B',          'activa',        '192.168.1.203'),
-    ('CAM-009','Portal Sur',     'Pasillo Central',                   'offline',       '192.168.1.204'),
-    ('CAM-010','Portal 80',      'Torniquete 1',                      'activa',        '192.168.1.301'),
-    ('CAM-011','Portal 80',      'Torniquete 2',                      'activa',        '192.168.1.302'),
-    ('CAM-012','Portal 80',      'Torniquete 3',                      'activa',        '192.168.1.303'),
-    ('CAM-013','Portal El Dorado','Torniquete 1 - Acceso Metro',      'activa',        '192.168.1.401'),
-    ('CAM-014','Portal El Dorado','Torniquete 2 - Acceso Metro',      'activa',        '192.168.1.402'),
-    ('CAM-015','Calle 100',      'Torniquete 1',                      'activa',        '192.168.1.501'),
-    ('CAM-016','Calle 100',      'Torniquete 2',                      'activa',        '192.168.1.502'),
-    ('CAM-017','Calle 72',       'Torniquete 1',                      'activa',        '192.168.1.601'),
-    ('CAM-018','Calle 72',       'Torniquete 2',                      'activa',        '192.168.1.602'),
-    ('CAM-019','Av. Jiménez',    'Torniquete 1',                      'activa',        '192.168.1.701'),
-    ('CAM-020','Av. Jiménez',    'Torniquete 2',                      'activa',        '192.168.1.702'),
+    ('CAM-001','Portal Norte',    'TM-B-01', 'Torniquete 1 - Entrada Principal',  'activa',        '192.168.1.101'),
+    ('CAM-002','Portal Norte',    'TM-B-01', 'Torniquete 2 - Entrada Principal',  'activa',        '192.168.1.102'),
+    ('CAM-003','Portal Norte',    'TM-B-01', 'Torniquete 3 - Salida',             'activa',        '192.168.1.103'),
+    ('CAM-004','Portal Norte',    'TM-B-01', 'Torniquete 4 - Salida',             'activa',        '192.168.1.104'),
+    ('CAM-005','Portal Norte',    'TM-B-01', 'Acceso Bicicarril',                 'mantenimiento', '192.168.1.105'),
+    ('CAM-006','Portal Sur',      'TM-G-01', 'Torniquete 1 - Entrada A',          'activa',        '192.168.1.201'),
+    ('CAM-007','Portal Sur',      'TM-G-01', 'Torniquete 2 - Entrada A',          'activa',        '192.168.1.202'),
+    ('CAM-008','Portal Sur',      'TM-G-01', 'Torniquete 1 - Entrada B',          'activa',        '192.168.1.203'),
+    ('CAM-009','Portal Sur',      'TM-G-01', 'Pasillo Central',                   'offline',       '192.168.1.204'),
+    ('CAM-010','Portal 80',       'TM-D-01', 'Torniquete 1',                      'activa',        '192.168.1.301'),
+    ('CAM-011','Portal 80',       'TM-D-01', 'Torniquete 2',                      'activa',        '192.168.1.302'),
+    ('CAM-012','Portal 80',       'TM-D-01', 'Torniquete 3',                      'activa',        '192.168.1.303'),
+    ('CAM-013','Portal El Dorado','TM-K-01', 'Torniquete 1 - Acceso Metro',      'activa',        '192.168.1.401'),
+    ('CAM-014','Portal El Dorado','TM-K-01', 'Torniquete 2 - Acceso Metro',      'activa',        '192.168.1.402'),
+    ('CAM-015','Calle 100',       'TM-B-12', 'Torniquete 1',                      'activa',        '192.168.1.501'),
+    ('CAM-016','Calle 100',       'TM-B-12', 'Torniquete 2',                      'activa',        '192.168.1.502'),
+    ('CAM-017','Calle 72',        'TM-A-02', 'Torniquete 1',                      'activa',        '192.168.1.601'),
+    ('CAM-018','Calle 72',        'TM-A-02', 'Torniquete 2',                      'activa',        '192.168.1.602'),
+    ('CAM-019','Av. Jiménez',     'TM-A-12', 'Torniquete 1',                      'activa',        '192.168.1.701'),
+    ('CAM-020','Av. Jiménez',     'TM-A-12', 'Torniquete 2',                      'activa',        '192.168.1.702'),
 ]
 
 
 def seed_db(db_path: str):
-    """Inserta datos demo si las tablas están vacías."""
+    """Inserta datos demo si las tablas están vacías o actualiza asociaciones."""
     conn = get_conn(db_path)
 
     # Usuarios
@@ -170,12 +182,19 @@ def seed_db(db_path: str):
     # Cámaras
     existing = conn.execute('SELECT COUNT(*) FROM camaras').fetchone()[0]
     if existing == 0:
-        for codigo, estacion, ubicacion, estado, ip in CAMARAS_DEMO:
+        for codigo, estacion, cod_est, ubicacion, estado, ip in CAMARAS_DEMO:
             conn.execute(
-                'INSERT INTO camaras (codigo, estacion, ubicacion, estado, ip) VALUES (?,?,?,?,?)',
-                (codigo, estacion, ubicacion, estado, ip)
+                'INSERT INTO camaras (codigo, estacion, codigo_estacion, ubicacion, estado, ip) VALUES (?,?,?,?,?,?)',
+                (codigo, estacion, cod_est, ubicacion, estado, ip)
             )
         print(f'[DB] {len(CAMARAS_DEMO)} cámaras demo insertadas')
+    else:
+        # Actualizar códigos de estación para cámaras existentes que no los tengan
+        for codigo, estacion, cod_est, ubicacion, estado, ip in CAMARAS_DEMO:
+            conn.execute(
+                'UPDATE camaras SET codigo_estacion = ? WHERE codigo = ? AND (codigo_estacion IS NULL OR codigo_estacion = "")',
+                (cod_est, codigo)
+            )
 
     # Eventos simulados (últimas 48 horas)
     existing = conn.execute('SELECT COUNT(*) FROM eventos').fetchone()[0]

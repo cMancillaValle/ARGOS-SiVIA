@@ -1,0 +1,642 @@
+<!-- frontend/views/mapa_transmilenio.html v1.7.5 -->
+<!-- ARGOS-SiViA · Mapa Interactivo de Monitoreo TransMilenio -->
+<div class="fade-in" id="modulo-mapa-transmilenio">
+
+  <!-- Breadcrumb -->
+  <div class="font-mono text-[11px] text-[color:var(--dim)] mb-4 tracking-[1px] flex items-center gap-1.5">
+    <button data-nav-module="home" class="hover:text-rojo transition-colors cursor-pointer text-amarillo">Dashboard</button>
+    <span class="text-rojo">/</span>
+    <span class="text-[color:var(--texto)]">Monitoreo · Mapa TransMilenio</span>
+  </div>
+
+  <!-- Header & KPI Bar -->
+  <div class="bg-[color:var(--bg2)] border border-[color:var(--borde2)] rounded-xl p-4 sm:p-5 mb-4 relative overflow-hidden shadow-sm">
+    <div class="absolute top-0 left-0 bottom-0 w-1 bg-rojo rounded-l-lg"></div>
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div>
+        <div class="font-mono text-[9px] tracking-[2px] text-rojo uppercase mb-1 flex items-center gap-2">
+          <span>CENTRO DE COMANDO & CONTROL (C4)</span>
+          <span class="inline-block w-1.5 h-1.5 rounded-full bg-verde pulse-dot"></span>
+        </div>
+        <h1 class="font-rajdhani text-2xl font-bold tracking-wide text-[color:var(--texto)] flex items-center gap-2">
+          🗺️ Mapa Táctico TransMilenio · Cobertura ARGOS
+        </h1>
+        <p class="text-xs text-[color:var(--dim)] font-light mt-0.5">
+          Georreferenciación de estaciones troncales, estado de cámaras en tiempo real e incidencias de evasión detectadas.
+        </p>
+      </div>
+
+      <!-- Resumen KPIs -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 shrink-0">
+        <div class="bg-[color:var(--bg3)] border border-[color:var(--borde2)] rounded-lg p-2.5 min-w-[110px]">
+          <div class="text-[9px] font-mono uppercase text-[color:var(--dim)] tracking-wider">Estaciones Red</div>
+          <div class="font-rajdhani text-xl font-bold text-[color:var(--texto)]" id="kpi-total-estaciones">—</div>
+        </div>
+        <div class="bg-[color:var(--bg3)] border border-[color:var(--borde2)] rounded-lg p-2.5 min-w-[110px]">
+          <div class="text-[9px] font-mono uppercase text-[color:var(--dim)] tracking-wider">Cobertura ARGOS</div>
+          <div class="font-rajdhani text-xl font-bold text-azul" id="kpi-cobertura">—</div>
+        </div>
+        <div class="bg-[color:var(--bg3)] border border-[color:var(--borde2)] rounded-lg p-2.5 min-w-[110px]">
+          <div class="text-[9px] font-mono uppercase text-[color:var(--dim)] tracking-wider">Cámaras Activas</div>
+          <div class="font-rajdhani text-xl font-bold text-verde" id="kpi-camaras-activas">—</div>
+        </div>
+        <div class="bg-[color:var(--bg3)] border border-[color:var(--borde2)] rounded-lg p-2.5 min-w-[110px]">
+          <div class="text-[9px] font-mono uppercase text-[color:var(--dim)] tracking-wider">Evasiones Hoy</div>
+          <div class="font-rajdhani text-xl font-bold text-rojo" id="kpi-evasiones-hoy">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Barra de Filtros y Búsqueda -->
+    <div class="flex flex-wrap items-center justify-between gap-2.5 mt-4 pt-3 border-t border-[color:var(--borde2)]">
+      <div class="flex flex-wrap items-center gap-2 flex-1 min-w-[280px]">
+        <!-- Búsqueda -->
+        <div class="relative flex-1 min-w-[180px] max-w-xs">
+          <input id="input-buscar-estacion" type="text" placeholder="Buscar estación..."
+            class="w-full bg-[color:var(--bg)] border border-[color:var(--borde2)] focus:border-rojo text-xs rounded-lg px-3 py-1.5 pl-8 text-[color:var(--texto)] outline-none font-mono transition-colors">
+          <span class="absolute left-2.5 top-2 text-xs text-[color:var(--dim)]">🔍</span>
+        </div>
+
+        <!-- Filtro Troncal -->
+        <select id="filtro-troncal"
+          class="bg-[color:var(--bg)] border border-[color:var(--borde2)] focus:border-rojo text-xs text-[color:var(--texto)] rounded-lg px-3 py-1.5 outline-none font-mono">
+          <option value="">Todas las Troncales</option>
+        </select>
+
+        <!-- Filtro Estado -->
+        <select id="filtro-estado"
+          class="bg-[color:var(--bg)] border border-[color:var(--borde2)] focus:border-rojo text-xs text-[color:var(--texto)] rounded-lg px-3 py-1.5 outline-none font-mono">
+          <option value="todos">Todas las Estaciones</option>
+          <option value="con_camaras">Solo con Cámaras ARGOS</option>
+          <option value="con_evasiones">Con Evasiones Hoy</option>
+        </select>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="btn-centrar-mapa"
+          class="inline-flex items-center gap-1.5 bg-[color:var(--bg3)] border border-[color:var(--borde2)] hover:border-rojo hover:text-rojo text-[color:var(--dim)] text-xs font-mono px-3 py-1.5 rounded-lg transition-all"
+          title="Centrar mapa en Bogotá">
+          🎯 Centrar
+        </button>
+        <button id="btn-refrescar-mapa"
+          class="inline-flex items-center gap-1.5 bg-[color:var(--bg3)] border border-[color:var(--borde2)] hover:border-azul hover:text-azul text-[color:var(--dim)] text-xs font-mono px-3 py-1.5 rounded-lg transition-all"
+          title="Actualizar datos">
+          ↻ Refrescar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Layout del Mapa con Drawer Lateral -->
+  <div class="relative bg-[color:var(--bg2)] border border-[color:var(--borde2)] rounded-xl overflow-hidden shadow-lg h-[calc(100vh-270px)] min-h-[550px]">
+    
+    <!-- Contenedor Leaflet -->
+    <div id="leaflet-map-container" class="w-full h-full z-10 bg-[#0e1117]"></div>
+
+    <!-- Leyenda Táctica Flotante (Inferior Izquierda) -->
+    <div class="absolute bottom-4 left-4 z-20 bg-[color:var(--bg2)]/90 backdrop-blur-md border border-[color:var(--borde2)] rounded-lg p-3 shadow-lg pointer-events-auto hidden sm:block">
+      <div class="font-mono text-[9px] text-[color:var(--dim)] uppercase tracking-wider mb-2 font-bold">Estado de Estación</div>
+      <div class="flex flex-col gap-1.5 text-[10px] font-mono text-[color:var(--texto)]">
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-verde border border-white/20"></span>
+          <span>Normal / Cámaras Activas</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-amarillo border border-white/20"></span>
+          <span>Alerta Moderada (≥ 2 evasiones)</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-rojo border border-white/20 pulse-dot"></span>
+          <span>Crítico (≥ 6 evasiones hoy)</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-[#4a5568] border border-white/20"></span>
+          <span>Sin Cobertura de Cámara</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drawer Lateral de Detalle de Estación -->
+    <div id="drawer-detalle-estacion"
+      class="absolute top-0 right-0 bottom-0 w-full sm:w-[380px] bg-[color:var(--bg2)]/95 backdrop-blur-md border-l border-[color:var(--borde2)] transform translate-x-full transition-transform duration-300 z-30 flex flex-col shadow-2xl">
+      
+      <!-- Drawer Header -->
+      <div class="p-4 border-b border-[color:var(--borde2)] flex items-start justify-between bg-[color:var(--bg3)]/70">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span id="drawer-troncal-badge" class="px-2 py-0.5 rounded font-mono text-[9px] font-bold text-white uppercase" style="background:#E8001D">Troncal</span>
+            <span id="drawer-tipo-badge" class="px-2 py-0.5 rounded font-mono text-[9px] bg-white/10 text-[color:var(--dim)] uppercase">Estación</span>
+          </div>
+          <h2 id="drawer-estacion-nombre" class="font-rajdhani text-xl font-bold text-[color:var(--texto)] leading-tight">Nombre Estación</h2>
+          <div id="drawer-estacion-codigo" class="font-mono text-[10px] text-[color:var(--dim)]">TM-XX-00 · Dirección</div>
+        </div>
+        <button id="btn-cerrar-drawer" class="text-2xl text-[color:var(--dim)] hover:text-rojo transition-colors leading-none">&times;</button>
+      </div>
+
+      <!-- Drawer Body (Scrollable) -->
+      <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+        
+        <!-- Tarjeta de Estado de Riesgo -->
+        <div id="drawer-riesgo-box" class="p-3 rounded-lg border flex items-center gap-3 bg-verde/10 border-verde/30 text-verde">
+          <span class="text-2xl" id="drawer-riesgo-icon">🛡️</span>
+          <div class="min-w-0 flex-1">
+            <div class="text-xs font-rajdhani font-bold uppercase tracking-wider" id="drawer-riesgo-titulo">Estado Normal</div>
+            <div class="text-[10px] font-mono text-[color:var(--dim)]" id="drawer-riesgo-desc">Bajo nivel de incidencias registradas hoy.</div>
+          </div>
+        </div>
+
+        <!-- Estadísticas de Evasión Hoy -->
+        <div>
+          <div class="font-mono text-[9px] text-rojo uppercase tracking-widest mb-2 font-bold flex items-center justify-between">
+            <span>Detecciones de Evasión (Hoy)</span>
+            <span id="drawer-ev-total" class="text-[11px] text-rojo font-bold">0</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="bg-[color:var(--bg3)] border border-[color:var(--borde2)] rounded-lg p-2.5">
+              <div class="text-[9px] font-mono text-[color:var(--dim)] uppercase">Confirmadas</div>
+              <div class="font-rajdhani text-lg font-bold text-verde" id="drawer-ev-confirmadas">0</div>
+            </div>
+            <div class="bg-[color:var(--bg3)] border border-[color:var(--borde2)] rounded-lg p-2.5">
+              <div class="text-[9px] font-mono text-[color:var(--dim)] uppercase">Pendientes</div>
+              <div class="font-rajdhani text-lg font-bold text-amarillo" id="drawer-ev-pendientes">0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cámaras Instaladas en la Estación -->
+        <div>
+          <div class="font-mono text-[9px] text-[color:var(--dim)] uppercase tracking-widest mb-2 font-bold flex items-center justify-between">
+            <span>Cámaras Instaladas</span>
+            <span id="drawer-cam-count" class="text-[10px] text-azul">0 cámaras</span>
+          </div>
+          <div id="drawer-camaras-list" class="flex flex-col gap-2">
+            <!-- Inyectado por JS -->
+          </div>
+        </div>
+
+        <!-- Últimas Alertas de Athena -->
+        <div>
+          <div class="font-mono text-[9px] text-[color:var(--dim)] uppercase tracking-widest mb-2 font-bold">
+            Últimas Detecciones en Estación
+          </div>
+          <div id="drawer-eventos-list" class="flex flex-col gap-1.5">
+            <!-- Inyectado por JS -->
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Leaflet CSS y JS se cargan dinámicamente desde el bloque JS para evitar race condition en SPA -->
+
+<style>
+  /* Personalizaciones Leaflet para tema oscuro */
+  .leaflet-container {
+    background: #0b0e14 !important;
+    font-family: 'Share Tech Mono', monospace;
+  }
+  .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+    background: var(--bg2) !important;
+    color: var(--texto) !important;
+    border: 1px solid var(--borde2);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+  }
+  .leaflet-popup-content {
+    margin: 10px 14px;
+    line-height: 1.4;
+  }
+  .custom-station-pin {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: white;
+    font-weight: bold;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    cursor: pointer;
+    transition: transform 0.2s ease;
+  }
+  .custom-station-pin:hover {
+    transform: scale(1.25);
+    z-index: 1000 !important;
+  }
+</style>
+
+<script>
+(function () {
+  'use strict';
+
+  let map = null;
+  let markersLayer = null;
+  let linesLayer = null;
+  let estacionesData = [];
+  let troncalesData = [];
+  let estacionSeleccionada = null;
+
+  const TOKEN = () => sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token') || '';
+
+  // Elementos DOM
+  const $kpiTotalEstaciones = document.getElementById('kpi-total-estaciones');
+  const $kpiCobertura        = document.getElementById('kpi-cobertura');
+  const $kpiCamarasActivas   = document.getElementById('kpi-camaras-activas');
+  const $kpiEvasionesHoy     = document.getElementById('kpi-evasiones-hoy');
+  const $filtroTroncal       = document.getElementById('filtro-troncal');
+  const $filtroEstado        = document.getElementById('filtro-estado');
+  const $inputBuscar         = document.getElementById('input-buscar-estacion');
+  const $btnCentrar          = document.getElementById('btn-centrar-mapa');
+  const $btnRefrescar        = document.getElementById('btn-refrescar-mapa');
+  const $drawer              = document.getElementById('drawer-detalle-estacion');
+  const $btnCerrarDrawer     = document.getElementById('btn-cerrar-drawer');
+
+  // Drawer fields
+  const $dNombre      = document.getElementById('drawer-estacion-nombre');
+  const $dCodigo      = document.getElementById('drawer-estacion-codigo');
+  const $dTroncalBadge= document.getElementById('drawer-troncal-badge');
+  const $dTipoBadge   = document.getElementById('drawer-tipo-badge');
+  const $dRiesgoBox   = document.getElementById('drawer-riesgo-box');
+  const $dRiesgoIcon  = document.getElementById('drawer-riesgo-icon');
+  const $dRiesgoTitulo= document.getElementById('drawer-riesgo-titulo');
+  const $dRiesgoDesc  = document.getElementById('drawer-riesgo-desc');
+  const $dEvTotal     = document.getElementById('drawer-ev-total');
+  const $dEvConf      = document.getElementById('drawer-ev-confirmadas');
+  const $dEvPend      = document.getElementById('drawer-ev-pendientes');
+  const $dCamCount    = document.getElementById('drawer-cam-count');
+  const $dCamList     = document.getElementById('drawer-camaras-list');
+  const $dEvList      = document.getElementById('drawer-eventos-list');
+
+  // Inicializar Leaflet
+  function initMap() {
+    if (map || typeof L === 'undefined') return;
+    const container = document.getElementById('leaflet-map-container');
+    if (!container) return;
+
+    const bogotaCoords = [4.6500, -74.0800];
+    map = L.map(container, {
+      center: bogotaCoords,
+      zoom: 12,
+      minZoom: 10,
+      maxZoom: 17,
+      zoomControl: false
+    });
+
+    L.control.zoom({ position: 'topleft' }).addTo(map);
+
+    // Capa base oscura (CartoDB Dark Matter)
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; TransMilenio',
+      subdomains: 'abcd',
+      maxZoom: 19
+    }).addTo(map);
+
+    linesLayer = L.layerGroup().addTo(map);
+    markersLayer = L.layerGroup().addTo(map);
+
+    // Forzar cálculo de tamaño tras inserción en DOM
+    setTimeout(() => { if (map) map.invalidateSize(); }, 200);
+    setTimeout(() => { if (map) map.invalidateSize(); }, 600);
+  }
+
+  // Cargar resumen de KPIs
+  async function loadKPIs() {
+    try {
+      const res = await fetch('/api/transmilenio/resumen', {
+        headers: { 'X-Token': TOKEN() }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if ($kpiTotalEstaciones) $kpiTotalEstaciones.textContent = data.red?.total_estaciones || '0';
+      if ($kpiCobertura) $kpiCobertura.textContent = (data.red?.cobertura_pct || 0) + '%';
+      if ($kpiCamarasActivas) $kpiCamarasActivas.textContent = data.camaras?.activas || '0';
+      if ($kpiEvasionesHoy) $kpiEvasionesHoy.textContent = data.evasiones_hoy?.total || '0';
+    } catch (e) {
+      console.error('[MapaTM] Error cargando KPIs:', e);
+    }
+  }
+
+  // Cargar troncales en el select
+  async function loadTroncales() {
+    try {
+      const res = await fetch('/api/transmilenio/troncales', {
+        headers: { 'X-Token': TOKEN() }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      troncalesData = data.troncales || [];
+      if ($filtroTroncal) {
+        $filtroTroncal.innerHTML = '<option value="">Todas las Troncales</option>' +
+          troncalesData.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
+      }
+    } catch (e) {
+      console.error('[MapaTM] Error cargando troncales:', e);
+    }
+  }
+
+  // Dibujar trazados de troncales (polylines conectando estaciones de cada troncal)
+  function drawCorridors() {
+    if (!linesLayer) return;
+    linesLayer.clearLayers();
+
+    const colorMap = {};
+    troncalesData.forEach(t => { colorMap[t.id] = t.color; });
+
+    // Agrupar estaciones por troncal ordenadas de norte a sur o este a oeste
+    const porTroncal = {};
+    estacionesData.forEach(est => {
+      const tid = est.troncal_id;
+      if (!porTroncal[tid]) porTroncal[tid] = [];
+      porTroncal[tid].push([est.lat, est.lng]);
+    });
+
+    Object.keys(porTroncal).forEach(tid => {
+      const coords = porTroncal[tid];
+      if (coords.length > 1) {
+        L.polyline(coords, {
+          color: colorMap[tid] || '#E8001D',
+          weight: 3.5,
+          opacity: 0.65,
+          smoothFactor: 1
+        }).addTo(linesLayer);
+      }
+    });
+  }
+
+  // Renderizar marcadores de estaciones
+  function renderMarkers() {
+    if (!markersLayer) return;
+    markersLayer.clearLayers();
+
+    const filtroT = $filtroTroncal ? $filtroTroncal.value : '';
+    const filtroE = $filtroEstado ? $filtroEstado.value : 'todos';
+    const busqueda = $inputBuscar ? $inputBuscar.value.trim().toLowerCase() : '';
+
+    const filtradas = estacionesData.filter(est => {
+      if (filtroT && est.troncal_id !== filtroT) return false;
+      if (filtroE === 'con_camaras' && (!est.camaras || est.camaras.total === 0)) return false;
+      if (filtroE === 'con_evasiones' && (!est.eventos_hoy || est.eventos_hoy.total_hoy === 0)) return false;
+      if (busqueda && !est.nombre.toLowerCase().includes(busqueda) && !est.codigo.toLowerCase().includes(busqueda)) return false;
+      return true;
+    });
+
+    filtradas.forEach(est => {
+      const riesgo = est.riesgo || 'normal';
+      const tieneCam = est.camaras && est.camaras.total > 0;
+      const camActivas = est.camaras ? est.camaras.activas : 0;
+      const evHoy = est.eventos_hoy ? est.eventos_hoy.total_hoy : 0;
+
+      let colorBg = '#4a5568';
+      let pinClass = 'custom-station-pin';
+      let size = est.tipo === 'portal' ? 16 : 12;
+
+      if (riesgo === 'critico') {
+        colorBg = '#E8001D';
+        pinClass += ' pulse-dot';
+      } else if (riesgo === 'alerta') {
+        colorBg = '#FFC800';
+      } else if (tieneCam) {
+        colorBg = '#00E5A0';
+      }
+
+      const iconHtml = `<div class="${pinClass}" style="width:${size}px; height:${size}px; background:${colorBg}; border:2px solid #ffffff;"></div>`;
+      const customIcon = L.divIcon({
+        html: iconHtml,
+        className: 'station-div-icon',
+        iconSize: [size, size],
+        iconAnchor: [size/2, size/2]
+      });
+
+      const marker = L.marker([est.lat, est.lng], { icon: customIcon }).addTo(markersLayer);
+
+      // Tooltip al pasar el cursor
+      const tooltipContent = `
+        <div class="text-[11px] font-mono">
+          <strong class="text-white">${est.nombre}</strong><br>
+          <span style="color:var(--dim)">${est.troncal}</span><br>
+          <span style="color:var(--azul)">📹 ${camActivas} cámaras activas</span><br>
+          <span style="color:${evHoy > 0 ? 'var(--rojo)' : 'var(--dim)'}">🚨 ${evHoy} evasiones hoy</span>
+        </div>
+      `;
+      marker.bindTooltip(tooltipContent, { direction: 'top', offset: [0, -8] });
+
+      // Click: abrir drawer con detalle
+      marker.on('click', () => {
+        openStationDrawer(est.codigo || est.id);
+      });
+    });
+  }
+
+  // Cargar estaciones desde backend
+  async function loadEstaciones() {
+    try {
+      const res = await fetch('/api/transmilenio/estaciones', {
+        headers: { 'X-Token': TOKEN() }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      estacionesData = data.estaciones || [];
+      drawCorridors();
+      renderMarkers();
+      setTimeout(() => { if (map) map.invalidateSize(); }, 100);
+    } catch (e) {
+      console.error('[MapaTM] Error cargando estaciones:', e);
+    }
+  }
+
+  // Abrir Drawer con datos completos de la estación
+  async function openStationDrawer(idOCodigo) {
+    try {
+      const res = await fetch(`/api/transmilenio/estaciones/${idOCodigo}`, {
+        headers: { 'X-Token': TOKEN() }
+      });
+      if (!res.ok) return;
+      const est = await res.json();
+      estacionSeleccionada = est;
+
+      // Header
+      $dNombre.textContent = est.nombre || 'Estación';
+      $dCodigo.textContent = `${est.codigo || ''} · ${est.direccion || est.troncal || ''}`;
+      $dTroncalBadge.textContent = est.troncal || 'Troncal';
+      $dTipoBadge.textContent = (est.tipo || 'estacion').toUpperCase();
+
+      // Color de badge de troncal
+      const tInfo = troncalesData.find(t => t.id === est.troncal_id);
+      if (tInfo) $dTroncalBadge.style.backgroundColor = tInfo.color;
+
+      // Estado de riesgo
+      const evHoy = est.estadisticas?.hoy_total || 0;
+      if (evHoy >= 6) {
+        $dRiesgoBox.className = 'p-3 rounded-lg border flex items-center gap-3 bg-rojo/10 border-rojo/30 text-rojo';
+        $dRiesgoIcon.textContent = '🚨';
+        $dRiesgoTitulo.textContent = 'Alerta Crítica de Evasión';
+        $dRiesgoDesc.textContent = `Se han detectado ${evHoy} evasiones de torniquete durante la jornada de hoy.`;
+      } else if (evHoy >= 2) {
+        $dRiesgoBox.className = 'p-3 rounded-lg border flex items-center gap-3 bg-amarillo/10 border-amarillo/30 text-amarillo';
+        $dRiesgoIcon.textContent = '⚠️';
+        $dRiesgoTitulo.textContent = 'Alerta Moderada';
+        $dRiesgoDesc.textContent = `Actividad sospechosa recurrente (${evHoy} evasiones registradas).`;
+      } else {
+        $dRiesgoBox.className = 'p-3 rounded-lg border flex items-center gap-3 bg-verde/10 border-verde/30 text-verde';
+        $dRiesgoIcon.textContent = '🛡️';
+        $dRiesgoTitulo.textContent = 'Operación Normal';
+        $dRiesgoDesc.textContent = 'Flujo seguro. No se registran incidentes graves hoy.';
+      }
+
+      // KPIs de evasión
+      $dEvTotal.textContent = evHoy;
+      $dEvConf.textContent = est.estadisticas?.hoy_confirmadas || 0;
+      $dEvPend.textContent = est.estadisticas?.hoy_pendientes || 0;
+
+      // Lista de cámaras instaladas
+      const camaras = est.camaras || [];
+      $dCamCount.textContent = `${camaras.length} cámara(s)`;
+      if (!camaras.length) {
+        $dCamList.innerHTML = '<div class="text-[10px] text-[color:var(--dim)] font-mono py-2 opacity-60">Sin cámaras registradas en esta estación.</div>';
+      } else {
+        $dCamList.innerHTML = camaras.map(cam => {
+          const clr = cam.estado === 'activa' ? 'verde' : cam.estado === 'offline' ? 'rojo' : 'amarillo';
+          return `
+            <div class="p-2.5 rounded-lg bg-white/3 border border-[color:var(--borde2)] flex items-center justify-between gap-2">
+              <div class="min-w-0">
+                <div class="font-mono text-[11px] font-bold text-white flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-${clr}"></span>
+                  <span>${cam.codigo}</span>
+                </div>
+                <div class="text-[10px] text-[color:var(--dim)] truncate">${cam.ubicacion}</div>
+              </div>
+              <button data-ver-camara="${cam.id}"
+                class="inline-flex items-center gap-1 bg-rojo hover:bg-rojo-oscuro text-white font-rajdhani font-bold text-[10px] px-2.5 py-1 rounded transition-colors uppercase tracking-wider shrink-0">
+                ▶ Ver en Vivo
+              </button>
+            </div>
+          `;
+        }).join('');
+
+        // Listener para saltar al streaming de la cámara
+        $dCamList.querySelectorAll('[data-ver-camara]').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const camId = btn.dataset.verCamara;
+            sessionStorage.setItem('argos_auto_connect_cam', camId);
+            if (window.AppRouter && typeof AppRouter.navigate === 'function') {
+              AppRouter.navigate('camaras');
+            } else {
+              window.location.href = '/dashboard?module=camaras';
+            }
+          });
+        });
+      }
+
+      // Lista de eventos recientes
+      const eventos = est.eventos_recientes || [];
+      if (!eventos.length) {
+        $dEvList.innerHTML = '<div class="text-[10px] text-[color:var(--dim)] font-mono py-2 opacity-60">Sin detecciones registradas recientemente.</div>';
+      } else {
+        $dEvList.innerHTML = eventos.slice(0, 5).map(ev => {
+          const hora = new Date(ev.detectado_en).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          return `
+            <div class="p-2 rounded bg-white/2 border border-white/5 flex items-center justify-between text-[10px] font-mono">
+              <div class="flex items-center gap-2 min-w-0 truncate">
+                <span class="text-rojo">🚨</span>
+                <span class="text-white truncate">${ev.camara_codigo || 'CAM'}: ${ev.tipo.toUpperCase()}</span>
+              </div>
+              <span class="text-[color:var(--dim)] shrink-0">${hora}</span>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Mostrar Drawer
+      $drawer.classList.remove('translate-x-full');
+
+      // Centrar mapa suavemente en la estación seleccionada
+      if (map && est.lat && est.lng) {
+        map.flyTo([est.lat, est.lng], 14, { duration: 0.8 });
+      }
+
+    } catch (e) {
+      console.error('[MapaTM] Error abriendo detalle de estación:', e);
+    }
+  }
+
+  // Cerrar Drawer
+  function closeDrawer() {
+    if ($drawer) $drawer.classList.add('translate-x-full');
+    estacionSeleccionada = null;
+  }
+
+  // Listeners de controles
+  if ($filtroTroncal)  $filtroTroncal.addEventListener('change', renderMarkers);
+  if ($filtroEstado)   $filtroEstado.addEventListener('change', renderMarkers);
+  if ($inputBuscar)    $inputBuscar.addEventListener('input', renderMarkers);
+  if ($btnCerrarDrawer) $btnCerrarDrawer.addEventListener('click', closeDrawer);
+
+  if ($btnCentrar) {
+    $btnCentrar.addEventListener('click', () => {
+      if (map) map.flyTo([4.6500, -74.0800], 12, { duration: 0.8 });
+    });
+  }
+
+  if ($btnRefrescar) {
+    $btnRefrescar.addEventListener('click', () => {
+      loadKPIs();
+      loadEstaciones();
+    });
+  }
+
+  // Carga asíncrona segura de Leaflet si aún no está en window.L
+  function ensureLeaflet(callback) {
+    if (typeof L !== 'undefined') {
+      callback();
+      return;
+    }
+    // Si no está, inyectar el script y link al head
+    if (!document.querySelector('link[href*="leaflet"]')) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(link);
+    }
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    script.onload = () => callback();
+    script.onerror = () => console.error('[MapaTM] Error cargando Leaflet desde CDN');
+    document.head.appendChild(script);
+  }
+
+  // Listener para redimensionar ventana
+  const onResize = () => { if (map) map.invalidateSize(); };
+  window.addEventListener('resize', onResize);
+
+  // Limpieza al salir de la vista (SPA Router)
+  document.addEventListener('argos:navaway', () => {
+    window.removeEventListener('resize', onResize);
+    if (map) {
+      map.remove();
+      map = null;
+    }
+  }, { once: true });
+
+  // Inicialización secuencial
+  (async function start() {
+    ensureLeaflet(async () => {
+      initMap();
+      await loadTroncales();
+      await loadKPIs();
+      await loadEstaciones();
+
+      // Auto-refresh cada 30 segundos
+      const timer = setInterval(() => {
+        if (!map) { clearInterval(timer); return; }
+        loadKPIs();
+        loadEstaciones();
+      }, 30000);
+    });
+  })();
+
+})();
+</script>

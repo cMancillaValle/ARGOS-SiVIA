@@ -56,6 +56,7 @@ from routes.system_metrics  import system_metrics_bp
 from routes.profile         import profile_bp
 from routes.reset_password  import reset_bp
 from routes.camera_client   import camera_client_bp, init_websocket
+from routes.transmilenio    import transmilenio_bp
 from utils.limiter          import limiter
 from flask_sock             import Sock
 import logging
@@ -127,6 +128,7 @@ app.register_blueprint(rbac_bp,           url_prefix='/api/rbac')
 app.register_blueprint(system_metrics_bp, url_prefix='/api/sistema')
 app.register_blueprint(profile_bp,        url_prefix='/api/perfil')
 app.register_blueprint(reset_bp,          url_prefix='/api/auth/reset-password')
+app.register_blueprint(transmilenio_bp,    url_prefix='/api/transmilenio')
 
 # ── Frontend ────────────────────────────────────────────────────
 HERMES_DIST = os.path.normpath(os.path.join(BASE_DIR, '..', 'frontend-hermes', 'dist'))

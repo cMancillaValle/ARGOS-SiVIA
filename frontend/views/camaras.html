@@ -1739,9 +1739,17 @@
   // INICIALIZACIÓN ATHENA
   // ══════════════════════════════════════════════════════════════════════════
 
-  (async () => {
-
     await loadCameras();
+
+    // Auto-selección si venimos desde el Mapa TransMilenio (C4)
+    const autoCamId = sessionStorage.getItem('argos_auto_connect_cam');
+    if (autoCamId) {
+      sessionStorage.removeItem('argos_auto_connect_cam');
+      const target = cameras.find(c => String(c.id) === String(autoCamId) || c.codigo === autoCamId);
+      if (target) {
+        selectCamera(target.id);
+      }
+    }
 
     try {
 
