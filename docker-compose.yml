@@ -1,0 +1,35 @@
+name: argos-sivia
+
+services:
+  argos-backend-ia:
+    image: python:3.11-slim
+    container_name: argos-backend-ia
+    working_dir: /app
+    env_file:
+      - .env
+    volumes:
+      # Código, SQLite, evidencias y pesos de los modelos.
+      - ./:/app
+    environment:
+      ARGOS_PORT: "5000"
+      PYTHONUNBUFFERED: "1"
+      PYTHONPATH: /app/backend
+    command: >
+      sh -c "apt-get update
+      && apt-get install -y --no-install-recommends libgl1 libglib2.0-0
+      && pip install --no-cache-dir -r backend/requirements.txt
+      && pip install --no-cache-dir -r backend/core_ia/athena/requirements.txt
+      && python backend/app.py"
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:5000/api/health')"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    restart: unless-stopped
