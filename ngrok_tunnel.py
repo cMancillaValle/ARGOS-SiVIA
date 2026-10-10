@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-ARGOS - SiViA · Módulo de Túnel Ngrok
-======================================
-Expone el servidor Flask al exterior usando pyngrok.
+ARGOS - SiViA · Módulo de Túnel Ngrok (FastAPI + Uvicorn)
+==========================================================
+Expone el servidor FastAPI y el WebSocket de cámaras al exterior usando pyngrok.
 Ejecutar: python ngrok_tunnel.py
 """
 
@@ -12,7 +12,8 @@ import time
 import signal
 import logging
 import subprocess
-import threading
+import urllib.request
+import urllib.error
 
 # ── Logging ────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -23,9 +24,8 @@ logging.basicConfig(
 log = logging.getLogger("ARGOS.Ngrok")
 
 # ── Configuración ──────────────────────────────────────────────────────────
-FLASK_PORT    = int(os.environ.get("ARGOS_PORT", 5000))
-NGROK_TOKEN   = os.environ.get("NGROK_AUTHTOKEN", "")   # token ngrok
-# NGROK_REGION  = os.environ.get("NGROK_REGION", "sa")    # sa = South America
+ARGOS_PORT    = int(os.environ.get("ARGOS_PORT", 5000))
+NGROK_TOKEN   = os.environ.get("NGROK_AUTHTOKEN", "")
 BASE_DIR      = os.path.dirname(os.path.abspath(__file__))
 BACKEND_DIR   = os.path.join(BASE_DIR, "backend")
 
@@ -44,6 +44,7 @@ def ensure_pyngrok():
 ensure_pyngrok()
 
 from pyngrok import ngrok, conf, exception as ngrok_exc  # noqa: E402
+
 
 # ══════════════════════════════════════════════════════════════════════════
 #  PASO 1.5 - Construir Widget Hermes (Micro-Frontend)
@@ -65,12 +66,6 @@ build_hermes_widget()
 #  PASO 2 - Autenticar Ngrok
 # ══════════════════════════════════════════════════════════════════════════
 def autenticar_ngrok():
-    """
-    Prioridad de búsqueda del token:
-      1. Variable de entorno  NGROK_AUTHTOKEN
-      2. Constante NGROK_TOKEN definida arriba
-      3. Archivo  .ngrok_token  en la raíz del proyecto
-    """
     token = NGROK_TOKEN
 
     if not token:
@@ -83,8 +78,7 @@ def autenticar_ngrok():
             "No se encontró NGROK_AUTHTOKEN.\n"
             "  Opciones:\n"
             "    1. export NGROK_AUTHTOKEN='tu_token'\n"
-            "    2. Crea el archivo  .ngrok_token  con tu token\n"
-            "    3. Edita NGROK_TOKEN en ngrok_tunnel.py\n"
+            "    2. Crea el archivo .ngrok_token con tu token\n"
             "  Obtén tu token en: https://dashboard.ngrok.com/get-started/your-authtoken"
         )
         sys.exit(1)
@@ -94,30 +88,58 @@ def autenticar_ngrok():
 
 
 # ══════════════════════════════════════════════════════════════════════════
-#  PASO 3 - Iniciar Flask en segundo plano
+#  PASO 3 - Iniciar FastAPI (Uvicorn) en segundo plano
 # ══════════════════════════════════════════════════════════════════════════
-flask_process = None
+fastapi_process = None
 
-def iniciar_flask():
-    global flask_process
-    app_path = os.path.join(BACKEND_DIR, "app.py")
-    log.info(f"Iniciando Flask en puerto {FLASK_PORT}…")
+def iniciar_fastapi():
+    global fastapi_process
+    log.info(f"Iniciando FastAPI (Uvicorn) en puerto {ARGOS_PORT} (workers=1)…")
 
-    flask_process = subprocess.Popen(
-        [sys.executable, app_path],
+    cmd = [
+        sys.executable, "-m", "uvicorn",
+        "main:app",
+        "--host", "0.0.0.0",
+        "--port", str(ARGOS_PORT),
+        "--workers", "1"
+    ]
+
+    fastapi_process = subprocess.Popen(
+        cmd,
         cwd=BACKEND_DIR,
-        env={**os.environ, "ARGOS_PORT": str(FLASK_PORT)},
+        env={**os.environ, "ARGOS_PORT": str(ARGOS_PORT)},
     )
 
-    # Esperar a que Flask levante
-    time.sleep(2)
+    # Espera activa contra /api/health
+    health_url = f"http://127.0.0.1:{ARGOS_PORT}/api/health"
+    log.info(f"Esperando respuesta de FastAPI en {health_url}…")
 
-    if flask_process.poll() is not None:
-        log.error("Flask no pudo iniciar. Revisa los logs.")
+    max_intentos = 30  # hasta 30 segundos
+    servidor_listo = False
+
+    for intento in range(max_intentos):
+        if fastapi_process.poll() is not None:
+            log.error("El proceso Uvicorn terminó inesperadamente. Revisa los logs.")
+            sys.exit(1)
+
+        try:
+            with urllib.request.urlopen(health_url, timeout=2) as resp:
+                if resp.status == 200:
+                    servidor_listo = True
+                    break
+        except (urllib.error.URLError, ConnectionRefusedError, TimeoutError):
+            pass
+
+        time.sleep(1)
+
+    if not servidor_listo:
+        log.error("Timeout esperando inicio de FastAPI. Cerrando proceso…")
+        if fastapi_process.poll() is None:
+            fastapi_process.terminate()
         sys.exit(1)
 
-    log.info(f"Flask activo  →  http://localhost:{FLASK_PORT}")
-    return flask_process
+    log.info(f"FastAPI activo ✓  →  http://localhost:{ARGOS_PORT}")
+    return fastapi_process
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -127,11 +149,9 @@ tunnel = None
 
 def abrir_tunel():
     global tunnel
-    # log.info(f"Abriendo túnel Ngrok  (región: {NGROK_REGION})…")
-
     try:
         tunnel = ngrok.connect(
-            addr=FLASK_PORT,
+            addr=ARGOS_PORT,
             proto="http",
         )
     except ngrok_exc.PyngrokNgrokError as e:
@@ -139,7 +159,6 @@ def abrir_tunel():
         sys.exit(1)
 
     url_publica = tunnel.public_url
-    # Preferir HTTPS si está disponible
     if url_publica.startswith("http://"):
         url_publica = url_publica.replace("http://", "https://", 1)
 
@@ -150,17 +169,20 @@ def abrir_tunel():
 #  PASO 5 - Mostrar información de acceso
 # ══════════════════════════════════════════════════════════════════════════
 def mostrar_info(url_publica: str):
-    separador = "═" * 60
+    ws_url = url_publica.replace("https://", "wss://").replace("http://", "ws://")
+    ws_full = f"{ws_url}/api/camaras/client/push"
+
+    separador = "═" * 65
     print(f"\n{separador}")
-    print("  ARGOS - SiViA  ·  Acceso Remoto Activo")
+    print("  ARGOS - SiViA  ·  Acceso Remoto Activo (FastAPI + WebSocket)")
     print(separador)
-    print(f"  🏠  Local:       http://localhost:{FLASK_PORT}")
-    print(f"  🌍  Público:     {url_publica}")
-    print(f"  📡  API pública: {url_publica}/api")
-    print(f"  🔌  Inspector:   http://localhost:4040   (Ngrok dashboard)")
+    print(f"  Local:          http://localhost:{ARGOS_PORT}")
+    print(f"  Público:         {url_publica}")
+    print(f"  API pública:     {url_publica}/api")
+    print(f"  WebSocket:       {ws_full}")
+    print(f"  Inspector Ngrok: http://localhost:4040")
     print(separador)
-    print("  Comparte la URL pública con otros dispositivos.")
-    print("  La URL cambia cada vez que reinicias el túnel.")
+    print("  Tanto la API REST como el WebSocket operan en el mismo túnel.")
     print(f"{separador}\n")
 
 
@@ -177,10 +199,10 @@ def cleanup(signum=None, frame=None):
     except Exception:
         pass
     try:
-        if flask_process and flask_process.poll() is None:
-            flask_process.terminate()
-            flask_process.wait(timeout=5)
-            log.info("Flask detenido.")
+        if fastapi_process and fastapi_process.poll() is None:
+            fastapi_process.terminate()
+            fastapi_process.wait(timeout=5)
+            log.info("FastAPI detenido.")
     except Exception:
         pass
     sys.exit(0)
@@ -194,29 +216,26 @@ signal.signal(signal.SIGTERM, cleanup)
 #  MAIN
 # ══════════════════════════════════════════════════════════════════════════
 if __name__ == "__main__":
-    print("\n" + "═"*60)
+    print("\n" + "═"*65)
     print("  ARGOS - SiViA  ·  Iniciando con Ngrok")
-    print("═"*60)
+    print("═"*65)
 
     autenticar_ngrok()
-    iniciar_flask()
+    iniciar_fastapi()
     url_publica = abrir_tunel()
     mostrar_info(url_publica)
 
-    # ── Guardar URL en archivo para que otros scripts la consuman ──
     url_file = os.path.join(BASE_DIR, ".ngrok_url_actual")
     with open(url_file, "w") as f:
         f.write(url_publica)
     log.info(f"URL guardada en  {url_file}")
 
-    # ── Mantener proceso vivo ──
     log.info("Sistema activo. Presiona Ctrl+C para detener.")
     try:
         while True:
             time.sleep(10)
-            # Verificar que Flask sigue vivo
-            if flask_process and flask_process.poll() is not None:
-                log.error("Flask se detuvo inesperadamente. Cerrando…")
+            if fastapi_process and fastapi_process.poll() is not None:
+                log.error("FastAPI se detuvo inesperadamente. Cerrando…")
                 cleanup()
     except KeyboardInterrupt:
         cleanup()

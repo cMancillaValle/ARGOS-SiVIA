@@ -1,18 +1,15 @@
 """
-services/rbac.py
+services/rbac.py  (sin imports Flask — compatible FastAPI y Python puro)
 ────────────────────────────────────────────────────────────
 ARGOS - SiViA  ·  Control de Acceso Basado en Roles (RBAC)
-────────────────────────────────────────────────────────────
 
-Uso:
-    from services.rbac import tiene_permiso, requiere_permiso, PERMISOS_ROL
-
-Roles disponibles:
-    admin, supervisor, operador, analista, tecnico, auditor
+Las funciones de validación son Python puro.
+Los decoradores Flask han sido removidos — usar las dependencias
+de auth_service.py (require_permission, require_any_permission, require_role)
+en su lugar dentro de FastAPI.
 """
 
 from functools import wraps
-from flask import request, jsonify
 
 # ══════════════════════════════════════════════════════════════
 #  CATÁLOGO DE PERMISOS
@@ -89,11 +86,9 @@ PERMISOS = {
 PERMISOS_ROL: dict[str, set[str]] = {
 
     # ── ADMIN ─────────────────────────────────────────────────
-    # Acceso total sin restricción
     "admin": set(PERMISOS.keys()),
 
     # ── SUPERVISOR ────────────────────────────────────────────
-    # Monitoreo completo, eventos, estadísticas; sin gestión de infraestructura
     "supervisor": {
         "dashboard:ver",
         "dashboard:exportar",
@@ -117,7 +112,6 @@ PERMISOS_ROL: dict[str, set[str]] = {
     },
 
     # ── OPERADOR ──────────────────────────────────────────────
-    # Cámaras asignadas, alertas en tiempo real, marcar eventos
     "operador": {
         "dashboard:ver",
         "camaras:ver",
@@ -132,7 +126,6 @@ PERMISOS_ROL: dict[str, set[str]] = {
     },
 
     # ── ANALISTA ──────────────────────────────────────────────
-    # Estadísticas, datos históricos; solo lectura operacional
     "analista": {
         "dashboard:ver",
         "camaras:ver",
@@ -148,7 +141,6 @@ PERMISOS_ROL: dict[str, set[str]] = {
     },
 
     # ── TECNICO ───────────────────────────────────────────────
-    # Cámaras, sistema, infraestructura y logs técnicos
     "tecnico": {
         "dashboard:ver",
         "camaras:ver",
@@ -169,8 +161,6 @@ PERMISOS_ROL: dict[str, set[str]] = {
     },
 
     # ── AUDITOR ───────────────────────────────────────────────
-    # Solo lectura: auditoría del sistema, logs, historial de eventos
-    # NO accede a estadísticas (eso es rol de analista)
     "auditor": {
         "dashboard:ver",
         "camaras:ver",
@@ -187,118 +177,64 @@ PERMISOS_ROL: dict[str, set[str]] = {
 
 
 # ══════════════════════════════════════════════════════════════
-#  FUNCIÓN PRINCIPAL: tiene_permiso
+#  FUNCIONES PURAS DE VALIDACIÓN
 # ══════════════════════════════════════════════════════════════
 
 def tiene_permiso(usuario: dict, permiso: str) -> bool:
     """
     Verifica si un usuario tiene un permiso específico.
-
-    Args:
-        usuario:  dict con al menos la clave 'rol'
-                  Ej: {'id': 1, 'username': 'admin', 'rol': 'admin'}
-        permiso:  string con formato 'módulo:acción'
-                  Ej: 'camaras:eliminar', 'chatbot:consulta_tecnica'
-
-    Returns:
-        True  → el rol del usuario incluye ese permiso
-        False → acceso denegado
-
-    Ejemplos:
-        tiene_permiso({'rol': 'operador'}, 'eventos:revisar')  → True
-        tiene_permiso({'rol': 'auditor'},  'usuarios:crear')   → False
-        tiene_permiso({'rol': 'admin'},    'cualquier:cosa')   → True
+    100% Python puro, sin dependencias de framework.
     """
     if not usuario or not permiso:
         return False
-
     rol = usuario.get("rol", "")
-
-    # Admin siempre tiene acceso total
     if rol == "admin":
         return True
-
     permisos_del_rol = PERMISOS_ROL.get(rol, set())
     return permiso in permisos_del_rol
 
 
 def obtener_permisos(usuario: dict) -> list[str]:
-    """
-    Devuelve la lista completa de permisos del usuario.
-
-    Útil para enviar al frontend y construir la UI dinámica.
-    """
+    """Devuelve la lista completa de permisos del usuario."""
     rol = usuario.get("rol", "")
     return sorted(PERMISOS_ROL.get(rol, set()))
 
 
 def puede_acceder_modulo(usuario: dict, modulo: str) -> bool:
-    """
-    Verifica si el usuario tiene al menos UN permiso en el módulo dado.
-
-    Args:
-        modulo: nombre del módulo (ej: 'camaras', 'estadisticas')
-
-    Uso típico: controlar visibilidad de secciones en el menú.
-    """
+    """Verifica si el usuario tiene al menos UN permiso en el módulo dado."""
     rol = usuario.get("rol", "")
     permisos = PERMISOS_ROL.get(rol, set())
     return any(p.startswith(f"{modulo}:") for p in permisos)
 
 
 # ══════════════════════════════════════════════════════════════
-#  DECORADORES FLASK
+#  DECORADORES (STUBS — solo para compatibilidad durante la migración)
+#  Los routers FastAPI deben usar Depends(require_permission("modulo:accion"))
+#  definidas en services/auth_service.py
 # ══════════════════════════════════════════════════════════════
 
 def requiere_permiso(permiso: str):
     """
-    Decorador que valida un permiso específico en el endpoint.
-
-    Requiere que @requiere_auth haya sido aplicado antes,
-    o que request.usuario esté disponible.
-
-    Uso:
-        @app.route('/api/camaras', methods=['DELETE'])
-        @requiere_auth
-        @requiere_permiso('camaras:eliminar')
-        def eliminar_camara():
-            ...
+    STUB para compatibilidad. En FastAPI usar:
+        from services.auth_service import require_permission
+        usuario = Depends(require_permission("modulo:accion"))
     """
     def decorator(f):
         @wraps(f)
         def decorated(*args, **kwargs):
-            usuario = getattr(request, "usuario", None)
-            if not usuario:
-                return jsonify({"error": "No autorizado."}), 401
-            if not tiene_permiso(usuario, permiso):
-                return jsonify({
-                    "error": f"Acceso denegado.",
-                    "detalle": f"Tu rol '{usuario.get('rol')}' no tiene el permiso '{permiso}'.",
-                    "permiso_requerido": permiso,
-                }), 403
-            return f(*args, **kwargs)
+            raise RuntimeError(
+                f"requiere_permiso('{permiso}') Flask stub invocado en contexto FastAPI. "
+                "Usa Depends(require_permission(...)) en su lugar."
+            )
         return decorated
     return decorator
 
 
 def requiere_cualquier_permiso(*permisos: str):
-    """
-    Decorador que pasa si el usuario tiene AL MENOS UNO de los permisos dados.
-
-    Uso:
-        @requiere_cualquier_permiso('camaras:editar', 'camaras:crear')
-    """
+    """STUB para compatibilidad — usar require_any_permission() de auth_service."""
     def decorator(f):
         @wraps(f)
         def decorated(*args, **kwargs):
-            usuario = getattr(request, "usuario", None)
-            if not usuario:
-                return jsonify({"error": "No autorizado."}), 401
-            if not any(tiene_permiso(usuario, p) for p in permisos):
-                return jsonify({
-                    "error": "Acceso denegado.",
-                    "detalle": f"Se requiere uno de: {', '.join(permisos)}",
-                }), 403
-            return f(*args, **kwargs)
+            raise RuntimeError("requiere_cualquier_permiso Flask stub invocado en FastAPI.")
         return decorated
     return decorator

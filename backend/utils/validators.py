@@ -1,14 +1,22 @@
+"""
+utils/validators.py  (sin imports Flask)
+────────────────────────────────────────
+Validadores de datos reutilizables, Python puro.
+format_error ahora devuelve un dict listo para JSONResponse de FastAPI.
+"""
+
 import re
-import urllib.parse
-from flask import jsonify
+from fastapi.responses import JSONResponse
 
 EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
+
 
 def validate_email(email: str) -> bool:
     """Verifica que el correo tenga un formato estándar usando RegExp."""
     if not email:
         return False
     return bool(EMAIL_REGEX.match(email.strip()))
+
 
 def validate_password(password: str) -> tuple[bool, str]:
     """Mínimo 8 caracteres, al menos 1 mayúscula, 1 número y 1 símbolo."""
@@ -22,22 +30,24 @@ def validate_password(password: str) -> tuple[bool, str]:
         return False, "al menos un símbolo"
     return True, ""
 
-def validate_avatar(avatar: str) -> bool:
-    """Asegura que de haber un avatar, sea URL (http) o URI Base64 válida y no exceda límites burdos."""
-    if not avatar:
-        return True # Es opcional
 
-    if len(avatar) > 200000: # ~200kb previniendo payloads
+def validate_avatar(avatar: str) -> bool:
+    """Asegura que de haber un avatar, sea URL (http) o URI Base64 válida."""
+    if not avatar:
+        return True  # Es opcional
+
+    if len(avatar) > 200000:  # ~200kb previniendo payloads
         return False
-        
-    # Verificar prefix de URl / base64
+
     if avatar.startswith(('http://', 'https://')):
         return True
-    
+
     if avatar.startswith('data:image/'):
         return True
-        
+
     return False
 
-def format_error(msg="Datos no válidos"):
-    return jsonify({'error': msg}), 400
+
+def format_error(msg: str = "Datos no válidos") -> JSONResponse:
+    """Devuelve una JSONResponse 400 estilo FastAPI."""
+    return JSONResponse(status_code=400, content={"error": msg})

@@ -1,29 +1,36 @@
 #!/usr/bin/env python3
 """
-ARGOS - SiViA · Script de inicio rápido
-========================================
+ARGOS - SiViA · Script de inicio rápido (FastAPI + Uvicorn)
+============================================================
 Ejecuta:   python start.py
 Servidor:  http://localhost:5000
 """
-import os, sys, subprocess
+import os
+import sys
+import subprocess
 
-BASE  = os.path.dirname(os.path.abspath(__file__))
+BASE = os.path.dirname(os.path.abspath(__file__))
 BACKEND = os.path.join(BASE, 'backend')
-APP     = os.path.join(BACKEND, 'app.py')
+PORT = os.environ.get("ARGOS_PORT", "5000")
 
-# Verify Flask is installed
+# Verificar que FastAPI y Uvicorn estén instalados
 try:
-    import flask
+    import fastapi
+    import uvicorn
 except ImportError:
-    print("Flask no está instalado. Instalando...")
-    subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'flask'])
+    print("FastAPI o Uvicorn no están instalados. Instalando dependencias...")
+    subprocess.check_call([
+        sys.executable, '-m', 'pip', 'install', '-r', os.path.join(BACKEND, 'requirements.txt')
+    ])
 
 print("\n" + "═"*50)
-print("  ARGOS - SiViA · Iniciando sistema...")
+print("  ARGOS - SiViA · Iniciando servidor FastAPI...")
 print("═"*50)
 print(f"  Directorio: {BASE}")
-print(f"  Backend:    {APP}")
+print(f"  Backend:    {BACKEND}")
+print(f"  Puerto:     {PORT}")
 print("═"*50 + "\n")
 
 os.chdir(BACKEND)
-os.execv(sys.executable, [sys.executable, APP])
+cmd = [sys.executable, "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", str(PORT), "--workers", "1"]
+os.execv(sys.executable, cmd)

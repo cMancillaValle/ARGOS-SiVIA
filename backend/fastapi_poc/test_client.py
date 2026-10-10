@@ -81,7 +81,7 @@ def run_inprocess_tests():
     # 1. Healthcheck HTTP
     res = client.get("/health")
     assert res.status_code == 200, f"Healthcheck falló: {res.text}"
-    print(" [✓] GET /health responde HTTP 200 OK")
+    print(" [OK] GET /health responde HTTP 200 OK")
 
     token = get_or_create_test_token()
     print(f" [i] Token de prueba generado: {token[:10]}...")
@@ -94,7 +94,7 @@ def run_inprocess_tests():
         print(f"  Respuesta recibida: {response}")
         assert response.get("type") == "error"
         assert response.get("message") == "No autorizado"
-        print("  [✓] Rechazado con mensaje 'No autorizado' correctamente")
+        print("  [OK] Rechazado con mensaje 'No autorizado' correctamente")
 
     # 3. Test: Rechazo por cam_id faltante
     print("\n--- Test 2: Rechazo sin cam_id ---")
@@ -104,7 +104,7 @@ def run_inprocess_tests():
         print(f"  Respuesta recibida: {response}")
         assert response.get("type") == "error"
         assert response.get("message") == "cam_id requerido"
-        print("  [✓] Rechazado con mensaje 'cam_id requerido' correctamente")
+        print("  [OK] Rechazado con mensaje 'cam_id requerido' correctamente")
 
     # 4. Test: Handshake exitoso, Ping/Pong, Frame Base64 y Limpieza al desconectar
     print("\n--- Test 3: Handshake OK, Ping/Pong, Frames & Limpieza ---")
@@ -118,18 +118,18 @@ def run_inprocess_tests():
         assert handshake_res.get("cam_id") == cam_test_id
         assigned_client_id = handshake_res.get("client_id")
         assert assigned_client_id is not None
-        print(f"  [✓] Handshake OK, client_id asignado: {assigned_client_id}")
+        print(f"  [OK] Handshake OK, client_id asignado: {assigned_client_id}")
 
         # Verificar mapa de cámaras
         assert get_client_camera(assigned_client_id) == cam_test_id
-        print(f"  [✓] Mapa _client_cameras verificado: {assigned_client_id} -> Cámara {cam_test_id}")
+        print(f"  [OK] Mapa _client_cameras verificado: {assigned_client_id} -> Cámara {cam_test_id}")
 
         # Enviar Ping
         ws.send_text(json.dumps({"type": "ping"}))
         ping_res = json.loads(ws.receive_text())
         print(f"  Respuesta Ping: {ping_res}")
         assert ping_res.get("type") == "pong"
-        print("  [✓] Ping/Pong exitoso")
+        print("  [OK] Ping/Pong exitoso")
 
         # Enviar Frame JPEG en Base64
         ws.send_text(json.dumps({
@@ -145,14 +145,14 @@ def run_inprocess_tests():
         buffered_bytes = client_buffer.read(assigned_client_id)
         assert buffered_bytes is not None, "El frame no fue encontrado en client_buffer"
         assert buffered_bytes == DUMMY_JPEG_BYTES, "Los bytes del buffer no coinciden con el JPEG enviado"
-        print(f"  [✓] Frame Base64 recibido y decodificado en client_buffer ({len(buffered_bytes)} bytes)")
+        print(f"  [OK] Frame Base64 recibido y decodificado en client_buffer ({len(buffered_bytes)} bytes)")
 
     # 5. Verificar limpieza post-desconexión
     time.sleep(0.05)
     post_clients = client_buffer.clients()
     assert assigned_client_id not in post_clients, "client_id aún permanece en client_buffer tras desconexión"
     assert get_client_camera(assigned_client_id) is None, "client_id aún permanece en _client_cameras tras desconexión"
-    print("  [✓] Limpieza exitosa: cliente removido de client_buffer y mapa de cámaras al desconectar")
+    print("  [OK] Limpieza exitosa: cliente removido de client_buffer y mapa de cámaras al desconectar")
 
     # Revocar token de prueba
     try:
@@ -186,7 +186,7 @@ def run_live_network_tests(ws_url: str):
             data = json.loads(msg)
             print(f"  Respuesta: {data}")
             assert data.get("type") == "error" and data.get("message") == "No autorizado"
-            print("  [✓] Rechazado con 'No autorizado' correctamente")
+            print("  [OK] Rechazado con 'No autorizado' correctamente")
 
         # 2. Handshake válido, Ping, Frame
         print("\n--- Test 2: Handshake OK, Ping/Pong, Frames & Cierre ---")
@@ -196,14 +196,14 @@ def run_live_network_tests(ws_url: str):
             print(f"  Respuesta Handshake: {handshake}")
             assert handshake.get("type") == "ok"
             cid = handshake.get("client_id")
-            print(f"  [✓] Handshake exitoso, client_id: {cid}")
+            print(f"  [OK] Handshake exitoso, client_id: {cid}")
 
             # Ping
             await ws.send(json.dumps({"type": "ping"}))
             pong = json.loads(await ws.recv())
             print(f"  Respuesta Ping: {pong}")
             assert pong.get("type") == "pong"
-            print("  [✓] Ping/Pong exitoso")
+            print("  [OK] Ping/Pong exitoso")
 
             # Frame
             await ws.send(json.dumps({
@@ -211,7 +211,7 @@ def run_live_network_tests(ws_url: str):
                 "data": DUMMY_B64_FRAME,
                 "ts": int(time.time() * 1000)
             }))
-            print(f"  [✓] Frame enviado exitosamente")
+            print(f"  [OK] Frame enviado exitosamente")
 
         print("\n========================================================")
         print(" TESTS DE RED COMPLETADOS CON ÉXITO")

@@ -31,8 +31,8 @@ El sistema integra un pipeline de visión por computador con un backend REST, un
   - Detección en cascada condicional (Pose y espacio de color RGB se ejecutan únicamente si hay personas en escena).
 - **Procesamiento multihilo aislado**: Worker en subproceso con comunicación por pipe binario de bajo retardo hacia Flask.
 
-### 🖥️ Backend REST — Flask
-- API REST completa con autenticación por token (`X-Token`)
+### 🖥️ Backend ASGI — FastAPI (v1.7.5+)
+- API REST asíncrona completa con autenticación por token (`X-Token`)
 - **Control de Acceso Basado en Roles (RBAC)** con 6 roles: `admin`, `supervisor`, `operador`, `analista`, `técnico`, `auditor`
 - Gestión completa de cámaras (CRUD) y soporte de fuentes físicas, RTSP y archivos de video
 - **Endpoints de análisis de video**: `POST /api/camaras/upload-video` y `GET /api/camaras/videos`
@@ -41,8 +41,8 @@ El sistema integra un pipeline de visión por computador con un backend REST, un
 - Auditoría de acciones del sistema con log persistente
 - Estadísticas del sistema en tiempo real y métricas (CPU, RAM, disco — psutil)
 - Autenticación de dos factores **2FA TOTP** con código QR y recuperación por correo (SMTP)
-- Rate limiting y protección contra fuerza bruta (Flask-Limiter)
-- Acceso remoto a cámara cliente via **WebSocket** (flask-sock)
+- Rate limiting y protección contra fuerza bruta con **slowapi**
+- Acceso remoto a cámara cliente via **WebSocket nativo ASGI** (`WS /api/camaras/client/push`)
 
 ### 🌐 Frontend Web — Dashboard Principal
 - Interfaz SPA multi-panel renderizada dinámicamente con JavaScript Vanilla
@@ -109,27 +109,30 @@ ARGOS-SiVIA/
 │   │   └── types/              → Tipos TypeScript
 │   └── dist/                   → Bundle compilado (generado por Vite)
 │
-├── backend/                    ← Servidor Flask (API REST + lógica de negocio)
-│   ├── app.py                  → Entrada principal, registro de blueprints
-│   ├── requirements.txt        → Dependencias de IA (torch, ultralytics, mediapipe)
+├── backend/                    ← Servidor FastAPI (API REST + WebSocket + lógica de negocio)
+│   ├── main.py                 → Entrada principal FastAPI, lifespan, routers, estáticos
+│   ├── requirements.txt        → Dependencias del backend FastAPI (fastapi, uvicorn, slowapi)
 │   ├── database/
 │   │   └── db.py               → Esquema SQLite, inicialización y datos demo
-│   ├── routes/                 → Blueprints Flask por dominio
-│   │   ├── auth.py             → Autenticación + 2FA TOTP
-│   │   ├── cameras.py          → CRUD cámaras + stream MJPEG
-│   │   ├── camera_client.py    → WebSocket para cámara cliente remota
-│   │   ├── events.py           → Gestión de eventos de seguridad
-│   │   ├── stats.py            → Estadísticas del sistema
-│   │   ├── users.py            → CRUD usuarios
-│   │   ├── rbac_api.py         → API de permisos y matriz RBAC
-│   │   ├── profile.py          → Perfil de usuario + cambio de email/contraseña
-│   │   ├── reset_password.py   → Recuperación de contraseña por email
-│   │   ├── auditoria.py        → Log de auditoría + exportación CSV
-│   │   ├── chat.py             → Endpoint del asistente Hermes IA
-│   │   └── system_metrics.py   → Métricas de CPU/RAM/disco + configuración IA
-│   ├── services/               → Lógica de negocio desacoplada
-│   │   ├── auth_service.py     → Tokens, decoradores @requiere_auth / @requiere_rol
-│   │   ├── rbac.py             → Matriz RBAC y evaluación de permisos
+│   ├── api/
+│   │   └── routers/            → Routers FastAPI por dominio
+│   │       ├── auth.py         → Autenticación + 2FA TOTP
+│   │       ├── cameras.py      → CRUD cámaras + stream MJPEG
+│   │       ├── camera_client.py→ WebSocket integrado (/api/camaras/client/push)
+│   │       ├── events.py       → Gestión de eventos de seguridad
+│   │       ├── stats.py        → Estadísticas del sistema
+│   │       ├── users.py        → CRUD usuarios
+│   │       ├── rbac.py         → API de permisos y matriz RBAC
+│   │       ├── profile.py      → Perfil de usuario + cambio de email/contraseña
+│   │       ├── reset_password.py→ Recuperación de contraseña por email
+│   │       ├── auditoria.py    → Log de auditoría + exportación CSV
+│   │       ├── chat.py         → Endpoint del asistente Hermes IA
+│   │       ├── transmilenio.py → Integración de estaciones y troncales
+│   │       ├── sesiones.py     → Sesiones activas y monitoreo
+│   │       └── system_metrics.py→ Métricas de CPU/RAM/disco + configuración IA
+│   ├── services/               → Lógica de negocio desacoplada (Python puro)
+│   │   ├── auth_service.py     → Dependencias get_current_user, require_permission
+│   │   ├── rbac.py             → Matriz RBAC y funciones de validación
 │   │   ├── hermes_service.py   → Orquestador del pipeline Hermes IA
 │   │   ├── hermes_intents.py   → Motor NLP por reglas (detección de intenciones)
 │   │   ├── hermes_context.py   → Modelos Pydantic de contratos API
@@ -138,7 +141,7 @@ ARGOS-SiVIA/
 │   │   ├── two_factor.py       → Gestión de TOTP + Fernet + QR
 │   │   └── system_health.py    → Snapshot de métricas del sistema (psutil)
 │   └── utils/
-│       ├── limiter.py          → Rate limiter global (Flask-Limiter)
+│       ├── limiter.py          → Rate limiter global (slowapi)
 │       └── validators.py       → Validadores de entrada
 │
 ├── backend/core_ia/athena/     ← Motor de Visión IA (Worker independiente)
@@ -172,9 +175,10 @@ ARGOS-SiVIA/
 | Tecnología | Versión | Uso |
 |---|---|---|
 | **Python** | 3.10+ | Lenguaje base del servidor y IA |
-| **Flask** | 3.0.3 | Framework servidor REST |
-| **Flask-Limiter** | 3.8.0 | Rate limiting y protección brute-force |
-| **flask-sock** | ≥ 0.7.0 | WebSocket para cámara cliente remota |
+| **FastAPI** | ≥ 0.110.0 | Framework servidor web ASGI y WebSockets |
+| **Uvicorn** | ≥ 0.28.0 | Servidor ASGI de producción (workers=1) |
+| **slowapi** | ≥ 0.1.9 | Rate limiting y protección brute-force |
+| **websockets** | ≥ 12.0 | Protocolo WebSocket de ingesta de video |
 | **Werkzeug** | 3.0.3 | Seguridad: hashing de contraseñas PBKDF2 |
 | **SQLite** | stdlib | Base de datos embebida |
 | **pyotp** | 2.9.0 | Generación y validación TOTP (2FA) |
@@ -243,12 +247,16 @@ pip install ultralytics opencv-python mediapipe torch lapx
 
 ### 3. Iniciar el sistema
 ```bash
-# Activar entorno del backend e iniciar el servidor
+# Activar entorno del backend e iniciar el servidor (FastAPI + Uvicorn)
 backend_env\Scripts\activate
-python backend/app.py
+cd backend
+python -m uvicorn main:app --host 0.0.0.0 --port 5000 --workers 1
+
+# O mediante el script rápido:
+python start.py
 ```
 
-> El servidor levanta en `http://localhost:5000`
+> El servidor levanta en `http://localhost:5000` con la API en `/api` y el WebSocket en `ws://localhost:5000/api/camaras/client/push`
 
 ### 4. Acceso remoto (opcional)
 ```bash

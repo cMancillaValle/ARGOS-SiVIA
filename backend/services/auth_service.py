@@ -1,11 +1,11 @@
 """
-services/auth_service.py  (actualizado con RBAC)
+services/auth_service.py  (migrado a FastAPI — sin imports Flask)
 ────────────────────────────────────────────────────────────
 ARGOS - SiViA  ·  Autenticación + integración RBAC
 
-Exporta todos los decoradores originales PLUS los nuevos
-de rbac.py para que el resto del código no necesite
-cambiar sus imports.
+Exporta todos los símbolos originales para que los routers existentes
+no necesiten cambiar sus imports, más las dependencias FastAPI nuevas
+(get_current_user, require_permission, etc.).
 """
 
 import sqlite3
@@ -13,10 +13,7 @@ import hashlib
 import secrets
 import os
 from datetime import datetime, timedelta
-from functools import wraps
-from flask import request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
-
 
 # Re-exportar el RBAC completo desde un solo punto de entrada
 from services.rbac import (          # noqa: F401  (re-export)
@@ -50,7 +47,6 @@ def verify_password(plain: str, stored_hash: str) -> bool:
         return check_password_hash(stored_hash, plain)
     # Retrocompatibilidad con SHA-256 clásico
     return hashlib.sha256(plain.encode()).hexdigest() == stored_hash
-
 
 
 def generate_token() -> str:
@@ -95,51 +91,14 @@ def revoke_token(token: str):
     conn.close()
 
 
-# ── Decorador: autenticación ──────────────────────────────────
+# ── Auditoría (sin depender de request Flask) ─────────────────
 
-def requiere_auth(f):
-    """Valida el token X-Token. Inyecta request.usuario."""
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        token = request.headers.get('X-Token')
-        user  = validate_token(token)
-        if not user:
-            return jsonify({'error': 'No autorizado. Token inválido o expirado.'}), 401
-        request.usuario = user
-        return f(*args, **kwargs)
-    return decorated
-
-
-# ── Decorador: rol(es) específico(s) ─────────────────────────
-# Mantenido por compatibilidad con el código existente
-
-def requiere_rol(*roles):
+def registrar_auditoria(usuario_id, accion, detalle=None, ip: str = None):
     """
-    Acepta la request solo si el usuario tiene uno de los roles dados.
-    Para nuevos endpoints prefer @requiere_permiso('modulo:accion').
+    Registra una acción en el log de auditoría.
+    ip es opcional; si no se pasa, queda NULL en la BD.
     """
-    def decorator(f):
-        @wraps(f)
-        def decorated(*args, **kwargs):
-            token = request.headers.get('X-Token')
-            user  = validate_token(token)
-            if not user:
-                return jsonify({'error': 'No autorizado.'}), 401
-            if user['rol'] not in roles:
-                return jsonify({
-                    'error': f'Acceso denegado. Roles permitidos: {", ".join(roles)}'
-                }), 403
-            request.usuario = user
-            return f(*args, **kwargs)
-        return decorated
-    return decorator
-
-
-# ── Auditoría ─────────────────────────────────────────────────
-
-def registrar_auditoria(usuario_id, accion, detalle=None):
     try:
-        ip   = request.remote_addr if request else None
         conn = get_conn()
         conn.execute(
             'INSERT INTO auditoria (usuario_id, accion, detalle, ip_origen) VALUES (?,?,?,?)',
@@ -151,13 +110,9 @@ def registrar_auditoria(usuario_id, accion, detalle=None):
         pass
 
 
-# ── Sesiones activas (módulo actual + monitoreo en tiempo real) ────────────
+# ── Sesiones activas ──────────────────────────────────────────
 
 def actualizar_modulo_sesion(token: str, modulo: str):
-    """
-    Registra el módulo que el usuario está viendo ahora mismo.
-    Se llama desde el frontend cada vez que navega (router.js).
-    """
     if not token or not modulo:
         return False
     conn = get_conn()
@@ -174,10 +129,6 @@ def actualizar_modulo_sesion(token: str, modulo: str):
 
 
 def listar_sesiones_activas():
-    """
-    Devuelve los usuarios conectados actualmente (1 fila por usuario único),
-    tomando su sesión más reciente y activa (última actividad en los últimos 30 min).
-    """
     conn  = get_conn()
     ahora = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     query = '''
@@ -186,13 +137,13 @@ def listar_sesiones_activas():
                s.ultima_actividad
         FROM sesiones s
         JOIN usuarios u ON u.id = s.usuario_id
-        WHERE s.expira_en > ? 
+        WHERE s.expira_en > ?
           AND u.activo = 1
           AND s.ultima_actividad >= datetime('now', '-30 minutes')
           AND s.token = (
-              SELECT s2.token 
-              FROM sesiones s2 
-              WHERE s2.usuario_id = s.usuario_id 
+              SELECT s2.token
+              FROM sesiones s2
+              WHERE s2.usuario_id = s.usuario_id
                 AND s2.expira_en > ?
               ORDER BY s2.ultima_actividad DESC, s2.creado_en DESC
               LIMIT 1
@@ -203,3 +154,106 @@ def listar_sesiones_activas():
     conn.close()
     return [dict(r) for r in rows]
 
+
+# ════════════════════════════════════════════════════════════════
+# DEPENDENCIAS FASTAPI
+# ════════════════════════════════════════════════════════════════
+
+from fastapi import Header, HTTPException, Request, Depends
+from typing import Optional
+
+
+def get_current_user(x_token: Optional[str] = Header(default=None, alias="X-Token")):
+    """
+    Dependencia FastAPI: extrae y valida el token del header X-Token.
+    Devuelve el dict del usuario si es válido, o lanza HTTP 401.
+    """
+    if not x_token:
+        raise HTTPException(status_code=401, detail="No autorizado. Token inválido o expirado.")
+    user = validate_token(x_token)
+    if not user:
+        raise HTTPException(status_code=401, detail="No autorizado. Token inválido o expirado.")
+    return user
+
+
+def require_permission(permiso: str):
+    """
+    Dependencia FastAPI: verifica que el usuario tenga un permiso específico.
+
+    Uso:
+        @router.get("/endpoint")
+        def endpoint(usuario = Depends(require_permission("camaras:ver"))):
+            ...
+    """
+    def _check(usuario: dict = Depends(get_current_user)):
+        if not tiene_permiso(usuario, permiso):
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "Acceso denegado.",
+                    "detalle": f"Tu rol '{usuario.get('rol')}' no tiene el permiso '{permiso}'.",
+                    "permiso_requerido": permiso,
+                }
+            )
+        return usuario
+    return _check
+
+
+def require_any_permission(*permisos: str):
+    """
+    Dependencia FastAPI: pasa si el usuario tiene AL MENOS UNO de los permisos dados.
+    """
+    def _check(usuario: dict = Depends(get_current_user)):
+        if not any(tiene_permiso(usuario, p) for p in permisos):
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "Acceso denegado.",
+                    "detalle": f"Se requiere uno de: {', '.join(permisos)}",
+                }
+            )
+        return usuario
+    return _check
+
+
+def require_role(*roles: str):
+    """
+    Dependencia FastAPI: verifica que el usuario tenga uno de los roles dados.
+    """
+    def _check(usuario: dict = Depends(get_current_user)):
+        if usuario.get("rol") not in roles:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Acceso denegado. Roles permitidos: {', '.join(roles)}"
+            )
+        return usuario
+    return _check
+
+
+# ── Compat: Stubs de decoradores Flask (NO usados en FastAPI) ──
+# Mantenidos para que old routes/blueprint code sin migrar no explote al importar.
+
+def requiere_auth(f):
+    """
+    STUB DE COMPATIBILIDAD — No usar en rutas FastAPI nuevas.
+    En FastAPI, usar Depends(get_current_user).
+    """
+    from functools import wraps
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        raise RuntimeError(
+            "requiere_auth (Flask) no debe usarse en FastAPI. "
+            "Usa Depends(get_current_user)."
+        )
+    return decorated
+
+
+def requiere_rol(*roles):
+    """STUB DE COMPATIBILIDAD — No usar en rutas FastAPI."""
+    def decorator(f):
+        from functools import wraps
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            raise RuntimeError("requiere_rol (Flask) no debe usarse en FastAPI.")
+        return decorated
+    return decorator

@@ -19,7 +19,7 @@ services:
       && apt-get install -y --no-install-recommends libgl1 libglib2.0-0
       && pip install --no-cache-dir -r backend/requirements.txt
       && pip install --no-cache-dir -r backend/core_ia/athena/requirements.txt
-      && python backend/app.py"
+      && cd backend && python -m uvicorn main:app --host 0.0.0.0 --port 5000 --workers 1"
     ports:
       - "5000:5000"
     healthcheck:
