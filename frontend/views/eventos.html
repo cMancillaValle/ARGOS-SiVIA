@@ -401,7 +401,15 @@
   });
   $btnRecargar.addEventListener('click', () => cargarEventos(paginaActual));
 
-  // Carga inicial
+  // Carga inicial (revisar si venimos navegando desde Mapa TransMilenio)
+  const filtroEstacionPrev = sessionStorage.getItem('argos_filtro_estacion_ev');
+  if (filtroEstacionPrev) {
+    sessionStorage.removeItem('argos_filtro_estacion_ev');
+    if ($inputBusqueda) {
+      $inputBusqueda.value = filtroEstacionPrev;
+    }
+  }
+
   cargarEventos(1);
 
 })();

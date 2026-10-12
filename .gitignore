@@ -19,9 +19,15 @@ dist/
 # ── Archivos de Entorno y Configuración Sensible ─────────────────────────────
 # (¡NUNCA SUBIR AL REPOSITORIO!)
 .env
-.env.*.local
+.env.*
+!.env.example
 .ngrok_token
 .ngrok_url_actual
+*.pem
+*.key
+*.crt
+*.pfx
+*.p12
 
 # ── Modelos de Inteligencia Artificial (Pesos Binarios Pesados) ──────────────
 # Descargar con: pip install ultralytics && yolo download
@@ -31,36 +37,60 @@ dist/
 *.weights
 *.caffemodel
 *.tflite
+*.bin
+*.h5
+*.keras
+*.engine
+*.safetensors
 
 # ── Datos de Entrenamiento y Ejecuciones YOLO ────────────────────────────────
 # Las carpetas de dataset y runs se generan localmente
 runs/
 backend/core_ia/athena/dataset/images/
 backend/core_ia/athena/dataset/labels/
+backend/core_ia/athena/runs/
 
 # ── Bases de Datos Locales ───────────────────────────────────────────────────
 *.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
 *.sqlite3
+database/*.db
 
-# ── Videos y Archivos Multimedia Subidos (Uploads) ───────────────────────────
+# ── Videos y Archivos Multimedia Subidos (Uploads) y Evidencias ───────────────
 backend/uploads/videos/*
 !backend/uploads/videos/.gitkeep
+backend/evidence/*
+!backend/evidence/.gitkeep
+backend/core_ia/athena/evidence/*
+!backend/core_ia/athena/evidence/.gitkeep
+!backend/core_ia/athena/evidence/*.py
 *.mp4
 *.avi
 *.mkv
 *.mov
 *.webm
 *.flv
-
-backend/evidence/
+*.m4v
 
 # ── Dependencias Node.js y Builds de Frontend ────────────────────────────────
 node_modules/
+frontend-hermes/node_modules/
 frontend-hermes/dist/
 frontend-hermes/.vite/
 dist/
 dist-ssr/
 *.local
+
+# ── Pruebas, Cobertura y Caches ──────────────────────────────────────────────
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
 
 # ── Carpetas ignoradas del proyecto ─────────────────────────────────────────
 # Scripts de instalación (solo para distribución, no para desarrollo)
@@ -74,6 +104,9 @@ tests/
 logs/
 *.log
 athena_worker.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # ── Editor e IDEs ────────────────────────────────────────────────────────────
 .vscode/
@@ -90,8 +123,12 @@ athena_worker.log
 Thumbs.db
 desktop.ini
 
-# ── Backups y Archivos Temporales ────────────────────────────────────────────
+# ── Backups, Temporales y Comprimidos ────────────────────────────────────────
 *.bak
 *.tmp
 *.temp
-backend/evidence/ 
+*.zip
+*.tar
+*.gz
+*.rar
+*.7z

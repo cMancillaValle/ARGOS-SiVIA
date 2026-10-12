@@ -89,6 +89,14 @@ class HermesRequest(BaseModel):
         return v
 
 
+class FuenteAsistente(BaseModel):
+    """Referencia verificable a datos internos o documentación autorizada."""
+    tipo:           Literal["evento", "estadistica", "documentacion", "sistema", "camaras", "usuarios", "auditoria", "infraestructura", "ayuda"]
+    referencia:     str            # ej: "evento:42" o "docs:arquitectura.md#componentes"
+    titulo:         str            # Título visible de la fuente
+    fecha_consulta: Optional[str] = None
+
+
 # ══════════════════════════════════════════════════════════════
 #  CONTRATO DE SALIDA  (Backend → Frontend)
 # ══════════════════════════════════════════════════════════════
@@ -96,19 +104,6 @@ class HermesRequest(BaseModel):
 class HermesResponse(BaseModel):
     """
     Lo que /api/chat siempre devuelve - tipado estrictamente.
-
-    Campos:
-        tipo             Clasificación semántica de la respuesta
-        severidad        Nivel de urgencia visual
-        contenido        Texto de la respuesta (markdown-safe)
-        alertas_resumen  Lista compacta de alertas relevantes (puede ser vacía)
-        acciones         Botones de acción rápida según el rol
-        sugerencias      Preguntas de seguimiento sugeridas
-        estado_sistema   Snapshot del estado en este momento
-        intencion_detectada  Intent que el motor NLP identificó
-        rol_usuario      Rol del usuario autenticado
-        timestamp        Momento de la respuesta
-        session_id       Session ID confirmado/generado
     """
     tipo:               Literal[
                             "info", "alerta", "error",
@@ -126,3 +121,20 @@ class HermesResponse(BaseModel):
         default_factory=lambda: datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     )
     session_id:         Optional[str]         = None
+
+    # Campos retrocompatibles para el asistente híbrido local
+    modo:               Optional[Literal[
+                            "general", "vision", "documentacion", "estadisticas",
+                            "sistema", "eventos", "camaras", "usuarios",
+                            "auditoria", "infraestructura", "ayuda"
+                        ]] = None
+    modelo:             Optional[str]         = None
+    fuentes:            list[FuenteAsistente]  = Field(default_factory=list)
+    herramientas_usadas: list[str]             = Field(default_factory=list)
+    respuesta_generada_por_modelo: bool       = False
+    sin_datos:          bool                  = False
+    advertencias:       list[str]              = Field(default_factory=list)
+
+    # Metadatos de observabilidad y etapas de procesamiento
+    etapas_procesamiento: list[str]            = Field(default_factory=list)
+    tiempos_ms:         dict[str, float]      = Field(default_factory=dict)

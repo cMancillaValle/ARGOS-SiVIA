@@ -989,11 +989,25 @@
         }
       });
 
-      // Auto-selección desde el Mapa TransMilenio
+      // Auto-selección desde el Mapa TransMilenio (por cámara específica o por estación)
       const autoCamId = sessionStorage.getItem('argos_auto_connect_cam');
+      const filtroEstacion = sessionStorage.getItem('argos_filtro_estacion_cam');
+
       if (autoCamId) {
         sessionStorage.removeItem('argos_auto_connect_cam');
         const target = cameras.find(c => String(c.id) === String(autoCamId) || c.codigo === autoCamId);
+        if (target) {
+          asignarCamaraASlot(0, target.id);
+          conectarSlot(0, target.id, 'acceso');
+          return;
+        }
+      } else if (filtroEstacion) {
+        sessionStorage.removeItem('argos_filtro_estacion_cam');
+        const estNorm = filtroEstacion.trim().toLowerCase();
+        const target = cameras.find(c => 
+          (c.codigo_estacion && c.codigo_estacion.trim().toLowerCase() === estNorm) ||
+          (c.estacion && c.estacion.trim().toLowerCase().includes(estNorm))
+        );
         if (target) {
           asignarCamaraASlot(0, target.id);
           conectarSlot(0, target.id, 'acceso');

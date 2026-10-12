@@ -1,12 +1,12 @@
 <!-- frontend/views/mapa_transmilenio.html v1.7.5 -->
-<!-- ARGOS-SiViA · Mapa Interactivo de Monitoreo TransMilenio -->
+<!-- ARGOS-SiViA · Mapa Esquemático Operativo TransMilenio (mapaTM) -->
 <div class="fade-in" id="modulo-mapa-transmilenio">
 
   <!-- Breadcrumb -->
   <div class="font-mono text-[11px] text-[color:var(--dim)] mb-4 tracking-[1px] flex items-center gap-1.5">
     <button data-nav-module="home" class="hover:text-rojo transition-colors cursor-pointer text-amarillo">Dashboard</button>
     <span class="text-rojo">/</span>
-    <span class="text-[color:var(--texto)]">Monitoreo · Mapa TransMilenio</span>
+    <span class="text-[color:var(--texto)]">Monitoreo · Mapa Táctico TransMilenio</span>
   </div>
 
   <!-- Header & KPI Bar -->
@@ -19,10 +19,10 @@
           <span class="inline-block w-1.5 h-1.5 rounded-full bg-verde pulse-dot"></span>
         </div>
         <h1 class="font-rajdhani text-2xl font-bold tracking-wide text-[color:var(--texto)] flex items-center gap-2">
-          🗺️ Mapa Táctico TransMilenio · Cobertura ARGOS
+          🗺️ Red Táctica TransMilenio · Monitoreo SiViA
         </h1>
         <p class="text-xs text-[color:var(--dim)] font-light mt-0.5">
-          Georreferenciación de estaciones troncales, estado de cámaras en tiempo real e incidencias de evasión detectadas.
+          Esquema operacional de la red de troncales, cobertura de cámaras en tiempo real e incidencias de evasión detectadas.
         </p>
       </div>
 
@@ -33,7 +33,7 @@
           <div class="font-rajdhani text-xl font-bold text-[color:var(--texto)]" id="kpi-total-estaciones">—</div>
         </div>
         <div class="bg-[color:var(--bg3)] border border-[color:var(--borde2)] rounded-lg p-2.5 min-w-[110px]">
-          <div class="text-[9px] font-mono uppercase text-[color:var(--dim)] tracking-wider">Cobertura ARGOS</div>
+          <div class="text-[9px] font-mono uppercase text-[color:var(--dim)] tracking-wider">Cobertura SiViA</div>
           <div class="font-rajdhani text-xl font-bold text-azul" id="kpi-cobertura">—</div>
         </div>
         <div class="bg-[color:var(--bg3)] border border-[color:var(--borde2)] rounded-lg p-2.5 min-w-[110px]">
@@ -47,90 +47,113 @@
       </div>
     </div>
 
-    <!-- Barra de Filtros y Búsqueda -->
+    <!-- Barra de Filtros, Búsqueda y Leyenda Rápida -->
     <div class="flex flex-wrap items-center justify-between gap-2.5 mt-4 pt-3 border-t border-[color:var(--borde2)]">
       <div class="flex flex-wrap items-center gap-2 flex-1 min-w-[280px]">
         <!-- Búsqueda -->
         <div class="relative flex-1 min-w-[180px] max-w-xs">
-          <input id="input-buscar-estacion" type="text" placeholder="Buscar estación..."
+          <input id="input-buscar-estacion" type="text" placeholder="Buscar por estación o código..."
             class="w-full bg-[color:var(--bg)] border border-[color:var(--borde2)] focus:border-rojo text-xs rounded-lg px-3 py-1.5 pl-8 text-[color:var(--texto)] outline-none font-mono transition-colors">
           <span class="absolute left-2.5 top-2 text-xs text-[color:var(--dim)]">🔍</span>
         </div>
 
         <!-- Filtro Troncal -->
         <select id="filtro-troncal"
-          class="bg-[color:var(--bg)] border border-[color:var(--borde2)] focus:border-rojo text-xs text-[color:var(--texto)] rounded-lg px-3 py-1.5 outline-none font-mono">
+          class="bg-[color:var(--bg)] border border-[color:var(--borde2)] focus:border-rojo text-xs text-[color:var(--texto)] rounded-lg px-3 py-1.5 outline-none font-mono cursor-pointer">
           <option value="">Todas las Troncales</option>
         </select>
 
-        <!-- Filtro Estado -->
+        <!-- Filtro Estado Operativo -->
         <select id="filtro-estado"
-          class="bg-[color:var(--bg)] border border-[color:var(--borde2)] focus:border-rojo text-xs text-[color:var(--texto)] rounded-lg px-3 py-1.5 outline-none font-mono">
+          class="bg-[color:var(--bg)] border border-[color:var(--borde2)] focus:border-rojo text-xs text-[color:var(--texto)] rounded-lg px-3 py-1.5 outline-none font-mono cursor-pointer">
           <option value="todos">Todas las Estaciones</option>
           <option value="con_camaras">Solo con Cámaras ARGOS</option>
           <option value="con_evasiones">Con Evasiones Hoy</option>
         </select>
       </div>
 
+      <!-- Acciones de Vista -->
       <div class="flex items-center gap-2">
-        <button id="btn-centrar-mapa"
-          class="inline-flex items-center gap-1.5 bg-[color:var(--bg3)] border border-[color:var(--borde2)] hover:border-rojo hover:text-rojo text-[color:var(--dim)] text-xs font-mono px-3 py-1.5 rounded-lg transition-all"
-          title="Centrar mapa en Bogotá">
+        <button id="btn-reset-vista"
+          class="inline-flex items-center gap-1.5 bg-[color:var(--bg3)] border border-[color:var(--borde2)] hover:border-rojo hover:text-rojo text-[color:var(--dim)] text-xs font-mono px-3 py-1.5 rounded-lg transition-all cursor-pointer"
+          title="Centrar y restablecer vista completa de la red">
           🎯 Centrar
         </button>
         <button id="btn-refrescar-mapa"
-          class="inline-flex items-center gap-1.5 bg-[color:var(--bg3)] border border-[color:var(--borde2)] hover:border-azul hover:text-azul text-[color:var(--dim)] text-xs font-mono px-3 py-1.5 rounded-lg transition-all"
-          title="Actualizar datos">
+          class="inline-flex items-center gap-1.5 bg-[color:var(--bg3)] border border-[color:var(--borde2)] hover:border-azul hover:text-azul text-[color:var(--dim)] text-xs font-mono px-3 py-1.5 rounded-lg transition-all cursor-pointer"
+          title="Actualizar datos operativos desde el backend">
           ↻ Refrescar
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Layout del Mapa con Drawer Lateral -->
-  <div class="relative bg-[color:var(--bg2)] border border-[color:var(--borde2)] rounded-xl overflow-hidden shadow-lg h-[calc(100vh-270px)] min-h-[550px]">
+  <!-- Layout del Mapa Esquemático con Drawer Lateral -->
+  <div class="relative bg-[color:var(--bg2)] border border-[color:var(--borde2)] rounded-xl overflow-hidden shadow-lg h-[calc(100vh-270px)] min-h-[550px] flex">
     
-    <!-- Contenedor Leaflet -->
-    <div id="leaflet-map-container" class="w-full h-full z-10 bg-[#0e1117]"></div>
+    <!-- Contenedor Principal del Diagrama SVG -->
+    <div id="tm-schematic-container" class="w-full h-full relative z-10 flex-1">
+      <!-- El renderer SVG TransmilenioSchematicMap inyecta aquí el diagrama -->
+    </div>
 
-    <!-- Leyenda Táctica Flotante (Inferior Izquierda) -->
-    <div class="absolute bottom-4 left-4 z-20 bg-[color:var(--bg2)]/90 backdrop-blur-md border border-[color:var(--borde2)] rounded-lg p-3 shadow-lg pointer-events-auto hidden sm:block">
-      <div class="font-mono text-[9px] text-[color:var(--dim)] uppercase tracking-wider mb-2 font-bold">Estado de Estación</div>
+    <!-- Barra de Troncales (Filtro Rápido Superior Flotante) -->
+    <div id="tm-troncales-bar" class="absolute top-3 left-3 z-20 flex flex-wrap gap-1 max-w-[calc(100%-60px)] sm:max-w-md pointer-events-auto">
+      <!-- Inyectado por JS con los colores de mapaTM -->
+    </div>
+
+    <!-- Leyenda Operativa Flotante (Inferior Izquierda) -->
+    <div class="absolute bottom-4 left-4 z-20 bg-[color:var(--bg2)]/90 backdrop-blur-md border border-[color:var(--borde2)] rounded-lg p-3 shadow-lg pointer-events-auto hidden sm:block max-w-[260px]">
+      <div class="font-mono text-[9px] text-[color:var(--dim)] uppercase tracking-wider mb-2 font-bold flex items-center justify-between">
+        <span>Simbología Operativa</span>
+        <span class="text-[8px] text-[color:var(--muted)]">mapaTM</span>
+      </div>
       <div class="flex flex-col gap-1.5 text-[10px] font-mono text-[color:var(--texto)]">
         <div class="flex items-center gap-2">
-          <span class="w-3 h-3 rounded-full bg-verde border border-white/20"></span>
-          <span>Normal / Cámaras Activas</span>
+          <span class="w-3.5 h-3.5 rounded-sm bg-[color:var(--bg3)] border-2 border-[color:var(--verde)] flex items-center justify-center">
+            <span class="w-1 h-1 rounded-full bg-[color:var(--verde)]"></span>
+          </span>
+          <span>Portal de Troncal</span>
         </div>
         <div class="flex items-center gap-2">
-          <span class="w-3 h-3 rounded-full bg-amarillo border border-white/20"></span>
-          <span>Alerta Moderada (≥ 2 evasiones)</span>
+          <span class="w-3.5 h-3.5 rounded-full bg-[color:var(--bg3)] border-2 border-[color:var(--texto)] flex items-center justify-center">
+            <span class="w-1 h-1 rounded-full bg-[color:var(--texto)]"></span>
+          </span>
+          <span>Transbordo / Intercambio</span>
         </div>
         <div class="flex items-center gap-2">
-          <span class="w-3 h-3 rounded-full bg-rojo border border-white/20 pulse-dot"></span>
-          <span>Crítico (≥ 6 evasiones hoy)</span>
+          <span class="w-2.5 h-2.5 rounded-full bg-[color:var(--verde)] border border-white/20"></span>
+          <span>Monitoreada (Sin incidencias)</span>
         </div>
         <div class="flex items-center gap-2">
-          <span class="w-3 h-3 rounded-full bg-[#4a5568] border border-white/20"></span>
-          <span>Sin Cobertura de Cámara</span>
+          <span class="w-2.5 h-2.5 rounded-full bg-[color:var(--amarillo)] border border-white/20"></span>
+          <span>Alerta Moderada (&ge; 2 evasiones)</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-[color:var(--rojo)] border border-white/20 pulse-dot"></span>
+          <span>Crítica (&ge; 6 evasiones hoy)</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-[color:var(--muted)] border border-white/10"></span>
+          <span>Sin Cámaras Registradas</span>
         </div>
       </div>
     </div>
 
     <!-- Drawer Lateral de Detalle de Estación -->
     <div id="drawer-detalle-estacion"
-      class="absolute top-0 right-0 bottom-0 w-full sm:w-[380px] bg-[color:var(--bg2)]/95 backdrop-blur-md border-l border-[color:var(--borde2)] transform translate-x-full transition-transform duration-300 z-30 flex flex-col shadow-2xl">
+      class="absolute top-0 right-0 bottom-0 w-full sm:w-[390px] bg-[color:var(--bg2)]/95 backdrop-blur-md border-l border-[color:var(--borde2)] transform translate-x-full transition-transform duration-300 z-30 flex flex-col shadow-2xl">
       
       <!-- Drawer Header -->
-      <div class="p-4 border-b border-[color:var(--borde2)] flex items-start justify-between bg-[color:var(--bg3)]/70">
-        <div>
+      <div class="p-4 border-b border-[color:var(--borde2)] flex items-start justify-between bg-[color:var(--bg3)]/70 shrink-0">
+        <div class="min-w-0 pr-2">
           <div class="flex items-center gap-2 mb-1">
             <span id="drawer-troncal-badge" class="px-2 py-0.5 rounded font-mono text-[9px] font-bold text-white uppercase" style="background:#E8001D">Troncal</span>
             <span id="drawer-tipo-badge" class="px-2 py-0.5 rounded font-mono text-[9px] bg-white/10 text-[color:var(--dim)] uppercase">Estación</span>
           </div>
-          <h2 id="drawer-estacion-nombre" class="font-rajdhani text-xl font-bold text-[color:var(--texto)] leading-tight">Nombre Estación</h2>
-          <div id="drawer-estacion-codigo" class="font-mono text-[10px] text-[color:var(--dim)]">TM-XX-00 · Dirección</div>
+          <h2 id="drawer-estacion-nombre" class="font-rajdhani text-xl font-bold text-[color:var(--texto)] leading-tight truncate">Nombre Estación</h2>
+          <div id="drawer-estacion-codigo" class="font-mono text-[10px] text-[color:var(--dim)] truncate">TM-XX-00 · Dirección</div>
         </div>
-        <button id="btn-cerrar-drawer" class="text-2xl text-[color:var(--dim)] hover:text-rojo transition-colors leading-none">&times;</button>
+        <button id="btn-cerrar-drawer" class="text-2xl text-[color:var(--dim)] hover:text-rojo transition-colors leading-none cursor-pointer p-1" aria-label="Cerrar panel">&times;</button>
       </div>
 
       <!-- Drawer Body (Scrollable) -->
@@ -138,11 +161,23 @@
         
         <!-- Tarjeta de Estado de Riesgo -->
         <div id="drawer-riesgo-box" class="p-3 rounded-lg border flex items-center gap-3 bg-verde/10 border-verde/30 text-verde">
-          <span class="text-2xl" id="drawer-riesgo-icon">🛡️</span>
+          <span class="text-2xl shrink-0" id="drawer-riesgo-icon">🛡️</span>
           <div class="min-w-0 flex-1">
-            <div class="text-xs font-rajdhani font-bold uppercase tracking-wider" id="drawer-riesgo-titulo">Estado Normal</div>
-            <div class="text-[10px] font-mono text-[color:var(--dim)]" id="drawer-riesgo-desc">Bajo nivel de incidencias registradas hoy.</div>
+            <div class="text-xs font-rajdhani font-bold uppercase tracking-wider" id="drawer-riesgo-titulo">Operación Normal</div>
+            <div class="text-[10px] font-mono text-[color:var(--dim)]" id="drawer-riesgo-desc">Bajo nivel de incidencias registradas en la jornada.</div>
           </div>
+        </div>
+
+        <!-- Acciones Operativas de Navegación Rápida -->
+        <div class="grid grid-cols-2 gap-2">
+          <button id="btn-ir-camaras-estacion"
+            class="inline-flex items-center justify-center gap-1.5 p-2 rounded-lg bg-[color:var(--bg3)] hover:bg-[color:var(--bg4)] border border-[color:var(--borde2)] hover:border-azul text-azul text-xs font-mono font-bold transition-all text-center">
+            <span>📹</span> Ver Cámaras
+          </button>
+          <button id="btn-ir-eventos-estacion"
+            class="inline-flex items-center justify-center gap-1.5 p-2 rounded-lg bg-[color:var(--bg3)] hover:bg-[color:var(--bg4)] border border-[color:var(--borde2)] hover:border-rojo text-rojo text-xs font-mono font-bold transition-all text-center">
+            <span>🚨</span> Ver Eventos
+          </button>
         </div>
 
         <!-- Estadísticas de Evasión Hoy -->
@@ -192,39 +227,240 @@
 
 </div>
 
-<!-- Leaflet CSS y JS se cargan dinámicamente desde el bloque JS para evitar race condition en SPA -->
-
+<!-- Estilos Esquemáticos Propios compatibles con temas Claro / Oscuro -->
 <style>
-  /* Personalizaciones Leaflet para tema oscuro */
-  .leaflet-container {
-    background: #0b0e14 !important;
-    font-family: 'Share Tech Mono', monospace;
+  /* Lienzo y elementos SVG */
+  .tm-schematic-svg {
+    background: var(--bg);
   }
-  .leaflet-popup-content-wrapper, .leaflet-popup-tip {
-    background: var(--bg2) !important;
-    color: var(--texto) !important;
-    border: 1px solid var(--borde2);
+
+  /* Corredores de troncales */
+  .tm-corridor {
+    stroke-width: 6.5px;
+    opacity: 0.85;
+    transition: opacity 0.25s ease, stroke-width 0.25s ease;
+  }
+  .tm-corridor--highlighted {
+    opacity: 1;
+    stroke-width: 8px;
+  }
+  .tm-corridor--dimmed {
+    opacity: 0.18;
+  }
+
+  /* Conexiones / Transbordos */
+  .tm-connection {
+    stroke: var(--dim);
+    stroke-width: 3.5px;
+    opacity: 0.65;
+  }
+
+  /* Estaciones Nodos */
+  .tm-station-node {
+    cursor: pointer;
+    outline: none;
+    transition: transform 0.15s ease, opacity 0.2s ease;
+  }
+  .tm-station-node:hover {
+    transform: scale(1.3);
+  }
+  .tm-station-node:focus-visible {
+    filter: drop-shadow(0 0 6px var(--azul));
+  }
+  .tm-station--dimmed {
+    opacity: 0.2;
+  }
+  .tm-station--selected .tm-station-shape {
+    stroke: var(--rojo) !important;
+    stroke-width: 3.5px !important;
+    filter: drop-shadow(0 0 8px var(--rojo));
+  }
+
+  /* Formas geométricas */
+  .tm-station-shape {
+    fill: var(--bg2);
+    stroke-width: 2.5px;
+    transition: stroke 0.2s ease, fill 0.2s ease;
+  }
+  .tm-regular-node {
+    stroke: var(--dim);
+  }
+  .tm-interchange-outer {
+    stroke: var(--texto);
+    stroke-width: 2px;
+  }
+  .tm-interchange-inner {
+    fill: var(--texto);
+  }
+  .tm-portal-shape {
+    stroke: var(--verde);
+    stroke-width: 2.5px;
+  }
+  .tm-portal-center {
+    fill: var(--verde);
+  }
+
+  /* Estados semánticos por riesgo y monitoreo */
+  .tm-status-monitored .tm-regular-node {
+    stroke: var(--verde);
+    fill: var(--bg2);
+  }
+  .tm-status-warning .tm-station-shape {
+    stroke: var(--amarillo) !important;
+    fill: var(--amarillo) !important;
+  }
+  .tm-status-critical .tm-station-shape {
+    stroke: var(--rojo) !important;
+    fill: var(--rojo) !important;
+    animation: tm-critical-pulse 1.8s ease-in-out infinite;
+  }
+  .tm-status-unmonitored .tm-station-shape {
+    stroke: var(--muted);
+    fill: var(--bg3);
+  }
+
+  @keyframes tm-critical-pulse {
+    0%, 100% { filter: drop-shadow(0 0 3px var(--rojo)); }
+    50% { filter: drop-shadow(0 0 10px var(--rojo)); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tm-status-critical .tm-station-shape {
+      animation: none !important;
+    }
+    .tm-station-node {
+      transition: none !important;
+    }
+  }
+
+  /* Etiquetas de texto */
+  .tm-station-label {
+    font-family: 'Share Tech Mono', 'IBM Plex Mono', monospace;
+    font-size: 8px;
+    fill: var(--texto);
+    pointer-events: none;
+    letter-spacing: 0.2px;
+    font-weight: 500;
+  }
+  .tm-label-portal {
+    font-weight: 700;
+    font-size: 9px;
+  }
+  .tm-label--selected {
+    fill: var(--rojo);
+    font-weight: 700;
+  }
+
+  /* Controles Zoom Flotantes */
+  .tm-zoom-controls {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    z-index: 25;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .tm-zoom-btn {
+    width: 32px;
+    height: 32px;
     border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
-  }
-  .leaflet-popup-content {
-    margin: 10px 14px;
-    line-height: 1.4;
-  }
-  .custom-station-pin {
+    background: var(--bg2);
+    border: 1px solid var(--borde2);
+    color: var(--texto);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 15px;
+    font-weight: bold;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
-    color: white;
-    font-weight: bold;
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     cursor: pointer;
-    transition: transform 0.2s ease;
+    transition: all 0.15s ease;
   }
-  .custom-station-pin:hover {
-    transform: scale(1.25);
-    z-index: 1000 !important;
+  .tm-zoom-btn:hover {
+    border-color: var(--rojo);
+    color: var(--rojo);
+    transform: scale(1.05);
+  }
+
+  /* Tooltip Flotante */
+  .tm-schematic-tooltip {
+    position: absolute;
+    pointer-events: none;
+    z-index: 40;
+    background: var(--bg2);
+    border: 1px solid var(--borde2);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--texto);
+    font-family: 'Share Tech Mono', monospace;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    min-width: 200px;
+    max-width: 260px;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+  .tm-schematic-tooltip.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .tm-tip-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 2px;
+  }
+  .tm-tip-title {
+    font-size: 11px;
+    color: var(--texto);
+  }
+  .tm-tip-code {
+    font-size: 9px;
+    color: var(--dim);
+  }
+  .tm-tip-meta {
+    font-size: 9px;
+    color: var(--rojo);
+    margin-bottom: 6px;
+  }
+  .tm-tip-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    margin-top: 2px;
+    color: var(--dim);
+  }
+  .tm-tip-row strong {
+    color: var(--texto);
+  }
+  .tm-text-alert {
+    color: var(--rojo) !important;
+  }
+  .tm-tip-footer {
+    margin-top: 6px;
+    padding-top: 5px;
+    border-top: 1px solid var(--borde2);
+  }
+  .tm-tip-badge {
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: inline-block;
+  }
+  .tm-badge-normal {
+    background: rgba(0, 229, 160, 0.12);
+    color: var(--verde);
+  }
+  .tm-badge-warning {
+    background: rgba(255, 200, 0, 0.12);
+    color: var(--amarillo);
+  }
+  .tm-badge-critical {
+    background: rgba(232, 0, 29, 0.15);
+    color: var(--rojo);
   }
 </style>
 
@@ -232,16 +468,14 @@
 (function () {
   'use strict';
 
-  let map = null;
-  let markersLayer = null;
-  let linesLayer = null;
+  let schematicMap = null;
   let estacionesData = [];
   let troncalesData = [];
   let estacionSeleccionada = null;
 
   const TOKEN = () => sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token') || '';
 
-  // Elementos DOM
+  // Elementos DOM de cabecera
   const $kpiTotalEstaciones = document.getElementById('kpi-total-estaciones');
   const $kpiCobertura        = document.getElementById('kpi-cobertura');
   const $kpiCamarasActivas   = document.getElementById('kpi-camaras-activas');
@@ -249,57 +483,49 @@
   const $filtroTroncal       = document.getElementById('filtro-troncal');
   const $filtroEstado        = document.getElementById('filtro-estado');
   const $inputBuscar         = document.getElementById('input-buscar-estacion');
-  const $btnCentrar          = document.getElementById('btn-centrar-mapa');
+  const $btnResetVista       = document.getElementById('btn-reset-vista');
   const $btnRefrescar        = document.getElementById('btn-refrescar-mapa');
-  const $drawer              = document.getElementById('drawer-detalle-estacion');
-  const $btnCerrarDrawer     = document.getElementById('btn-cerrar-drawer');
+  const $troncalesBar        = document.getElementById('tm-troncales-bar');
 
   // Drawer fields
-  const $dNombre      = document.getElementById('drawer-estacion-nombre');
-  const $dCodigo      = document.getElementById('drawer-estacion-codigo');
-  const $dTroncalBadge= document.getElementById('drawer-troncal-badge');
-  const $dTipoBadge   = document.getElementById('drawer-tipo-badge');
-  const $dRiesgoBox   = document.getElementById('drawer-riesgo-box');
-  const $dRiesgoIcon  = document.getElementById('drawer-riesgo-icon');
-  const $dRiesgoTitulo= document.getElementById('drawer-riesgo-titulo');
-  const $dRiesgoDesc  = document.getElementById('drawer-riesgo-desc');
-  const $dEvTotal     = document.getElementById('drawer-ev-total');
-  const $dEvConf      = document.getElementById('drawer-ev-confirmadas');
-  const $dEvPend      = document.getElementById('drawer-ev-pendientes');
-  const $dCamCount    = document.getElementById('drawer-cam-count');
-  const $dCamList     = document.getElementById('drawer-camaras-list');
-  const $dEvList      = document.getElementById('drawer-eventos-list');
+  const $drawer              = document.getElementById('drawer-detalle-estacion');
+  const $btnCerrarDrawer     = document.getElementById('btn-cerrar-drawer');
+  const $dNombre             = document.getElementById('drawer-estacion-nombre');
+  const $dCodigo             = document.getElementById('drawer-estacion-codigo');
+  const $dTroncalBadge       = document.getElementById('drawer-troncal-badge');
+  const $dTipoBadge          = document.getElementById('drawer-tipo-badge');
+  const $dRiesgoBox          = document.getElementById('drawer-riesgo-box');
+  const $dRiesgoIcon         = document.getElementById('drawer-riesgo-icon');
+  const $dRiesgoTitulo       = document.getElementById('drawer-riesgo-titulo');
+  const $dRiesgoDesc         = document.getElementById('drawer-riesgo-desc');
+  const $dEvTotal            = document.getElementById('drawer-ev-total');
+  const $dEvConf             = document.getElementById('drawer-ev-confirmadas');
+  const $dEvPend             = document.getElementById('drawer-ev-pendientes');
+  const $dCamCount           = document.getElementById('drawer-cam-count');
+  const $dCamList            = document.getElementById('drawer-camaras-list');
+  const $dEvList             = document.getElementById('drawer-eventos-list');
+  const $btnIrCamaras        = document.getElementById('btn-ir-camaras-estacion');
+  const $btnIrEventos        = document.getElementById('btn-ir-eventos-estacion');
 
-  // Inicializar Leaflet
-  function initMap() {
-    if (map || typeof L === 'undefined') return;
-    const container = document.getElementById('leaflet-map-container');
+  // Inicializar Renderer Esquemático
+  function initSchematic() {
+    const container = document.getElementById('tm-schematic-container');
     if (!container) return;
 
-    const bogotaCoords = [4.6500, -74.0800];
-    map = L.map(container, {
-      center: bogotaCoords,
-      zoom: 12,
-      minZoom: 10,
-      maxZoom: 17,
-      zoomControl: false
+    if (typeof TransmilenioSchematicMap === 'undefined' || typeof TRANSMILENIO_LAYOUT === 'undefined') {
+      console.error('[MapaTM] TransmilenioSchematicMap o TRANSMILENIO_LAYOUT no están disponibles.');
+      return;
+    }
+
+    schematicMap = new TransmilenioSchematicMap({
+      container: container,
+      layout: TRANSMILENIO_LAYOUT,
+      estaciones: estacionesData,
+      troncales: troncalesData,
+      onSelectStation: (codigo) => {
+        openStationDrawer(codigo);
+      }
     });
-
-    L.control.zoom({ position: 'topleft' }).addTo(map);
-
-    // Capa base oscura (CartoDB Dark Matter)
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; TransMilenio',
-      subdomains: 'abcd',
-      maxZoom: 19
-    }).addTo(map);
-
-    linesLayer = L.layerGroup().addTo(map);
-    markersLayer = L.layerGroup().addTo(map);
-
-    // Forzar cálculo de tamaño tras inserción en DOM
-    setTimeout(() => { if (map) map.invalidateSize(); }, 200);
-    setTimeout(() => { if (map) map.invalidateSize(); }, 600);
   }
 
   // Cargar resumen de KPIs
@@ -319,7 +545,7 @@
     }
   }
 
-  // Cargar troncales en el select
+  // Cargar troncales en el select y en la barra rápida
   async function loadTroncales() {
     try {
       const res = await fetch('/api/transmilenio/troncales', {
@@ -328,106 +554,42 @@
       if (!res.ok) return;
       const data = await res.json();
       troncalesData = data.troncales || [];
+
       if ($filtroTroncal) {
         $filtroTroncal.innerHTML = '<option value="">Todas las Troncales</option>' +
           troncalesData.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
       }
+
+      // Barra rápida de selección de troncal
+      if ($troncalesBar) {
+        $troncalesBar.innerHTML = troncalesData.map(t => `
+          <button data-troncal-btn="${t.id}"
+            class="px-2 py-0.5 rounded font-mono text-[9px] font-bold text-white uppercase shadow-sm transition-transform hover:scale-105 cursor-pointer"
+            style="background:${t.color || '#888'}"
+            title="${t.nombre}">
+            ${t.id}
+          </button>
+        `).join('');
+
+        $troncalesBar.querySelectorAll('[data-troncal-btn]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const tid = btn.dataset.troncalBtn;
+            if ($filtroTroncal.value === tid) {
+              $filtroTroncal.value = '';
+            } else {
+              $filtroTroncal.value = tid;
+            }
+            aplicarFiltros();
+          });
+        });
+      }
+
+      if (schematicMap) {
+        schematicMap.updateData(estacionesData, troncalesData);
+      }
     } catch (e) {
       console.error('[MapaTM] Error cargando troncales:', e);
     }
-  }
-
-  // Dibujar trazados de troncales (polylines conectando estaciones de cada troncal)
-  function drawCorridors() {
-    if (!linesLayer) return;
-    linesLayer.clearLayers();
-
-    const colorMap = {};
-    troncalesData.forEach(t => { colorMap[t.id] = t.color; });
-
-    // Agrupar estaciones por troncal ordenadas de norte a sur o este a oeste
-    const porTroncal = {};
-    estacionesData.forEach(est => {
-      const tid = est.troncal_id;
-      if (!porTroncal[tid]) porTroncal[tid] = [];
-      porTroncal[tid].push([est.lat, est.lng]);
-    });
-
-    Object.keys(porTroncal).forEach(tid => {
-      const coords = porTroncal[tid];
-      if (coords.length > 1) {
-        L.polyline(coords, {
-          color: colorMap[tid] || '#E8001D',
-          weight: 3.5,
-          opacity: 0.65,
-          smoothFactor: 1
-        }).addTo(linesLayer);
-      }
-    });
-  }
-
-  // Renderizar marcadores de estaciones
-  function renderMarkers() {
-    if (!markersLayer) return;
-    markersLayer.clearLayers();
-
-    const filtroT = $filtroTroncal ? $filtroTroncal.value : '';
-    const filtroE = $filtroEstado ? $filtroEstado.value : 'todos';
-    const busqueda = $inputBuscar ? $inputBuscar.value.trim().toLowerCase() : '';
-
-    const filtradas = estacionesData.filter(est => {
-      if (filtroT && est.troncal_id !== filtroT) return false;
-      if (filtroE === 'con_camaras' && (!est.camaras || est.camaras.total === 0)) return false;
-      if (filtroE === 'con_evasiones' && (!est.eventos_hoy || est.eventos_hoy.total_hoy === 0)) return false;
-      if (busqueda && !est.nombre.toLowerCase().includes(busqueda) && !est.codigo.toLowerCase().includes(busqueda)) return false;
-      return true;
-    });
-
-    filtradas.forEach(est => {
-      const riesgo = est.riesgo || 'normal';
-      const tieneCam = est.camaras && est.camaras.total > 0;
-      const camActivas = est.camaras ? est.camaras.activas : 0;
-      const evHoy = est.eventos_hoy ? est.eventos_hoy.total_hoy : 0;
-
-      let colorBg = '#4a5568';
-      let pinClass = 'custom-station-pin';
-      let size = est.tipo === 'portal' ? 16 : 12;
-
-      if (riesgo === 'critico') {
-        colorBg = '#E8001D';
-        pinClass += ' pulse-dot';
-      } else if (riesgo === 'alerta') {
-        colorBg = '#FFC800';
-      } else if (tieneCam) {
-        colorBg = '#00E5A0';
-      }
-
-      const iconHtml = `<div class="${pinClass}" style="width:${size}px; height:${size}px; background:${colorBg}; border:2px solid #ffffff;"></div>`;
-      const customIcon = L.divIcon({
-        html: iconHtml,
-        className: 'station-div-icon',
-        iconSize: [size, size],
-        iconAnchor: [size/2, size/2]
-      });
-
-      const marker = L.marker([est.lat, est.lng], { icon: customIcon }).addTo(markersLayer);
-
-      // Tooltip al pasar el cursor
-      const tooltipContent = `
-        <div class="text-[11px] font-mono">
-          <strong class="text-white">${est.nombre}</strong><br>
-          <span style="color:var(--dim)">${est.troncal}</span><br>
-          <span style="color:var(--azul)">📹 ${camActivas} cámaras activas</span><br>
-          <span style="color:${evHoy > 0 ? 'var(--rojo)' : 'var(--dim)'}">🚨 ${evHoy} evasiones hoy</span>
-        </div>
-      `;
-      marker.bindTooltip(tooltipContent, { direction: 'top', offset: [0, -8] });
-
-      // Click: abrir drawer con detalle
-      marker.on('click', () => {
-        openStationDrawer(est.codigo || est.id);
-      });
-    });
   }
 
   // Cargar estaciones desde backend
@@ -439,11 +601,37 @@
       if (!res.ok) return;
       const data = await res.json();
       estacionesData = data.estaciones || [];
-      drawCorridors();
-      renderMarkers();
-      setTimeout(() => { if (map) map.invalidateSize(); }, 100);
+
+      if (schematicMap) {
+        schematicMap.updateData(estacionesData, troncalesData);
+      }
     } catch (e) {
       console.error('[MapaTM] Error cargando estaciones:', e);
+    }
+  }
+
+  // Aplicar filtros al mapa
+  function aplicarFiltros() {
+    if (!schematicMap) return;
+    const tVal = $filtroTroncal ? $filtroTroncal.value : '';
+    const eVal = $filtroEstado ? $filtroEstado.value : 'todos';
+    const bVal = $inputBuscar ? $inputBuscar.value : '';
+
+    schematicMap.setFilters({
+      troncal: tVal,
+      estado: eVal,
+      busqueda: bVal
+    });
+
+    // Si la búsqueda coincide exactamente con una estación, centrar en ella
+    if (bVal && bVal.trim().length >= 3) {
+      const bNorm = bVal.trim().toLowerCase();
+      const match = estacionesData.find(e => 
+        e.nombre.toLowerCase() === bNorm || e.codigo.toLowerCase() === bNorm
+      );
+      if (match) {
+        schematicMap.centerOnStation(match.codigo);
+      }
     }
   }
 
@@ -506,10 +694,10 @@
                   <span class="w-1.5 h-1.5 rounded-full bg-${clr}"></span>
                   <span>${cam.codigo}</span>
                 </div>
-                <div class="text-[10px] text-[color:var(--dim)] truncate">${cam.ubicacion}</div>
+                <div class="text-[10px] text-[color:var(--dim)] truncate">${cam.ubicacion || 'Acceso'}</div>
               </div>
               <button data-ver-camara="${cam.id}"
-                class="inline-flex items-center gap-1 bg-rojo hover:bg-rojo-oscuro text-white font-rajdhani font-bold text-[10px] px-2.5 py-1 rounded transition-colors uppercase tracking-wider shrink-0">
+                class="inline-flex items-center gap-1 bg-rojo hover:bg-rojo-oscuro text-white font-rajdhani font-bold text-[10px] px-2.5 py-1 rounded transition-colors uppercase tracking-wider shrink-0 cursor-pointer">
                 ▶ Ver en Vivo
               </button>
             </div>
@@ -553,9 +741,9 @@
       // Mostrar Drawer
       $drawer.classList.remove('translate-x-full');
 
-      // Centrar mapa suavemente en la estación seleccionada
-      if (map && est.lat && est.lng) {
-        map.flyTo([est.lat, est.lng], 14, { duration: 0.8 });
+      // Centrar el SVG en la estación
+      if (schematicMap && est.codigo) {
+        schematicMap.centerOnStation(est.codigo);
       }
 
     } catch (e) {
@@ -567,17 +755,47 @@
   function closeDrawer() {
     if ($drawer) $drawer.classList.add('translate-x-full');
     estacionSeleccionada = null;
+    if (schematicMap) {
+      schematicMap.estacionSeleccionada = null;
+      schematicMap.render();
+    }
+  }
+
+  // Navegación a Módulo de Cámaras filtrando por esta estación
+  if ($btnIrCamaras) {
+    $btnIrCamaras.addEventListener('click', () => {
+      if (!estacionSeleccionada) return;
+      sessionStorage.setItem('argos_filtro_estacion_cam', estacionSeleccionada.codigo || estacionSeleccionada.nombre);
+      if (window.AppRouter && typeof AppRouter.navigate === 'function') {
+        AppRouter.navigate('camaras');
+      } else {
+        window.location.href = '/dashboard?module=camaras';
+      }
+    });
+  }
+
+  // Navegación a Módulo de Eventos filtrando por esta estación
+  if ($btnIrEventos) {
+    $btnIrEventos.addEventListener('click', () => {
+      if (!estacionSeleccionada) return;
+      sessionStorage.setItem('argos_filtro_estacion_ev', estacionSeleccionada.codigo || estacionSeleccionada.nombre);
+      if (window.AppRouter && typeof AppRouter.navigate === 'function') {
+        AppRouter.navigate('eventos');
+      } else {
+        window.location.href = '/dashboard?module=eventos';
+      }
+    });
   }
 
   // Listeners de controles
-  if ($filtroTroncal)  $filtroTroncal.addEventListener('change', renderMarkers);
-  if ($filtroEstado)   $filtroEstado.addEventListener('change', renderMarkers);
-  if ($inputBuscar)    $inputBuscar.addEventListener('input', renderMarkers);
+  if ($filtroTroncal)   $filtroTroncal.addEventListener('change', aplicarFiltros);
+  if ($filtroEstado)    $filtroEstado.addEventListener('change', aplicarFiltros);
+  if ($inputBuscar)     $inputBuscar.addEventListener('input', aplicarFiltros);
   if ($btnCerrarDrawer) $btnCerrarDrawer.addEventListener('click', closeDrawer);
 
-  if ($btnCentrar) {
-    $btnCentrar.addEventListener('click', () => {
-      if (map) map.flyTo([4.6500, -74.0800], 12, { duration: 0.8 });
+  if ($btnResetVista) {
+    $btnResetVista.addEventListener('click', () => {
+      if (schematicMap) schematicMap.resetView();
     });
   }
 
@@ -588,54 +806,27 @@
     });
   }
 
-  // Carga asíncrona segura de Leaflet si aún no está en window.L
-  function ensureLeaflet(callback) {
-    if (typeof L !== 'undefined') {
-      callback();
-      return;
-    }
-    // Si no está, inyectar el script y link al head
-    if (!document.querySelector('link[href*="leaflet"]')) {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      document.head.appendChild(link);
-    }
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    script.onload = () => callback();
-    script.onerror = () => console.error('[MapaTM] Error cargando Leaflet desde CDN');
-    document.head.appendChild(script);
-  }
-
-  // Listener para redimensionar ventana
-  const onResize = () => { if (map) map.invalidateSize(); };
-  window.addEventListener('resize', onResize);
-
   // Limpieza al salir de la vista (SPA Router)
   document.addEventListener('argos:navaway', () => {
-    window.removeEventListener('resize', onResize);
-    if (map) {
-      map.remove();
-      map = null;
+    if (schematicMap) {
+      schematicMap.destroy();
+      schematicMap = null;
     }
   }, { once: true });
 
   // Inicialización secuencial
   (async function start() {
-    ensureLeaflet(async () => {
-      initMap();
-      await loadTroncales();
-      await loadKPIs();
-      await loadEstaciones();
+    initSchematic();
+    await loadTroncales();
+    await loadKPIs();
+    await loadEstaciones();
 
-      // Auto-refresh cada 30 segundos
-      const timer = setInterval(() => {
-        if (!map) { clearInterval(timer); return; }
-        loadKPIs();
-        loadEstaciones();
-      }, 30000);
-    });
+    // Auto-refresh cada 30 segundos
+    const timer = setInterval(() => {
+      if (!schematicMap) { clearInterval(timer); return; }
+      loadKPIs();
+      loadEstaciones();
+    }, 30000);
   })();
 
 })();
