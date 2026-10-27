@@ -1,321 +1,197 @@
-# ARGOS - SiVIA
-## Plataforma de Monitoreo Inteligente Basada en Visión por Computador
+# ARGOS-SiVIA
 
-> **Prototipo Académico de Investigación** · Universidad Central · Bogotá, Colombia
+## Plataforma de monitoreo inteligente basada en visión por computador
 
-**ARGOS - SiViA** *(Sistema de Visión Artificial)* es una plataforma de software de monitoreo inteligente diseñada con fines académicos para la detección automática y reporte en tiempo real de evasión de pasaje y accesos no autorizados en estaciones de transporte público masivo (TransMilenio S.A.).
+**Prototipo académico de investigación**  
+Universidad Central, Bogotá, Colombia
 
-El sistema integra un pipeline de visión por computador con un backend REST, una interfaz web de gestión multi-rol y un asistente conversacional basado en NLP por reglas. Su arquitectura está pensada para ser modular y extensible, sirviendo como base tecnológica para investigación futura en sistemas de seguridad inteligente.
+ARGOS-SiVIA (Sistema de Visión Artificial) es una plataforma de software desarrollada con fines académicos para explorar la detección y el registro de posibles evasiones de pasaje y accesos no autorizados en estaciones de transporte público masivo.
 
----
+El proyecto integra un motor de visión por computador, un backend para la gestión de información, una interfaz web multirol y un asistente conversacional. Su arquitectura modular permite desarrollar, evaluar y ampliar progresivamente sus capacidades.
 
-## ✨ Funcionalidades Principales
+> El sistema es un prototipo académico. Sus capacidades de detección requieren validación en condiciones reales antes de considerar su uso operativo.
 
-### 🎥 Módulo de Visión IA — Athena (v1.7.5+)
-- **Tracking de personas con IDs persistentes** en tiempo real usando **YOLOv8n + ByteTrack** (`person_tracker.py`) con dibujo de trayectorias de desplazamiento.
-- **Detección de Evasión de Pasaje (TransMilenio)** (`evasion_detector.py`):
-  - **Línea virtual configurable (Tripwire)** para delimitar la zona de torniquetes.
-  - **Análisis biomecánico de postura** con **MediaPipe Pose Lite** para clasificar automáticamente:
-    - `SALTO`: Detección de elevación anómala de rodillas sobre la cadera.
-    - `AGACHADO`: Paso por debajo del torniquete (cabeza a nivel de cadera).
-    - `CRUCE`: Cruce no autorizado sin validación.
-- **Soporte de análisis para videos grabados** (`.mp4`, `.avi`, `.mkv`, `.mov`):
-  - Lector multihilo `FastCameraReader` con sincronización de FPS reales y **reproducción en bucle automático**.
-  - Subida directa de grabaciones desde la interfaz web y análisis con 1 solo clic.
-- **Modo Dual de Operación**:
-  - `🔐 Modo Acceso`: Control de acceso biométrico (YOLO + Pose + Tarjeta).
-  - `🚨 Modo Evasión`: Seguridad perimetral, seguimiento de personas y detección de colados.
-- **Optimización Integral de Rendimiento**:
-  - Desactivación de FaceMesh y MediaPipe Hands para reducción drástica de latencia.
-  - Escalado adaptativo a 480px (ahorro del 44% de cómputo por cuadro).
-  - Detección en cascada condicional (Pose y espacio de color RGB se ejecutan únicamente si hay personas en escena).
-- **Procesamiento multihilo aislado**: Worker en subproceso con comunicación por pipe binario de bajo retardo hacia Flask.
+## Tecnologías
 
-### 🖥️ Backend ASGI — FastAPI (v1.7.5+)
-- API REST asíncrona completa con autenticación por token (`X-Token`)
-- **Control de Acceso Basado en Roles (RBAC)** con 6 roles: `admin`, `supervisor`, `operador`, `analista`, `técnico`, `auditor`
-- Gestión completa de cámaras (CRUD) y soporte de fuentes físicas, RTSP y archivos de video
-- **Endpoints de análisis de video**: `POST /api/camaras/upload-video` y `GET /api/camaras/videos`
-- Registro y persistencia automática de eventos de evasión (`tipo='evasion'`) en base de datos SQLite
-- Transmisión en vivo por streaming MJPEG y eventos en tiempo real via Server-Sent Events (SSE)
-- Auditoría de acciones del sistema con log persistente
-- Estadísticas del sistema en tiempo real y métricas (CPU, RAM, disco — psutil)
-- Autenticación de dos factores **2FA TOTP** con código QR y recuperación por correo (SMTP)
-- Rate limiting y protección contra fuerza bruta con **slowapi**
-- Acceso remoto a cámara cliente via **WebSocket nativo ASGI** (`WS /api/camaras/client/push`)
+### Lenguajes y desarrollo
 
-### 🌐 Frontend Web — Dashboard Principal
-- Interfaz SPA multi-panel renderizada dinámicamente con JavaScript Vanilla
-- **Módulo de Cámaras y Monitoreo Inteligente**:
-  - Selector de modo operativo en vivo (`🔐 Acceso` / `🚨 Evasión`).
-  - Modal de carga de grabaciones con **Drag & Drop** y barra de progreso.
-  - Botón de acción rápida **`▶ Analizar`** para probar videos instantáneamente.
-  - Drawer desplegable de eventos IA en tiempo real.
-  - Overlay HUD con estado del motor, confianza y conteo de personas.
-- **Landing page** y **Panel de autenticación** con soporte 2FA
-- Módulos de Gestión de Usuarios (RBAC), Auditoría con exportación CSV, Infraestructura y Notificaciones
+[![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/HTML)
+[![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/CSS)
 
-### 🤖 Hermes IA — Asistente Conversacional
-- Motor NLP liviano basado en reglas (sin dependencias de ML)
-- Reconocimiento de intenciones (12 categorías) y extracción de entidades
-- Respuestas contextuales basadas en datos reales de la base de datos
-- Restricción de acceso a información por rol del usuario activo
-- Micro-frontend independiente construido en **React + TypeScript** con **Vite**
-- Historial de sesión en memoria por token de autenticación
-- Sugerencias y acciones rápidas contextuales por rol
+### Backend y almacenamiento
 
-### 🌍 Acceso Remoto — Ngrok
-- Túnel HTTP seguro via **pyngrok** para exponer el servidor Flask a internet
-- Auto-detección del token desde archivo `.ngrok_token` o variable de entorno
-- Construcción automática del micro-frontend Hermes antes de lanzar el túnel
-- URL pública guardada en `.ngrok_url_actual` para consumo por otros scripts
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![SQLite](https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+[![Pydantic](https://img.shields.io/badge/Pydantic-E92063?style=for-the-badge)](https://docs.pydantic.dev/)
 
----
+### Visión por computador e inteligencia artificial
 
-## 🏗️ Arquitectura del Proyecto
+[![YOLOv8](https://img.shields.io/badge/YOLOv8-111F68?style=for-the-badge)](https://docs.ultralytics.com/)
+[![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)](https://opencv.org/)
+[![MediaPipe](https://img.shields.io/badge/MediaPipe-0097A7?style=for-the-badge)](https://ai.google.dev/edge/mediapipe)
+[![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/)
 
-```
+### Interfaz y herramientas
+
+[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vite.dev/)
+[![Git](https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white)](https://git-scm.com/)
+[![Markdown](https://img.shields.io/badge/Markdown-000000?style=for-the-badge&logo=markdown&logoColor=white)](https://www.markdownguide.org/)
+
+## Funcionalidades principales
+
+### Athena: motor de visión por computador
+
+Athena es el módulo encargado del procesamiento visual y del análisis de escenas.
+
+- Detección y seguimiento de personas mediante YOLOv8 y ByteTrack.
+- Estimación de postura corporal mediante MediaPipe Pose.
+- Análisis de movimientos asociados a posibles evasiones de pasaje.
+- Delimitación de zonas de interés mediante líneas virtuales.
+- Procesamiento de archivos de video y fuentes de cámara compatibles.
+- Generación de eventos a partir de las condiciones detectadas.
+
+Las detecciones representan resultados del sistema que deben evaluarse y validarse. No constituyen, por sí solas, una confirmación de una infracción.
+
+### Backend: API y gestión del sistema
+
+El backend centraliza la lógica de negocio, la autenticación y la comunicación entre módulos.
+
+- API REST desarrollada con FastAPI.
+- Autenticación mediante tokens.
+- Control de acceso basado en roles y permisos.
+- Gestión de usuarios, cámaras y eventos.
+- Registro de acciones para auditoría.
+- Persistencia de información mediante SQLite.
+- Comunicación en tiempo real mediante mecanismos de streaming y eventos.
+- Funciones de autenticación de dos factores y recuperación de cuentas.
+
+### Dashboard: interfaz web
+
+La interfaz permite acceder a las funciones de gestión y monitoreo desde un panel centralizado.
+
+- Visualización de cámaras y fuentes de video.
+- Consulta de eventos generados por el sistema.
+- Gestión de usuarios y permisos.
+- Acceso a estadísticas e información del sistema.
+- Módulos de auditoría, infraestructura y notificaciones.
+- Interfaz adaptada a diferentes roles de usuario.
+
+### Hermes: asistente conversacional
+
+Hermes es un asistente integrado en la plataforma para facilitar las consultas sobre el sistema.
+
+- Identificación de intenciones y extracción de entidades mediante reglas.
+- Respuestas contextuales basadas en información disponible en el sistema.
+- Restricción de consultas según los permisos del usuario.
+- Historial de conversación asociado a la sesión.
+- Interfaz independiente desarrollada con React y TypeScript.
+
+Hermes utiliza un motor basado en reglas, no un modelo de lenguaje de gran escala.
+
+## Arquitectura general
+
+ARGOS-SiVIA se organiza en módulos con responsabilidades diferenciadas:
+
+| Módulo | Responsabilidad |
+|---|---|
+| Frontend | Interfaz web, navegación y presentación de información. |
+| Backend | API, autenticación, permisos y lógica de negocio. |
+| Athena | Procesamiento de video, detección y seguimiento de personas. |
+| Hermes | Asistencia conversacional y consultas contextuales. |
+| Base de datos | Persistencia de usuarios, eventos y datos del sistema. |
+
+La separación de estos componentes facilita el mantenimiento y permite evolucionar cada módulo de forma progresiva.
+
+## Estructura del proyecto
+
+```text
 ARGOS-SiVIA/
-│
-├── .env                        ← Variables de entorno (SMTP, Fernet, Flask, Ngrok)
-├── .env.example                ← Plantilla de configuración
-├── requirements.txt            ← Dependencias del servidor Flask
-├── ngrok_tunnel.py             ← Lanzador del túnel de acceso remoto
-├── start.py                    ← Script de inicio rápido local
-│
-├── frontend/                   ← Interfaz web principal (HTML + CSS + JS Vanilla)
-│   ├── index.html              → Landing page
-│   ├── login.html              → Inicio de sesión + 2FA
-│   ├── dashboard.html          → Panel de control principal (SPA)
-│   ├── css/
-│   │   └── argos-design.css    → Sistema de diseño principal
-│   ├── js/
-│   │   ├── api.js              → Cliente API centralizado
-│   │   ├── dashboard.js        → Lógica de paneles dinámicos
-│   │   ├── permissions.js      → Control de acceso en UI por rol
-│   │   ├── rbac.js             → Carga de matriz de permisos
-│   │   └── router.js           → Enrutador de vistas del dashboard
-│   ├── views/                  → Plantillas HTML por módulo del dashboard
-│   └── components/             → Componentes reutilizables (sidebar, topbar)
-│
-├── frontend-hermes/            ← Micro-frontend Hermes IA (React + TypeScript)
-│   ├── src/
-│   │   ├── App.tsx             → Componente raíz
-│   │   ├── hermes-widget.tsx   → Widget embebible del chatbot
-│   │   ├── components/         → Componentes React del chat
-│   │   ├── hooks/              → Custom hooks
-│   │   ├── store/              → Estado global
-│   │   ├── styles/             → Estilos del widget
-│   │   └── types/              → Tipos TypeScript
-│   └── dist/                   → Bundle compilado (generado por Vite)
-│
-├── backend/                    ← Servidor FastAPI (API REST + WebSocket + lógica de negocio)
-│   ├── main.py                 → Entrada principal FastAPI, lifespan, routers, estáticos
-│   ├── requirements.txt        → Dependencias del backend FastAPI (fastapi, uvicorn, slowapi)
-│   ├── database/
-│   │   └── db.py               → Esquema SQLite, inicialización y datos demo
+├── backend/
 │   ├── api/
-│   │   └── routers/            → Routers FastAPI por dominio
-│   │       ├── auth.py         → Autenticación + 2FA TOTP
-│   │       ├── cameras.py      → CRUD cámaras + stream MJPEG
-│   │       ├── camera_client.py→ WebSocket integrado (/api/camaras/client/push)
-│   │       ├── events.py       → Gestión de eventos de seguridad
-│   │       ├── stats.py        → Estadísticas del sistema
-│   │       ├── users.py        → CRUD usuarios
-│   │       ├── rbac.py         → API de permisos y matriz RBAC
-│   │       ├── profile.py      → Perfil de usuario + cambio de email/contraseña
-│   │       ├── reset_password.py→ Recuperación de contraseña por email
-│   │       ├── auditoria.py    → Log de auditoría + exportación CSV
-│   │       ├── chat.py         → Endpoint del asistente Hermes IA
-│   │       ├── transmilenio.py → Integración de estaciones y troncales
-│   │       ├── sesiones.py     → Sesiones activas y monitoreo
-│   │       └── system_metrics.py→ Métricas de CPU/RAM/disco + configuración IA
-│   ├── services/               → Lógica de negocio desacoplada (Python puro)
-│   │   ├── auth_service.py     → Dependencias get_current_user, require_permission
-│   │   ├── rbac.py             → Matriz RBAC y funciones de validación
-│   │   ├── hermes_service.py   → Orquestador del pipeline Hermes IA
-│   │   ├── hermes_intents.py   → Motor NLP por reglas (detección de intenciones)
-│   │   ├── hermes_context.py   → Modelos Pydantic de contratos API
-│   │   ├── hermes_session.py   → Historial de sesión en RAM
-│   │   ├── email_service.py    → Envío de emails SMTP (OTP, reset password, 2FA)
-│   │   ├── two_factor.py       → Gestión de TOTP + Fernet + QR
-│   │   └── system_health.py    → Snapshot de métricas del sistema (psutil)
-│   └── utils/
-│       ├── limiter.py          → Rate limiter global (slowapi)
-│       └── validators.py       → Validadores de entrada
-│
-├── backend/core_ia/athena/     ← Motor de Visión IA (Worker independiente)
-│   ├── athena_engine.py        → Orchestrador del worker IA (proceso subprocess)
-│   ├── athena_worker.py        → Worker de inferencia (YOLOv8 + MediaPipe)
-│   ├── client_frame_buffer.py  → Buffer de frames de cámara cliente
-│   ├── yolov8n.pt              → Pesos del modelo YOLOv8 nano
-│   ├── detectors/              → Detectores especializados
-│   │   ├── person_detector.py  → Detección de personas (YOLO)
-│   │   ├── pose_detector.py    → Estimación de pose (MediaPipe Pose)
-│   │   ├── hand_detector.py    → Detección de manos (MediaPipe Hands)
-│   │   ├── face_detector.py    → Detección facial (MediaPipe Face Mesh)
-│   │   └── card_detector.py    → Detección de tarjetas/objetos (OpenCV)
-│   ├── logic/
-│   │   └── decision_engine.py  → Motor de decisión de eventos
-│   ├── events/
-│   │   └── event_manager.py    → Registro de eventos al backend REST
+│   │   └── routers/
+│   ├── core_ia/
+│   │   └── athena/
+│   │       ├── detectors/
+│   │       ├── logic/
+│   │       └── events/
 │   ├── database/
-│   │   └── db.py               → Conexión local SQLite del worker
-│   └── dataset/                → Imágenes y etiquetas de entrenamiento YOLO
-│
-└── database/
-    └── argos.db                ← Base de datos SQLite (auto-generada al inicio)
+│   ├── services/
+│   └── main.py
+├── frontend/
+│   ├── css/
+│   ├── js/
+│   ├── views/
+│   └── components/
+├── frontend-hermes/
+│   └── src/
+├── database/
+├── requirements.txt
+├── .env.example
+└── README.md
 ```
+
+La estructura es orientativa y resume los directorios principales del proyecto.
+
+## Requisitos
+
+Antes de ejecutar el sistema, verifica que el entorno disponga de las siguientes herramientas:
+
+- Python 3.10 o superior, sujeto a las dependencias actuales del proyecto.
+- Node.js y npm para compilar el widget de Hermes.
+- Dependencias de visión por computador e inferencia de modelos.
+- Un archivo de configuración `.env` con los parámetros necesarios.
+
+Las versiones exactas deben consultarse en los archivos de dependencias de cada módulo.
+
+## Configuración
+
+1. Clona el repositorio.
+2. Revisa las dependencias del backend y del motor de visión.
+3. Instala las dependencias del frontend de Hermes si necesitas compilarlo.
+4. Crea un archivo `.env` a partir de `.env.example`.
+5. Configura los parámetros requeridos para autenticación, correo y servicios opcionales.
+6. Inicia los componentes siguiendo las instrucciones de desarrollo vigentes.
+
+**Importante:** no publiques contraseñas, tokens, claves criptográficas ni credenciales personales en el repositorio.
+
+Los comandos específicos de instalación y ejecución se documentarán de acuerdo con la configuración vigente del proyecto.
+
+## Estado del proyecto
+
+ARGOS-SiVIA es un prototipo académico en evolución. Su desarrollo contempla mejoras en la interfaz, la detección visual, la experiencia de consulta y la validación de los resultados.
+
+Entre las líneas de trabajo previstas se encuentran:
+
+- Evolución de la interfaz web hacia una arquitectura React y TypeScript.
+- Mejora de las capacidades conversacionales de Hermes.
+- Optimización de la comunicación entre Athena y el backend.
+- Validación del sistema con conjuntos de video representativos.
+- Ampliación de las opciones de consulta y exportación de informes.
+- Evaluación de alternativas de almacenamiento para futuras necesidades.
+
+Estas líneas de trabajo no implican que las funcionalidades correspondientes estén implementadas actualmente.
+
+## Contexto académico
+
+ARGOS-SiVIA se desarrolla como un proyecto académico de investigación en visión por computador, desarrollo web e integración de sistemas.
+
+El objetivo es construir una base tecnológica modular que permita estudiar el procesamiento visual, la gestión de eventos y el diseño de plataformas de monitoreo inteligente.
+
+## Colaboradores
+
+- **Carlos Mancilla.**
+- **Xavier Bravo:** [GitHub](https://github.com/xbravob-alt)
+- **Esteban Vallejo:** [GitHub](https://github.com/evallejog)
+
+## Repositorio
+
+[Consultar el código fuente de ARGOS-SiVIA](https://github.com/cMancillaValle/ARGOS-SiVIA)
 
 ---
 
-## ⚙️ Stack Tecnológico
-
-### Backend
-| Tecnología | Versión | Uso |
-|---|---|---|
-| **Python** | 3.10+ | Lenguaje base del servidor y IA |
-| **FastAPI** | ≥ 0.110.0 | Framework servidor web ASGI y WebSockets |
-| **Uvicorn** | ≥ 0.28.0 | Servidor ASGI de producción (workers=1) |
-| **slowapi** | ≥ 0.1.9 | Rate limiting y protección brute-force |
-| **websockets** | ≥ 12.0 | Protocolo WebSocket de ingesta de video |
-| **Werkzeug** | 3.0.3 | Seguridad: hashing de contraseñas PBKDF2 |
-| **SQLite** | stdlib | Base de datos embebida |
-| **pyotp** | 2.9.0 | Generación y validación TOTP (2FA) |
-| **cryptography** | 43.0.3 | Cifrado Fernet del secreto TOTP |
-| **qrcode[pil]** | 8.0 | Generación de código QR para 2FA |
-| **psutil** | 6.1.1+ | Métricas de CPU, RAM y disco |
-| **pydantic** | ≥ 2.0 | Validación de contratos API (Hermes) |
-| **python-dotenv** | ≥ 1.0.1 | Carga de variables de entorno |
-
-### Motor de Visión IA — Athena
-| Tecnología | Versión | Uso |
-|---|---|---|
-| **YOLOv8n** (ultralytics) | 8.4.33 | Detección de personas y objetos en tiempo real |
-| **ByteTrack / Lapx** | 0.9.4+ | Seguimiento multi-objeto (Tracking) con IDs persistentes |
-| **MediaPipe Pose** | 0.10.9 | Análisis biomecánico de postura corporal (salto/agachado) |
-| **OpenCV** | 4.13.0 | Captura, decodificación y renderizado de video |
-| **PyTorch** | 2.11.0 | Backend de inferencia de redes neuronales |
-| **NumPy** | 2.2.6 | Operaciones matriciales sobre frames |
-
-### Frontend Principal
-| Tecnología | Uso |
-|---|---|
-| **HTML5 / CSS3** | Estructura y estilos del dashboard |
-| **JavaScript (Vanilla ES6+)** | Lógica de paneles, API client, router SPA |
-| **Google Fonts** | Rajdhani · Exo 2 · Share Tech Mono |
-
-### Micro-Frontend Hermes IA
-| Tecnología | Versión | Uso |
-|---|---|---|
-| **React** | 19.2.4 | Componentes del widget de chat |
-| **TypeScript** | ~5.9.3 | Tipado estático |
-| **Vite** | 8.0.1 | Bundler y servidor de desarrollo |
-| **vite-plugin-css-injected-by-js** | 4.0.1 | Widget embebible sin CSS externo |
-
-### Infraestructura y Herramientas
-| Tecnología | Uso |
-|---|---|
-| **pyngrok** | Túnel HTTP para acceso remoto |
-| **SMTP Gmail** | Envío de emails transaccionales (OTP, reset) |
-| **Inno Setup** | Generación del instalador Windows (.exe) |
-
----
-
-## 🚀 Instalación y Ejecución
-
-### Requisitos previos
-- **Python 3.10+** instalado y en el PATH
-- **Node.js 18+** (solo si se va a compilar Hermes IA Widget)
-- Crear y configurar el archivo `.env` a partir de `.env.example`
-
-### 1. Instalación del servidor backend
-```bash
-# Crear entorno virtual e instalar dependencias del servidor
-python -m venv backend_env
-backend_env\Scripts\activate
-pip install -r requirements.txt
-```
-
-### 2. Instalación del motor de IA (Athena)
-```bash
-# Crear entorno virtual e instalar dependencias de IA (PyTorch, YOLO, MediaPipe, Tracking)
-python -m venv vision_env
-vision_env\Scripts\activate
-pip install ultralytics opencv-python mediapipe torch lapx
-```
-
-### 3. Iniciar el sistema
-```bash
-# Activar entorno del backend e iniciar el servidor (FastAPI + Uvicorn)
-backend_env\Scripts\activate
-cd backend
-python -m uvicorn main:app --host 0.0.0.0 --port 5000 --workers 1
-
-# O mediante el script rápido:
-python start.py
-```
-
-> El servidor levanta en `http://localhost:5000` con la API en `/api` y el WebSocket en `ws://localhost:5000/api/camaras/client/push`
-
-### 4. Acceso remoto (opcional)
-```bash
-# Requiere token configurado en .env (NGROK_AUTHTOKEN) o archivo .ngrok_token
-python ngrok_tunnel.py
-```
-
----
-
-## 👥 Usuarios de Acceso Demo
-
-| Usuario | Contraseña | Rol | Permisos |
-|---|---|---|---|
-| `admin` | `admin123` | Administrador | Acceso total al sistema |
-| `supervisor` | `sup123` | Supervisor | Monitoreo, alertas, análisis y reportes |
-| `operador` | `op123` | Operador | Cámaras y gestión de alertas |
-| `analista` | `an123` | Analista de Datos | Estadísticas e informes históricos |
-| `tecnico` | `tec123` | Técnico / Ingeniero | IA, infraestructura y logs técnicos |
-| `auditor` | `aud123` | Auditor | Solo lectura — auditoría e historial |
-
----
-
-## 🔐 Configuración de Variables de Entorno
-
-Copiar `.env.example` como `.env` y completar los valores:
-
-```env
-# Cifrado del secreto TOTP (2FA)
-ARGOS_FERNET_KEY=<clave generada con Fernet.generate_key()>
-
-# Servidor de correo SMTP (Gmail App Password)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=correo@gmail.com
-SMTP_PASS=xxxx xxxx xxxx xxxx
-SMTP_FROM=correo@gmail.com
-
-# Modo desarrollo (1 = no envía emails, devuelve código en JSON)
-ARGOS_DEV_MODE=1
-
-# Clave secreta Flask para firmar sesiones
-SECRET_KEY=<clave segura generada con secrets.token_hex(32)>
-
-# Token de Ngrok para acceso remoto
-NGROK_AUTHTOKEN=<token desde dashboard.ngrok.com>
-```
-
----
-
-## 🔮 Mejoras Futuras Planificadas
-
-- **Migración a PostgreSQL:** Escalar la base de datos desde SQLite a PostgreSQL para soportar mayor volumen de eventos, logs de auditoría y concurrencia de usuarios en un entorno de producción real.
-- **Migración completa de la UI a React:** Reemplazar el frontend en HTML/JS vanilla por una aplicación SPA React completa (con tipado TypeScript), ampliando la arquitectura tecnológica del micro-frontend Hermes.
-- **Mejora del Chatbot Hermes IA:** Integrar modelos de lenguaje locales (LLM) o técnicas de NLP semántico más avanzadas para mejorar la comprensión y contextualización de las consultas del usuario.
-- **Optimización del Flujo Athena IA ↔ Backend:** Refactorizar el canal de comunicación entre el worker de visión IA y el backend Flask (buffers de memoria compartida, ZeroMQ o WebSocket dedicado) para eliminar los retrasos actuales en el procesamiento de frames en tiempo real.
-- **Validación con Videos de Campo:** Realizar pruebas exhaustivas y re-entrenamiento del modelo YOLOv8 utilizando grabaciones reales de personas evadiendo el pasaje en estaciones de TransMilenio para mejorar la precisión y reducir falsos positivos.
-- **Exportación de Reportes PDF/Excel:** Añadir generación de reportes de incidencias y estadísticas en formatos descargables.
-- **Autenticación JWT:** Migrar el esquema de tokens de sesión simples a JSON Web Tokens estándar para mayor interoperabilidad y seguridad.
-
----
-
-*ARGOS - SiViA v1.7.5 · Prototipo Académico · Universidad Central*
+**ARGOS-SiVIA**  
+Prototipo académico de visión artificial.

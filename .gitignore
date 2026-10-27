@@ -78,7 +78,8 @@ backend/core_ia/athena/evidence/*
 # ── Dependencias Node.js y Builds de Frontend ────────────────────────────────
 node_modules/
 frontend-hermes/node_modules/
-frontend-hermes/dist/
+frontend-hermes/dist/*
+!frontend-hermes/dist/hermes-widget.js
 frontend-hermes/.vite/
 dist/
 dist-ssr/
@@ -132,3 +133,8 @@ desktop.ini
 *.gz
 *.rar
 *.7z
+
+# ── Agentes utilizados ───────────────────────────────────────────────────────
+
+.agents/
+skills-lock.json
