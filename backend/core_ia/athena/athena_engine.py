@@ -56,7 +56,9 @@ import subprocess
 import queue
 import logging
 import json
-from typing import Optional
+import uuid
+import copy
+from typing import Optional, Callable, Any
 from urllib.parse import quote
 
 from .camera_manager import camera_manager
@@ -199,6 +201,7 @@ class AthenaThread(threading.Thread):
 
     MSG_FRAME = 0x01
     MSG_EVENT = 0x02
+    MSG_METRICS = 0x03
     MSG_HB = 0xFF
 
     def __init__(
@@ -211,6 +214,9 @@ class AthenaThread(threading.Thread):
         mode: str = "acceso",
         tripwire: float = 0.55,
         client_id: Optional[str] = None,
+        diagnostics: Optional[dict] = None,
+        diag_lock: Optional[Any] = None,
+        on_session_end: Optional[Callable] = None,
     ):
         super().__init__(
             daemon=True,
@@ -228,6 +234,10 @@ class AthenaThread(threading.Thread):
 
         # Solo se utiliza cuando la cámara es una webcam.
         self.client_id = client_id
+        self.diagnostics = diagnostics if diagnostics is not None else {}
+        self.session_id = str(self.diagnostics.get("session_id", ""))
+        self._diag_lock = diag_lock if diag_lock is not None else threading.Lock()
+        self._on_session_end = on_session_end
 
         self._stop_ev = threading.Event()
         self._running = False
@@ -237,6 +247,37 @@ class AthenaThread(threading.Thread):
     # ─────────────────────────────────────────────────────────────────
     # ESTADO
     # ─────────────────────────────────────────────────────────────────
+
+    def record_milestone(self, name: str, val: Optional[float] = None):
+        """Registra un hito de tiempo relativo al inicio de la sesión de forma sincronizada."""
+        with self._diag_lock:
+            ms = self.diagnostics.setdefault("milestones_s", {})
+            if name not in ms:
+                started_at = self.diagnostics.get("started_at", time.perf_counter())
+                ms[name] = val if val is not None else (time.perf_counter() - started_at)
+
+    def update_worker_metrics(self, report: dict):
+        """Actualiza el último reporte de métricas del worker de forma sincronizada."""
+        with self._diag_lock:
+            self.diagnostics["worker"] = report
+            self.diagnostics["last_report_at"] = time.time()
+
+    def _finalize_session(self):
+        """Finaliza la sesión diagnóstica de forma segura e idempotente al terminar el hilo."""
+        if self._on_session_end:
+            try:
+                self._on_session_end(self.cam_id, self.session_id, self.diagnostics)
+            except Exception as e:
+                logger.warning(
+                    f"Error finalizando sesión diagnóstica cam={self.cam_id}: {e}"
+                )
+        else:
+            with self._diag_lock:
+                if self.diagnostics and self.diagnostics.get("is_active"):
+                    self.diagnostics["ended_at"] = time.time()
+                    started_at = self.diagnostics.get("started_at", time.perf_counter())
+                    self.diagnostics["duration_s"] = max(0.0, time.perf_counter() - started_at)
+                    self.diagnostics["is_active"] = False
 
     @property
     def is_running(self) -> bool:
@@ -322,6 +363,9 @@ class AthenaThread(threading.Thread):
 
             "--tripwire",
             str(self.tripwire),
+
+            "--session-id",
+            str(self.diagnostics.get("session_id", "")),
         ]
 
         logger.info(
@@ -330,6 +374,8 @@ class AthenaThread(threading.Thread):
         )
 
         try:
+
+            self.record_milestone("process_spawn_started_s")
 
             proc = subprocess.Popen(
                 cmd,
@@ -351,6 +397,8 @@ class AthenaThread(threading.Thread):
                 daemon=True,
                 name=f"AthenaStderr-cam{self.cam_id}",
             ).start()
+
+            self.record_milestone("process_spawned_s")
 
             return proc
 
@@ -486,6 +534,7 @@ class AthenaThread(threading.Thread):
     def run(self):
 
         self._running = True
+        self.record_milestone("athena_thread_started_s")
 
         logger.info(
             f"▶ AthenaThread iniciado "
@@ -495,225 +544,241 @@ class AthenaThread(threading.Thread):
             f"client_id={self.client_id}"
         )
 
-        # -------------------------------------------------------------
-        # Verificar entorno
-        # -------------------------------------------------------------
+        try:
+            # -------------------------------------------------------------
+            # Verificar entorno
+            # -------------------------------------------------------------
 
-        if not self._check_venv():
-
-            self._emit_error_frame()
-
-            self._running = False
-
-            return
-
-        retry_delay = 3
-
-        # -------------------------------------------------------------
-        # Reinicio automático del worker
-        # -------------------------------------------------------------
-
-        while not self._stop_ev.is_set():
-
-            self._proc = self._spawn()
-
-            if not self._proc:
+            if not self._check_venv():
 
                 self._emit_error_frame()
 
-                self._stop_ev.wait(
-                    retry_delay
-                )
+                return
 
-                continue
+            retry_delay = 3
 
-            # ---------------------------------------------------------
-            # Leer protocolo binario
-            # ---------------------------------------------------------
+            # -------------------------------------------------------------
+            # Reinicio automático del worker
+            # -------------------------------------------------------------
 
-            try:
+            while not self._stop_ev.is_set():
 
-                while not self._stop_ev.is_set():
+                self._proc = self._spawn()
 
-                    # Si el proceso murió.
-                    if self._proc.poll() is not None:
+                if not self._proc:
 
-                        logger.warning(
-                            f"Worker cam={self.cam_id} "
-                            f"terminó "
-                            f"(returncode="
-                            f"{self._proc.returncode}). "
-                            f"Reiniciando..."
-                        )
+                    self._emit_error_frame()
 
-                        break
-
-                    # -------------------------------------------------
-                    # Header:
-                    #
-                    # 1 byte  = tipo
-                    # 4 bytes = longitud
-                    # -------------------------------------------------
-
-                    header = self._read_exact(5)
-
-                    if header is None:
-                        break
-
-                    msg_type = header[0]
-
-                    payload_len = struct.unpack(
-                        ">I",
-                        header[1:5]
-                    )[0]
-
-                    # -------------------------------------------------
-                    # Heartbeat
-                    # -------------------------------------------------
-
-                    if msg_type == self.MSG_HB:
-
-                        continue
-
-                    # -------------------------------------------------
-                    # Mensaje sin payload
-                    # -------------------------------------------------
-
-                    if payload_len == 0:
-
-                        continue
-
-                    # -------------------------------------------------
-                    # Leer payload
-                    # -------------------------------------------------
-
-                    payload = self._read_exact(
-                        payload_len
+                    self._stop_ev.wait(
+                        retry_delay
                     )
 
-                    if payload is None:
+                    continue
 
-                        break
+                # ---------------------------------------------------------
+                # Leer protocolo binario
+                # ---------------------------------------------------------
 
-                    # =================================================
-                    # FRAME
-                    # =================================================
+                try:
 
-                    if msg_type == self.MSG_FRAME:
+                    while not self._stop_ev.is_set():
 
-                        self.buffer.write(
-                            payload
-                        )
+                        # Si el proceso murió.
+                        if self._proc.poll() is not None:
 
-                    # =================================================
-                    # EVENTO
-                    # =================================================
-
-                    elif msg_type == self.MSG_EVENT:
-
-                        try:
-
-                            ev = json.loads(
-                                payload.decode(
-                                    "utf-8"
-                                )
+                            logger.warning(
+                                f"Worker cam={self.cam_id} "
+                                f"terminó "
+                                f"(returncode="
+                                f"{self._proc.returncode}). "
+                                f"Reiniciando..."
                             )
 
-                            # ------------------------------------------------
-                            # Asegurar que el evento tenga cam_id.
-                            # ------------------------------------------------
+                            break
 
-                            if isinstance(ev, dict):
+                        # -------------------------------------------------
+                        # Header:
+                        #
+                        # 1 byte  = tipo
+                        # 4 bytes = longitud
+                        # -------------------------------------------------
 
-                                ev.setdefault(
-                                    "cam_id",
-                                    self.cam_id
-                                )
+                        header = self._read_exact(5)
 
-                            # ------------------------------------------------
-                            # Añadir a cola global.
-                            #
-                            # La cola sigue siendo global, pero cada
-                            # evento contiene cam_id, por lo que el
-                            # frontend puede saber de qué cámara viene.
-                            # ------------------------------------------------
+                        if header is None:
+                            break
+
+                        msg_type = header[0]
+
+                        payload_len = struct.unpack(
+                            ">I",
+                            header[1:5]
+                        )[0]
+
+                        # -------------------------------------------------
+                        # Heartbeat
+                        # -------------------------------------------------
+
+                        if msg_type == self.MSG_HB:
+
+                            continue
+
+                        # -------------------------------------------------
+                        # Mensaje sin payload
+                        # -------------------------------------------------
+
+                        if payload_len == 0:
+
+                            continue
+
+                        # -------------------------------------------------
+                        # Leer payload
+                        # -------------------------------------------------
+
+                        payload = self._read_exact(
+                            payload_len
+                        )
+
+                        if payload is None:
+
+                            break
+
+                        # =================================================
+                        # FRAME
+                        # =================================================
+
+                        if msg_type == self.MSG_FRAME:
+
+                            self.buffer.write(
+                                payload
+                            )
+                            self.record_milestone("first_jpeg_received_buffer_s")
+
+                        elif msg_type == self.MSG_METRICS:
+
+                            try:
+                                report = json.loads(payload.decode("utf-8"))
+                                if isinstance(report, dict):
+                                    self.update_worker_metrics(report)
+                            except Exception as e:
+                                logger.warning(f"Diagnóstico inválido de worker cam={self.cam_id}: {e}")
+
+                        # =================================================
+                        # EVENTO
+                        # =================================================
+
+                        elif msg_type == self.MSG_EVENT:
 
                             try:
 
-                                self.event_queue.put_nowait(
-                                    ev
+                                ev = json.loads(
+                                    payload.decode(
+                                        "utf-8"
+                                    )
                                 )
 
-                            except queue.Full:
+                                # ------------------------------------------------
+                                # Asegurar que el evento tenga cam_id.
+                                # ------------------------------------------------
 
-                                # Evitar que un exceso de eventos
-                                # bloquee Athena.
-                                logger.warning(
-                                    "Cola de eventos llena; "
-                                    f"evento descartado "
-                                    f"cam={self.cam_id}"
+                                if isinstance(ev, dict):
+
+                                    ev.setdefault(
+                                        "cam_id",
+                                        self.cam_id
+                                    )
+
+                                # ------------------------------------------------
+                                # Añadir a cola global.
+                                #
+                                # La cola sigue siendo global, pero cada
+                                # evento contiene cam_id, por lo que el
+                                # frontend puede saber de qué cámara viene.
+                                # ------------------------------------------------
+
+                                try:
+
+                                    self.event_queue.put_nowait(
+                                        ev
+                                    )
+
+                                except queue.Full:
+
+                                    # Evitar que un exceso de eventos
+                                    # bloquee Athena.
+                                    logger.warning(
+                                        "Cola de eventos llena; "
+                                        f"evento descartado "
+                                        f"cam={self.cam_id}"
+                                    )
+
+                                # Persistir evento en base de datos en segundo plano
+                                threading.Thread(
+                                    target=self._persistir_evento_db,
+                                    args=(ev, self.cam_id),
+                                    daemon=True
+                                ).start()
+
+                            except Exception as e:
+
+                                logger.error(
+                                    f"Error procesando evento "
+                                    f"cam={self.cam_id}: {e}"
                                 )
 
-                            # Persistir evento en base de datos en segundo plano
-                            threading.Thread(
-                                target=self._persistir_evento_db,
-                                args=(ev, self.cam_id),
-                                daemon=True
-                            ).start()
+                except Exception as e:
 
-                        except Exception as e:
+                    logger.error(
+                        f"Error leyendo worker "
+                        f"cam={self.cam_id}: {e}"
+                    )
 
-                            logger.error(
-                                f"Error procesando evento "
-                                f"cam={self.cam_id}: {e}"
-                            )
+                finally:
 
-            except Exception as e:
+                    # -----------------------------------------------------
+                    # Cerrar proceso si sigue vivo.
+                    # -----------------------------------------------------
 
-                logger.error(
-                    f"Error leyendo worker "
-                    f"cam={self.cam_id}: {e}"
-                )
+                    if (
+                        self._proc
+                        and self._proc.poll() is None
+                    ):
 
-            finally:
+                        try:
 
-                # -----------------------------------------------------
-                # Cerrar proceso si sigue vivo.
-                # -----------------------------------------------------
+                            self._proc.terminate()
 
-                if (
-                    self._proc
-                    and self._proc.poll() is None
-                ):
+                        except Exception:
+                            pass
 
-                    try:
+                # ---------------------------------------------------------
+                # Reiniciar si no fue detenido manualmente.
+                # ---------------------------------------------------------
 
-                        self._proc.terminate()
+                if not self._stop_ev.is_set():
 
-                    except Exception:
-                        pass
+                    logger.info(
+                        f"Athena cam={self.cam_id} "
+                        f"reintentará en "
+                        f"{retry_delay}s..."
+                    )
 
-            # ---------------------------------------------------------
-            # Reiniciar si no fue detenido manualmente.
-            # ---------------------------------------------------------
+                    self._stop_ev.wait(
+                        retry_delay
+                    )
 
-            if not self._stop_ev.is_set():
+        except Exception as e:
+            logger.error(
+                f"Error fatal no controlado en AthenaThread cam={self.cam_id}: {e}",
+                exc_info=True
+            )
 
-                logger.info(
-                    f"Athena cam={self.cam_id} "
-                    f"reintentará en "
-                    f"{retry_delay}s..."
-                )
-
-                self._stop_ev.wait(
-                    retry_delay
-                )
-
-        self._running = False
-
-        logger.info(
-            f"⏹ AthenaThread cam={self.cam_id} detenido"
-        )
+        finally:
+            self._running = False
+            self._finalize_session()
+            logger.info(
+                f"⏹ AthenaThread cam={self.cam_id} detenido"
+            )
 
     # ─────────────────────────────────────────────────────────────────
     # FRAME DE ERROR
@@ -811,6 +876,11 @@ class AthenaManager:
 
         self.camera_info = {}
 
+        # Telemetría de sesiones activas y finalizadas, sólo en memoria.
+        self._diag_lock = threading.Lock()
+        self.diagnostics = {}
+        self.completed_diagnostics = {}
+
         # -------------------------------------------------------------
         # Lock principal
         # -------------------------------------------------------------
@@ -839,6 +909,7 @@ class AthenaManager:
         mode: str = "acceso",
         tripwire: float = 0.55,
         client_id: Optional[str] = None,
+        request_started_at: Optional[float] = None,
     ):
         """
         Inicia Athena para una cámara.
@@ -887,10 +958,31 @@ class AthenaManager:
 
                 existing.stop()
 
-                if existing.is_alive():
+        # Esperar fuera del lock para no bloquear otras operaciones.
+        if existing and existing.is_alive():
 
-                    existing.join(
-                        timeout=5
+            existing.join(
+                timeout=5
+            )
+
+        with self.lock:
+
+            if existing:
+                if self.workers.get(cam_id) is not existing:
+                    logger.warning(
+                        f"No se pudo reiniciar la cámara {cam_id}: el worker registrado cambió durante la espera."
+                    )
+                    raise RuntimeError(
+                        f"No se pudo reiniciar la cámara {cam_id}: el worker registrado cambió durante la espera."
+                    )
+
+                if existing.is_alive():
+                    logger.warning(
+                        f"No se pudo reiniciar la cámara {cam_id}: el hilo anterior AthenaThread "
+                        f"continúa en ejecución tras el tiempo de espera (5s)."
+                    )
+                    raise RuntimeError(
+                        f"No se pudo reiniciar la cámara {cam_id}: el hilo anterior no terminó en el tiempo esperado."
                     )
 
                 self.workers.pop(
@@ -906,6 +998,19 @@ class AthenaManager:
                 self.camera_info.pop(
                     cam_id,
                     None
+                )
+                try:
+                    camera_manager.remove(cam_id)
+                except Exception:
+                    pass
+
+                self._archive_session(cam_id, getattr(existing, "session_id", None))
+            elif self.workers.get(cam_id) is not None:
+                logger.warning(
+                    f"No se pudo iniciar la cámara {cam_id}: otro worker fue registrado concurrentemente."
+                )
+                raise RuntimeError(
+                    f"No se pudo iniciar la cámara {cam_id}: conflicto de concurrencia al iniciar la cámara."
                 )
 
             # ---------------------------------------------------------
@@ -959,6 +1064,21 @@ class AthenaManager:
 
             buffer = AthenaBuffer()
 
+            started_at = request_started_at if request_started_at is not None else time.perf_counter()
+            diagnostics = {
+                "cam_id": cam_id,
+                "mode": mode,
+                "session_id": uuid.uuid4().hex,
+                "started_at": started_at,
+                "started_time": time.time(),
+                "is_active": True,
+                "milestones_s": {"connect_request_s": 0.0},
+                "worker": None,
+                "last_report_at": None,
+            }
+            with self._diag_lock:
+                self.diagnostics[cam_id] = diagnostics
+
             self.buffers[
                 cam_id
             ] = buffer
@@ -984,6 +1104,10 @@ class AthenaManager:
                 tripwire=tripwire,
 
                 client_id=client_id,
+
+                diagnostics=diagnostics,
+                diag_lock=self._diag_lock,
+                on_session_end=self._archive_session,
             )
 
             # ---------------------------------------------------------
@@ -1026,10 +1150,30 @@ class AthenaManager:
                 )
 
             # ---------------------------------------------------------
-            # Iniciar thread.
+            # Iniciar thread de forma protegida.
+            # Si falla, limpiar referencias y archivar diagnóstico.
             # ---------------------------------------------------------
 
-            worker.start()
+            try:
+                worker.start()
+            except Exception as e:
+                logger.error(
+                    f"Error al iniciar hilo AthenaThread para cam={cam_id}: {e}",
+                    exc_info=True
+                )
+                self.workers.pop(cam_id, None)
+                self.buffers.pop(cam_id, None)
+                self.camera_info.pop(cam_id, None)
+                try:
+                    camera_manager.remove(cam_id)
+                except Exception:
+                    pass
+                self._archive_session(
+                    cam_id,
+                    diagnostics.get("session_id"),
+                    fallback_diag=diagnostics
+                )
+                raise
 
             logger.info(
                 f"✓ Athena iniciado "
@@ -1085,10 +1229,28 @@ class AthenaManager:
             )
 
         # -------------------------------------------------------------
-        # Limpiar referencias.
+        # Comprobar si el hilo terminó realmente.
         # -------------------------------------------------------------
 
         with self.lock:
+
+            if self.workers.get(cam_id) is not worker:
+                logger.warning(
+                    f"Athena cam={cam_id}: el worker registrado cambió durante la detención. "
+                    f"No se modifican las referencias ni el diagnóstico actual."
+                )
+                return False
+
+            if worker.is_alive():
+                logger.warning(
+                    f"AthenaThread cam={cam_id} no terminó en el tiempo esperado (5s); "
+                    f"permanece activo. La sesión diagnóstica se mantiene activa."
+                )
+                return False
+
+            # ---------------------------------------------------------
+            # Limpiar referencias y archivar si terminó.
+            # ---------------------------------------------------------
 
             self.workers.pop(
                 cam_id,
@@ -1104,6 +1266,7 @@ class AthenaManager:
                 cam_id,
                 None
             )
+            self._archive_session(cam_id, getattr(worker, "session_id", None))
 
             if buffer:
 
@@ -1225,6 +1388,98 @@ class AthenaManager:
             return self.buffers.get(
                 cam_id
             )
+
+    def diagnostics_status(self, cam_id: Optional[int] = None) -> dict:
+        """
+        Retorna la telemetría en memoria de sesiones activas y finalizadas.
+        Garantiza copias profundas e independientes frente a accesos concurrentes.
+        No expone credenciales, rutas ni IPs de las fuentes.
+        """
+        target_cam = int(cam_id) if cam_id is not None else None
+        now_perf = time.perf_counter()
+
+        with self._diag_lock:
+            active_entries = [
+                (sid, copy.deepcopy(diag))
+                for sid, diag in self.diagnostics.items()
+                if target_cam is None or diag.get("cam_id") == target_cam
+            ]
+            completed_entries = [
+                (sid, copy.deepcopy(diag))
+                for sid, diag in self.completed_diagnostics.items()
+                if target_cam is None or diag.get("cam_id") == target_cam
+            ]
+
+        result = {}
+        for _, item in active_entries:
+            started_at = item.pop("started_at", None)
+            item.pop("started_time", None)
+            item["is_active"] = True
+            item["elapsed_s"] = (now_perf - started_at) if started_at is not None else 0.0
+            for sensitive_key in ("source", "engine_source", "ip", "url", "credentials"):
+                item.pop(sensitive_key, None)
+            result[item["session_id"]] = item
+
+        for _, item in completed_entries:
+            started_at = item.pop("started_at", None)
+            item.pop("started_time", None)
+            item["is_active"] = False
+            item["elapsed_s"] = item.get("duration_s", 0.0)
+            for sensitive_key in ("source", "engine_source", "ip", "url", "credentials"):
+                item.pop(sensitive_key, None)
+            result[item["session_id"]] = item
+
+        return {"sessions": result}
+
+    def _archive_session(
+        self,
+        cam_id: int,
+        session_id: Optional[str] = None,
+        fallback_diag: Optional[dict] = None,
+    ) -> Optional[dict]:
+        """
+        Archiva la sesión diagnóstica de forma idempotente y segura ante concurrencia.
+        Si se especifica session_id, solo archiva si coincide con la sesión activa actual
+        de la cámara, evitando sobrescribir sesiones nuevas con hilos anteriores lentos.
+        """
+        cam_id = int(cam_id)
+        with self._diag_lock:
+            # 1. Si la sesión ya fue archivada previamente, no duplicar
+            if session_id and session_id in self.completed_diagnostics:
+                return self.completed_diagnostics[session_id]
+
+            # 2. Localizar la sesión a archivar
+            current = self.diagnostics.get(cam_id)
+            if current and (session_id is None or current.get("session_id") == session_id):
+                diag = self.diagnostics.pop(cam_id)
+            elif fallback_diag and (session_id is None or fallback_diag.get("session_id") == session_id):
+                diag = fallback_diag
+            else:
+                return None
+
+            # 3. Registrar duración real y estado finalizado
+            diag["ended_at"] = time.time()
+            started_at = diag.get("started_at", time.perf_counter())
+            diag["duration_s"] = max(0.0, time.perf_counter() - started_at)
+            diag["is_active"] = False
+
+            sid = diag.get("session_id")
+            if sid:
+                self.completed_diagnostics[sid] = diag
+                self._prune_completed_diagnostics()
+
+            return diag
+
+    def _prune_completed_diagnostics(self):
+        """Limita la retención diagnóstica a 20 sesiones finalizadas más recientes."""
+        overflow = len(self.completed_diagnostics) - 20
+        if overflow > 0:
+            oldest = sorted(
+                self.completed_diagnostics.keys(),
+                key=lambda sid: self.completed_diagnostics[sid].get("ended_at", 0.0)
+            )
+            for session_id in oldest[:overflow]:
+                self.completed_diagnostics.pop(session_id, None)
 
     # ═════════════════════════════════════════════════════════════════
     # STATUS
@@ -1421,6 +1676,14 @@ class AthenaManager:
                 continue
 
             last_ts = ts
+
+            with self._diag_lock:
+                diagnostics = self.diagnostics.get(cam_id)
+                if diagnostics is not None:
+                    ms = diagnostics.setdefault("milestones_s", {})
+                    if "first_mjpeg_yield_s" not in ms:
+                        started_at = diagnostics.get("started_at", time.perf_counter())
+                        ms["first_mjpeg_yield_s"] = time.perf_counter() - started_at
 
             # ---------------------------------------------------------
             # MJPEG multipart.

@@ -38,6 +38,7 @@ from fastapi.responses import JSONResponse, StreamingResponse, Response
 from services.auth_service import (
     get_current_user,
     require_permission,
+    require_any_permission,
     registrar_auditoria,
     validate_token,
 )
@@ -249,6 +250,32 @@ def athena_status(usuario: dict = Depends(get_current_user)):
         })
 
 
+@router.get("/athena/diagnostics")
+def athena_diagnostics(
+    cam_id: Optional[int] = None,
+    usuario: dict = Depends(require_any_permission("camaras:ver", "camaras:ver_detalle")),
+):
+    """
+    Telemetría en memoria por sesión Athena, sin exponer fuentes ni credenciales de cámara.
+    Controlado por RBAC: requiere permiso para consultar cámaras.
+    """
+    if cam_id is not None:
+        conn = get_conn()
+        row = conn.execute('SELECT id FROM camaras WHERE id=?', (cam_id,)).fetchone()
+        conn.close()
+        if not row:
+            return JSONResponse(status_code=404, content={'error': 'Cámara no encontrada.'})
+
+    athena = _get_athena()
+    if not athena:
+        return JSONResponse(status_code=503, content={'error': 'Motor Athena no disponible'})
+    try:
+        return JSONResponse(content=athena.diagnostics_status(cam_id))
+    except Exception as e:
+        logger.error(f'Error obteniendo diagnóstico Athena: {e}', exc_info=True)
+        return JSONResponse(status_code=500, content={'error': 'Diagnóstico no disponible'})
+
+
 @router.get("/eventos/stream")
 def eventos_sse(request: Request):
     """
@@ -397,6 +424,7 @@ async def connect_camera(
     request: Request,
     usuario: dict = Depends(get_current_user),
 ):
+    request_started_at = time.perf_counter()
     conn = get_conn()
     row = conn.execute('SELECT * FROM camaras WHERE id=?', (cam_id,)).fetchone()
     conn.close()
@@ -454,7 +482,8 @@ async def connect_camera(
             confidence=confidence,
             mode=mode,
             tripwire=tripwire,
-            client_id=client_id
+            client_id=client_id,
+            request_started_at=request_started_at,
         )
 
         ip = request.client.host if request.client else None

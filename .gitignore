@@ -2,21 +2,28 @@
 #  ARGOS SiViA — Control de Versiones (.gitignore)
 # ═══════════════════════════════════════════════════════════════
 
-# ── Python y Entornos Virtuales ──────────────────────────────────────────────
+# ── 1. Python y Entornos Virtuales ───────────────────────────────────────────
 __pycache__/
 *.py[cod]
+*$py.class
 *.pyo
 *.pyd
 .Python
 env/
 venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
 vision_env/
 backend_env/
 build/
 dist/
 *.egg-info/
+.mypy_cache/
+.ruff_cache/
 
-# ── Archivos de Entorno y Configuración Sensible ─────────────────────────────
+# ── 2. Archivos de Entorno y Configuración Sensible ─────────────────────────
 # (¡NUNCA SUBIR AL REPOSITORIO!)
 .env
 .env.*
@@ -29,7 +36,7 @@ dist/
 *.pfx
 *.p12
 
-# ── Modelos de Inteligencia Artificial (Pesos Binarios Pesados) ──────────────
+# ── 3. Modelos de Inteligencia Artificial (Pesos Binarios Pesados) ──────────
 # Descargar con: pip install ultralytics && yolo download
 *.pt
 *.pth
@@ -43,14 +50,14 @@ dist/
 *.engine
 *.safetensors
 
-# ── Datos de Entrenamiento y Ejecuciones YOLO ────────────────────────────────
+# ── 4. Datos de Entrenamiento y Ejecuciones YOLO ────────────────────────────
 # Las carpetas de dataset y runs se generan localmente
 runs/
 backend/core_ia/athena/dataset/images/
 backend/core_ia/athena/dataset/labels/
 backend/core_ia/athena/runs/
 
-# ── Bases de Datos Locales ───────────────────────────────────────────────────
+# ── 5. Bases de Datos Locales ───────────────────────────────────────────────
 *.db
 *.db-journal
 *.db-wal
@@ -59,7 +66,7 @@ backend/core_ia/athena/runs/
 *.sqlite3
 database/*.db
 
-# ── Videos y Archivos Multimedia Subidos (Uploads) y Evidencias ───────────────
+# ── 6. Videos y Archivos Multimedia Subidos (Uploads) y Evidencias ───────────
 backend/uploads/videos/*
 !backend/uploads/videos/.gitkeep
 backend/evidence/*
@@ -75,7 +82,7 @@ backend/core_ia/athena/evidence/*
 *.flv
 *.m4v
 
-# ── Dependencias Node.js y Builds de Frontend ────────────────────────────────
+# ── 7. Dependencias Node.js y Builds de Frontend ────────────────────────────
 node_modules/
 frontend-hermes/node_modules/
 frontend-hermes/dist/*
@@ -85,7 +92,7 @@ dist/
 dist-ssr/
 *.local
 
-# ── Pruebas, Cobertura y Caches ──────────────────────────────────────────────
+# ── 8. Pruebas, Cobertura y Caches ──────────────────────────────────────────
 .pytest_cache/
 .coverage
 .coverage.*
@@ -93,25 +100,28 @@ htmlcov/
 .tox/
 .nox/
 
-# ── Carpetas ignoradas del proyecto ─────────────────────────────────────────
+# ── 9. Carpetas y Módulos Experimentales Excluidos ──────────────────────────
 # Scripts de instalación (solo para distribución, no para desarrollo)
 installer/
-# Modelos y prototipos experimentales
+# Prototipos y maquetas frontend experimentales (no son modelos IA)
 modelos_nuevos/
 # Tests locales (no hacen parte del repositorio académico principal)
 tests/
 
-# ── Logs y Archivos Temporales de Ejecución ──────────────────────────────────
+# ── 10. Logs y Archivos de Diagnóstico de Ejecución ─────────────────────────
 logs/
 *.log
 athena_worker.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*.pid
+*.seed
 
-# ── Editor e IDEs ────────────────────────────────────────────────────────────
+# ── 11. Editor, IDEs y Herramientas ─────────────────────────────────────────
 .vscode/
 .idea/
+.history/
 *.swp
 *.swo
 *.suo
@@ -119,22 +129,32 @@ yarn-error.log*
 *.njsproj
 *.sln
 
-# ── Sistema Operativo ────────────────────────────────────────────────────────
+# ── 12. Sistema Operativo ───────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# ── Backups, Temporales y Comprimidos ────────────────────────────────────────
+# ── 13. Backups, Copias Locales y Temporales ────────────────────────────────
+Copias/
+copias/
 *.bak
 *.tmp
 *.temp
+*~
+*.orig
+*.rej
 *.zip
 *.tar
 *.gz
 *.rar
 *.7z
 
-# ── Agentes utilizados ───────────────────────────────────────────────────────
+# ── 14. Archivos Temporales de Depuración y Diferencias ─────────────────────
+# Archivos temporales residuales generados localmente (ej. volcados de diff)
+/e
+*.diff
+*.patch
 
+# ── 15. Herramientas y Agentes de Desarrollo ────────────────────────────────
 .agents/
 skills-lock.json
