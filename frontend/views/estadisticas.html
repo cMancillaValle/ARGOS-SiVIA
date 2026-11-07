@@ -11,52 +11,142 @@
     <div class="absolute top-0 left-0 bottom-0 w-1 bg-rojo rounded-l-lg"></div>
     <div>
       <div class="font-mono text-[9px] tracking-[2px] text-rojo uppercase mb-2">Reportes Analíticos</div>
-      <h2 class="font-rajdhani text-2xl md:text-3xl font-bold tracking-wide mb-2">Desempeño y Métricas</h2>
+      <h2 class="font-rajdhani text-2xl md:text-3xl font-bold tracking-wide mb-2">Desempeño y Métricas Operativas</h2>
       <p class="text-sm text-texto-dim font-light max-w-xl leading-relaxed">
-        Visualización de evasiones detectadas por troncal, precisión del modelo y tasas de falsos positivos reportados durante la última semana.
+        Visualización de evasiones detectadas en el sistema, volumen por estación y estado de validación operativa.
       </p>
     </div>
     
     <div class="flex gap-2 font-mono text-xs text-texto-dim">
-      <button class="bg-bg-tertiary border border-panelBorde px-3 py-1.5 rounded hover:text-texto transition-colors">7 Días</button>
-      <button class="bg-rojo/20 border border-rojo/50 text-rojo px-3 py-1.5 rounded">30 Días</button>
+      <button id="btn-stat-refresh" onclick="cargarEstadisticasReales()" class="bg-bg-tertiary border border-panelBorde px-3 py-1.5 rounded hover:text-texto transition-colors">
+        Actualizar Datos
+      </button>
     </div>
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-    <!-- Chart Mock 1 -->
-    <div class="bg-panel border border-white/5 rounded-xl p-6 shadow-lg">
-      <h3 class="font-rajdhani font-bold text-lg text-texto mb-5 uppercase tracking-wide">Evasiones por Troncal</h3>
-      <div class="h-48 border-b border-l border-white/10 flex items-end justify-between px-2 pt-4 pb-0 relative">
-        <!-- Bars -->
-        <div class="w-[12%] bg-gradient-to-t from-rojo/80 to-[#ff4444] rounded-t-sm relative group" style="height: 85%;">
-          <div class="absolute -top-6 left-1/2 -translate-x-1/2 font-mono text-[10px] text-texto opacity-0 group-hover:opacity-100 transition-opacity">850</div>
+    <!-- Panel 1: Eventos por Estación (Datos Reales de Base de Datos) -->
+    <div class="bg-panel border border-white/5 rounded-xl p-6 shadow-lg flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-rajdhani font-bold text-lg text-texto uppercase tracking-wide">Evasiones Registradas por Estación</h3>
+          <span class="text-[9px] font-mono px-2 py-0.5 rounded bg-verde/10 text-verde border border-verde/20">Dato Real</span>
         </div>
-        <div class="w-[12%] bg-gradient-to-t from-rojo/60 to-rojo rounded-t-sm relative group" style="height: 60%;"></div>
-        <div class="w-[12%] bg-gradient-to-t from-rojo/40 to-rojo/80 rounded-t-sm relative group" style="height: 40%;"></div>
-        <div class="w-[12%] bg-gradient-to-t from-rojo/60 to-rojo rounded-t-sm relative group" style="height: 70%;"></div>
-        <div class="w-[12%] bg-gradient-to-t from-rojo/40 to-rojo/80 rounded-t-sm relative group" style="height: 35%;"></div>
-        <div class="w-[12%] bg-gradient-to-t from-rojo/20 to-rojo/50 rounded-t-sm relative group" style="height: 20%;"></div>
+        <p class="text-xs text-texto-dim mb-4">Total de eventos acumulados por estación según registros de cámaras.</p>
       </div>
-      <div class="flex justify-between font-mono text-[9px] text-texto-dim uppercase tracking-wider mt-2 px-1">
-        <span>Caracas</span><span>NQS</span><span>Américas</span><span>Suba</span><span>80</span><span>Sur</span>
+
+      <div id="chart-estaciones-container" class="h-48 border-b border-l border-white/10 flex items-end justify-between px-2 pt-4 pb-0 relative">
+        <div class="text-xs text-texto-dim text-center w-full my-auto">Cargando distribución por estación...</div>
+      </div>
+      <div id="chart-estaciones-labels" class="flex justify-between font-mono text-[9px] text-texto-dim uppercase tracking-wider mt-2 px-1">
       </div>
     </div>
 
-    <!-- Chart Mock 2 -->
-    <div class="bg-panel border border-white/5 rounded-xl p-6 shadow-lg">
-      <h3 class="font-rajdhani font-bold text-lg text-texto mb-5 uppercase tracking-wide">Tasa de Confiabilidad IA (YOLOv8)</h3>
-      <div class="flex h-48 items-center justify-center relative">
-        <!-- Circulo central -->
-        <div class="w-32 h-32 rounded-full border-[12px] border-bg-tertiary relative flex items-center justify-center">
-          <div class="absolute inset-[-12px] rounded-full border-[12px] border-verde border-l-transparent border-b-transparent transform rotate-45"></div>
-          <div class="font-rajdhani text-3xl font-bold text-verde">98%</div>
+    <!-- Panel 2: Calidad y Evaluación de IA (F24: Sin Métricas Inventadas) -->
+    <div class="bg-panel border border-white/5 rounded-xl p-6 shadow-lg flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-rajdhani font-bold text-lg text-texto uppercase tracking-wide">Tasa de Confiabilidad IA (YOLOv8)</h3>
+          <span class="text-[9px] font-mono px-2 py-0.5 rounded bg-amarillo/10 text-amarillo border border-amarillo/20">No Evaluado</span>
+        </div>
+        <p class="text-xs text-texto-dim leading-relaxed mb-4">
+          La precisión global, recall y F1-score requieren un benchmark formal con un conjunto de prueba etiquetado (Ground Truth). ARGOS no presenta precisiones ficticias.
+        </p>
+      </div>
+
+      <div class="flex h-36 items-center justify-center relative">
+        <div class="w-32 h-32 rounded-full border-[6px] border-dashed border-white/10 relative flex flex-col items-center justify-center text-center p-2">
+          <span class="text-xl font-bold font-mono text-amarillo">N/D</span>
+          <span class="text-[9px] font-mono text-texto-dim uppercase mt-1">Sin benchmark</span>
         </div>
       </div>
-      <div class="flex justify-center gap-6 font-mono text-[10px] mt-4">
-        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded bg-verde"></span> <span class="text-texto-dim">Aciertos (True Positive)</span></div>
-        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded bg-bg-tertiary"></span> <span class="text-texto-dim">Falsos Positivos</span></div>
+
+      <div class="mt-4 pt-3 border-t border-white/5 flex flex-col gap-1.5 text-xs">
+        <div class="flex justify-between font-mono text-[10px]">
+          <span class="text-texto-dim">Tasa de Confirmación Operadores:</span>
+          <span id="stat-tasa-confirmacion" class="font-bold text-texto">Calculando...</span>
+        </div>
+        <div class="flex justify-between font-mono text-[10px]">
+          <span class="text-texto-dim">Eventos Confirmados / Descartados:</span>
+          <span id="stat-eventos-revisados" class="font-bold text-texto">-</span>
+        </div>
+        <div class="text-[9px] text-texto-dim/70 italic mt-1">
+          * La tasa de confirmación refleja la concordancia humana con las alertas revisadas, no la precisión global del modelo.
+        </div>
       </div>
     </div>
   </div>
 </div>
+
+<script>
+(function() {
+  const token = () => sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token');
+
+  window.cargarEstadisticasReales = async function() {
+    try {
+      const res = await fetch('/api/stats', {
+        headers: { 'X-Token': token() }
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      // 1. Tasa de confirmación humana
+      const tc = data.sistema?.tasa_confirmacion_operador;
+      const elTc = document.getElementById('stat-tasa-confirmacion');
+      if (elTc) {
+        if (tc !== null && tc !== undefined) {
+          elTc.textContent = (tc * 100).toFixed(1) + '%';
+          elTc.className = 'font-bold text-verde';
+        } else {
+          elTc.textContent = 'Sin revisiones suficientes';
+          elTc.className = 'font-bold text-texto-dim';
+        }
+      }
+
+      const elRev = document.getElementById('stat-eventos-revisados');
+      if (elRev && data.eventos) {
+        const conf = data.eventos.confirmados || 0;
+        const desc = data.eventos.descartados || 0;
+        elRev.textContent = `${conf} confirmados / ${desc} descartados`;
+      }
+
+      // 2. Gráfico por estación real
+      const estaciones = data.por_estacion || [];
+      const cont = document.getElementById('chart-estaciones-container');
+      const labelsCont = document.getElementById('chart-estaciones-labels');
+
+      if (!estaciones.length) {
+        if (cont) cont.innerHTML = '<div class="text-xs text-texto-dim text-center w-full my-auto">Sin eventos registrados aún</div>';
+        if (labelsCont) labelsCont.innerHTML = '';
+        return;
+      }
+
+      const maxVal = Math.max(...estaciones.map(e => e.total), 1);
+      if (cont) {
+        cont.innerHTML = estaciones.map(e => {
+          const pct = Math.max(8, Math.round((e.total / maxVal) * 100));
+          return `
+            <div class="w-[12%] bg-gradient-to-t from-rojo/80 to-[#ff4444] rounded-t-sm relative group transition-all" style="height: ${pct}%;">
+              <div class="absolute -top-6 left-1/2 -translate-x-1/2 font-mono text-[10px] text-texto opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 px-1 rounded whitespace-nowrap">
+                ${e.total} ev.
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      if (labelsCont) {
+        labelsCont.innerHTML = estaciones.map(e => {
+          const shortName = (e.estacion || 'N/A').replace('Portal ', 'P. ').substring(0, 8);
+          return `<span title="${e.estacion}">${shortName}</span>`;
+        }).join('');
+      }
+
+    } catch (err) {
+      console.warn('Error cargando estadísticas:', err);
+    }
+  };
+
+  cargarEstadisticasReales();
+})();
+</script>

@@ -175,9 +175,37 @@
   window.camRefresh = camRefresh;
   window.camFilter  = camFilter;
 
-  window.camPing = function(id, ip) {
-    const msg = ip ? `Enviando ping a ${ip}...` : 'IP no configurada';
-    alert(`📡 Test de conexión\n\n${msg}\n\n(Resultado simulado - integrar con endpoint de diagnóstico real)`);
+  let _pingingCam = {};
+  window.camPing = async function(id, ip) {
+    if (_pingingCam[id]) return;
+    _pingingCam[id] = true;
+    const btn = document.querySelector(`button[onclick*="camPing(${id},"]`);
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '⏳';
+    }
+
+    try {
+      const res = await fetch(`/api/camaras/${id}/ping`, {
+        headers: { 'X-Token': token() }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const estadoTxt = data.online ? '✓ EN LÍNEA' : '✗ FUERA DE LÍNEA';
+        const latTxt = data.latencia_ms !== null ? `Latencia: ${data.latencia_ms} ms` : 'Latencia: N/A';
+        alert(`📡 Diagnóstico de Red Real\n\nCámara: ${data.codigo || id}\nDirección/Fuente: ${data.ip || 'No asignada'}\nResultado: ${estadoTxt}\n${latTxt}\nDetalle: ${data.detalle || '-'}`);
+      } else {
+        alert(`📡 Error de Diagnóstico\n\n${data.error || 'No se pudo completar el diagnóstico.'}`);
+      }
+    } catch (err) {
+      alert(`📡 Error de Conexión\n\nNo se pudo contactar al servidor para realizar el diagnóstico.`);
+    } finally {
+      _pingingCam[id] = false;
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '📡';
+      }
+    }
   };
 
   window.camOpenModal = function(id) {

@@ -9,10 +9,11 @@ POST /api/auth/reset-password/confirmar  → código + nueva contraseña
 
 import sqlite3
 import os
+import logging
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
-from services.auth_service import hash_password, registrar_auditoria
+from services.auth_service import hash_password, registrar_auditoria, revoke_all_user_sessions
 from services.email_service import (
     store_code, validate_code,
     enviar_codigo_reset_password,
@@ -21,6 +22,8 @@ from utils.limiter import limiter
 from utils.validators import validate_password, format_error
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+RESET_REQUEST_MESSAGE = 'Si la cuenta existe, recibirás instrucciones para continuar.'
 DB_PATH = os.path.normpath(os.path.join(
     os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', 'database', 'argos.db'
 ))
@@ -29,6 +32,7 @@ DB_PATH = os.path.normpath(os.path.join(
 def get_conn():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    conn.execute('PRAGMA foreign_keys = ON')
     return conn
 
 
@@ -53,54 +57,78 @@ async def solicitar_reset(request: Request):
     if not user:
         return JSONResponse(content={
             'status': 'ok',
-            'mensaje': 'Si el usuario existe, recibirás un email con instrucciones.',
+            'mensaje': RESET_REQUEST_MESSAGE,
         })
 
     resultado = enviar_codigo_reset_password(user['email'], user['username'])
 
-    respuesta = {
-        'status':  'ok',
-        'mensaje': f'Código enviado al email registrado de {user["username"]}.',
-        'username': user['username'],
-    }
+    if resultado.get('rate_limited'):
+        return JSONResponse(content={'status': 'ok', 'mensaje': RESET_REQUEST_MESSAGE})
+
+    if resultado.get('enviado'):
+        return JSONResponse(content={
+            'status':  'ok',
+            'mensaje': RESET_REQUEST_MESSAGE,
+        })
+
     if resultado.get('dev'):
-        respuesta['dev_code'] = resultado.get('code')
-        respuesta['aviso']    = 'Modo desarrollo: SMTP no configurado. Código incluido en respuesta.'
-    return JSONResponse(content=respuesta)
+        return JSONResponse(content={
+            'status':   'ok',
+            'mensaje':  RESET_REQUEST_MESSAGE,
+            'dev_code': resultado.get('code'),
+            'aviso':    'Modo desarrollo explícito activo (ARGOS_DEV_MODE). Código incluido para pruebas.',
+        })
+
+    # Respuesta indistinguible para no confirmar que la cuenta existe.
+    logger.error('No se pudo entregar un código de recuperación para una cuenta válida.')
+    return JSONResponse(content={'status': 'ok', 'mensaje': RESET_REQUEST_MESSAGE})
 
 
 @router.post("/confirmar")
 @limiter.limit("5/minute")
 async def confirmar_reset(request: Request):
     """
-    Body: { "username": "...", "codigo": "123456", "nueva_password": "..." }
+    Body: { "username": "usuario o email", "codigo": "123456", "nueva_password": "..." }
     """
     data     = await request.json() if await _has_body(request) else {}
-    username = data.get('username', '').strip()
+    identifier = data.get('username', '').strip()
     code     = str(data.get('codigo', '')).strip()
     nueva    = data.get('nueva_password', '').strip()
 
-    if not all([username, code, nueva]):
+    if not all([identifier, code, nueva]):
         return format_error('username, codigo y nueva_password son obligatorios.')
 
     pass_ok, pass_msg = validate_password(nueva)
     if not pass_ok:
         return format_error(f'La contraseña es débil: {pass_msg}')
 
-    ok, _ = validate_code('reset_pass', username, code)
+    conn = get_conn()
+    user = conn.execute(
+        'SELECT id, username FROM usuarios WHERE (username=? OR email=?) AND activo=1',
+        (identifier, identifier)
+    ).fetchone()
+    conn.close()
+    code_identifier = user['username'] if user else identifier
+
+    ok, validation = validate_code('reset_pass', code_identifier, code)
     if not ok:
+        logger.warning(
+            'Fallo de validación de recuperación para cuenta=%s motivo=%s ip=%s',
+            code_identifier,
+            validation.get('reason', 'invalid'),
+            request.client.host if request.client else 'unknown',
+        )
+        return JSONResponse(status_code=400, content={'error': 'Código incorrecto o expirado. Solicita un nuevo código.'})
+
+    if not user:
         return JSONResponse(status_code=400, content={'error': 'Código incorrecto o expirado. Solicita un nuevo código.'})
 
     conn = get_conn()
-    user = conn.execute('SELECT id FROM usuarios WHERE username=? AND activo=1', (username,)).fetchone()
-    if not user:
-        conn.close()
-        return JSONResponse(status_code=404, content={'error': 'Usuario no encontrado.'})
-
     conn.execute('UPDATE usuarios SET password=? WHERE id=?',
                  (hash_password(nueva), user['id']))
     conn.commit()
     conn.close()
+    revoke_all_user_sessions(user['id'])
     ip = request.client.host if request.client else None
     registrar_auditoria(user['id'], 'PASSWORD_RESET', 'Contraseña restablecida via email', ip)
     return JSONResponse(content={'status': 'ok', 'mensaje': 'Contraseña restablecida. Ya puedes iniciar sesión.'})

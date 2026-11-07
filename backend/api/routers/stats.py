@@ -24,6 +24,7 @@ DB_PATH = os.path.normpath(os.path.join(
 def get_conn():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    conn.execute('PRAGMA foreign_keys = ON')
     return conn
 
 
@@ -56,9 +57,33 @@ def general_stats(usuario: dict = Depends(get_current_user)):
 
     usuarios = conn.execute('SELECT COUNT(*) FROM usuarios WHERE activo=1').fetchone()[0]
 
-    precision = 0.0
-    if ev_confirm + ev_desc > 0:
-        precision = round(ev_confirm / (ev_confirm + ev_desc), 4)
+    # F24: Tasa de confirmación de eventos revisados por operadores humanos
+    tasa_confirmacion = None
+    if (ev_confirm + ev_desc) > 0:
+        tasa_confirmacion = round(ev_confirm / (ev_confirm + ev_desc), 4)
+
+    # Uptime real del host si psutil está disponible
+    uptime_h = None
+    try:
+        import psutil
+        boot = psutil.boot_time()
+        uptime_h = round((datetime.now().timestamp() - boot) / 3600.0, 1)
+    except Exception:
+        uptime_h = None
+
+    # FPS promedio configurado en cámaras activas
+    fps_row = conn.execute('SELECT AVG(fps) FROM camaras WHERE estado="activa"').fetchone()
+    fps_promedio = round(fps_row[0], 1) if fps_row and fps_row[0] is not None else None
+
+    # Distribución real de eventos por estación
+    estaciones_stats = conn.execute('''
+        SELECT c.estacion, COUNT(e.id) as total
+        FROM eventos e
+        JOIN camaras c ON c.id = e.camara_id
+        GROUP BY c.estacion
+        ORDER BY total DESC
+        LIMIT 6
+    ''').fetchall()
 
     conn.close()
     return JSONResponse(content={
@@ -72,11 +97,14 @@ def general_stats(usuario: dict = Depends(get_current_user)):
         },
         'sistema': {
             'usuarios_activos': usuarios,
-            'precision_modelo': precision,
-            'fps_promedio': 15.4,
-            'uptime_horas': 720,
+            'tasa_confirmacion_operador': tasa_confirmacion,
+            'precision_modelo': None,  # F24: Retirado 98% ficticio. No evaluado
+            'precision_modelo_estado': 'no_evaluado',
+            'fps_promedio': fps_promedio,
+            'uptime_horas': uptime_h,
         },
         'actividad_48h': [dict(r) for r in por_hora],
+        'por_estacion': [dict(r) for r in estaciones_stats],
     })
 
 

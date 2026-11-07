@@ -149,7 +149,13 @@
       const q = document.getElementById('aud-q')?.value || '';
       const fecha = document.getElementById('aud-fecha')?.value || '';
       const usuario = document.getElementById('aud-usuario')?.value || '';
-      const params = new URLSearchParams({ q, fecha, usuario, limite: LIMITE, pagina: _pagina });
+      const params = new URLSearchParams({
+        q,
+        fecha,
+        usuario_param: usuario,
+        limite: LIMITE,
+        pagina: _pagina
+      });
       try {
         const r = await fetch(`/api/auditoria?${params}`, { headers: { 'X-Token': token() } });
         if (!r.ok) throw new Error(`API ${r.status}`);

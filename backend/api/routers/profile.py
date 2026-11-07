@@ -4,7 +4,7 @@ api/routers/profile.py
 GET    /api/perfil/me                   → Datos del usuario actual
 PUT    /api/perfil/me                   → Actualizar nombre
 PUT    /api/perfil/me/avatar            → Cambiar avatar (base64)
-POST   /api/perfil/me/email/solicitar   → Paso 1: verificar password, enviar código al email actual
+POST   /api/perfil/me/email/solicitar   → Verificar password y enviar código al email nuevo
 POST   /api/perfil/me/email/confirmar   → Paso 2: verificar código 1, enviar código al nuevo email
 POST   /api/perfil/me/email/finalizar   → Paso 3: verificar código 2, actualizar email
 PUT    /api/perfil/me/password          → Cambiar contraseña (requiere actual)
@@ -15,11 +15,13 @@ POST   /api/perfil/me/2fa/desactivar    → Desactivar 2FA (requiere password + 
 
 import sqlite3
 import os
+import logging
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import JSONResponse
 
 from services.auth_service import (
     hash_password, verify_password, get_current_user, registrar_auditoria,
+    revoke_all_user_sessions,
 )
 from utils.validators import validate_email, validate_password, validate_avatar, format_error
 from services.two_factor import (
@@ -33,8 +35,10 @@ from services.email_service import (
     store_code, validate_code, peek_code,
     enviar_codigo_cambio_email,
 )
+from utils.limiter import limiter
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 DB_PATH = os.path.normpath(os.path.join(
     os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', 'database', 'argos.db'
 ))
@@ -43,6 +47,7 @@ DB_PATH = os.path.normpath(os.path.join(
 def get_conn():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    conn.execute('PRAGMA foreign_keys = ON')
     return conn
 
 
@@ -131,10 +136,11 @@ async def update_avatar(request: Request, usuario: dict = Depends(get_current_us
 
 
 @router.post("/me/email/solicitar")
+@limiter.limit("5/minute")
 async def email_step1(request: Request, usuario: dict = Depends(get_current_user)):
     data     = await request.json() if await _has_body(request) else {}
     password = data.get('password', '').strip()
-    nuevo    = data.get('nuevo_email', '').strip()
+    nuevo    = data.get('nuevo_email', '').strip().lower()
 
     if not password or not nuevo:
         return format_error('password y nuevo_email son obligatorios.')
@@ -146,57 +152,115 @@ async def email_step1(request: Request, usuario: dict = Depends(get_current_user
     if not user or not verify_password(password, user['password']):
         return JSONResponse(status_code=403, content={'error': 'Contraseña incorrecta.'})
 
-    if user['email'] == nuevo:
+    if user['email'].lower() == nuevo:
         return format_error('El nuevo email es igual al actual.')
 
-    resultado = enviar_codigo_cambio_email(usuario['id'], user['email'], nuevo)
-    respuesta = {'status': 'ok', 'mensaje': f'Código enviado a {user["email"]}.'}
+    # Validación de unicidad
+    conn = get_conn()
+    try:
+        duplicado = conn.execute(
+            'SELECT id FROM usuarios WHERE LOWER(email) = ? AND id != ?',
+            (nuevo, usuario['id'])
+        ).fetchone()
+        if duplicado:
+            return JSONResponse(status_code=409, content={'error': 'El correo electrónico ya está registrado por otra cuenta.'})
+    finally:
+        conn.close()
+
+    resultado = enviar_codigo_cambio_email(usuario['id'], nuevo, nuevo)
+    if resultado.get('rate_limited'):
+        return JSONResponse(
+            status_code=429,
+            content={'error': 'Espera antes de solicitar un nuevo código de verificación.'}
+        )
+    if resultado.get('enviado') or resultado.get('dev'):
+        conn = get_conn()
+        try:
+            conn.execute('UPDATE usuarios SET email_pending = ? WHERE id = ?', (nuevo, usuario['id']))
+            conn.commit()
+        finally:
+            conn.close()
+    if resultado.get('enviado'):
+        return JSONResponse(content={
+            'status': 'ok',
+            'mensaje': f'Código de verificación enviado al nuevo correo: {nuevo}.',
+            'nuevo_email': nuevo
+        })
+
     if resultado.get('dev'):
-        respuesta['dev_code'] = resultado.get('code')
-        respuesta['aviso']    = 'Modo desarrollo: código incluido en respuesta (configura SMTP en producción).'
-    return JSONResponse(content=respuesta)
+        return JSONResponse(content={
+            'status': 'ok',
+            'mensaje': f'Código de verificación generado para: {nuevo}.',
+            'nuevo_email': nuevo,
+            'dev_code': resultado.get('code'),
+            'aviso': 'Modo desarrollo explícito activo (ARGOS_DEV_MODE). Código incluido para pruebas.',
+        })
+
+    return JSONResponse(
+        status_code=503,
+        content={'error': 'El servicio de correo no está disponible en este momento. Contacta al administrador.'}
+    )
 
 
 @router.post("/me/email/confirmar")
+@limiter.limit("5/minute")
 async def email_step2(request: Request, usuario: dict = Depends(get_current_user)):
-    data  = await request.json() if await _has_body(request) else {}
-    code  = str(data.get('codigo', '')).strip()
-    uid   = usuario['id']
+    """
+    Confirma el cambio de correo electrónico verificando el código.
+    El correo final se toma EXCLUSIVAMENTE de la solicitud pendiente validada,
+    impidiendo la sustitución arbitraria de la dirección.
+    """
+    data = await request.json() if await _has_body(request) else {}
+    code = str(data.get('codigo', '')).strip()
+    uid  = usuario['id']
 
-    ok, extra = validate_code('email_cambio', str(uid), code)
+    if not code:
+        return format_error('El código de verificación es obligatorio.')
+
+    ok, extra = validate_code('cambio_email', str(uid), code)
     if not ok:
+        logger.warning(
+            'Fallo de validación de cambio de correo user_id=%s motivo=%s ip=%s',
+            uid,
+            extra.get('reason', 'invalid'),
+            request.client.host if request.client else 'unknown',
+        )
         return JSONResponse(status_code=400, content={'error': 'Código incorrecto o expirado.'})
 
-    nuevo_email = extra.get('nuevo_email', '')
-    if not nuevo_email:
-        return JSONResponse(status_code=400, content={'error': 'Estado inválido. Inicia el proceso de nuevo.'})
+    nuevo_email = extra.get('nuevo_email', '').strip().lower()
+    if not nuevo_email or not validate_email(nuevo_email):
+        return JSONResponse(status_code=400, content={'error': 'Solicitud inválida o corrupta. Inicia el proceso nuevamente.'})
 
-    resultado = enviar_codigo_cambio_email(uid, nuevo_email)
-    respuesta = {'status': 'ok', 'mensaje': f'Código enviado a {nuevo_email}.'}
-    if resultado.get('dev'):
-        respuesta['dev_code'] = resultado.get('code')
-        respuesta['aviso']    = 'Modo desarrollo: código incluido en respuesta.'
-    return JSONResponse(content=respuesta)
+    conn = get_conn()
+    try:
+        # Re-verificar unicidad antes de persistir
+        duplicado = conn.execute(
+            'SELECT id FROM usuarios WHERE LOWER(email) = ? AND id != ?',
+            (nuevo_email, uid)
+        ).fetchone()
+        if duplicado:
+            conn.execute('UPDATE usuarios SET email_pending = NULL WHERE id = ?', (uid,))
+            conn.commit()
+            return JSONResponse(status_code=409, content={'error': 'El correo electrónico ya fue registrado por otra cuenta.'})
+
+        conn.execute('UPDATE usuarios SET email = ?, email_pending = NULL WHERE id = ?', (nuevo_email, uid))
+        conn.commit()
+    finally:
+        conn.close()
+
+    ip = request.client.host if request.client else None
+    registrar_auditoria(uid, 'EMAIL_ACTUALIZADO', f'Correo actualizado exitosamente a: {nuevo_email}', ip)
+    return JSONResponse(content={
+        'status': 'ok',
+        'mensaje': 'Email actualizado correctamente.',
+        'nuevo_email': nuevo_email
+    })
 
 
 @router.post("/me/email/finalizar")
 async def email_step3(request: Request, usuario: dict = Depends(get_current_user)):
-    data  = await request.json() if await _has_body(request) else {}
-    code  = str(data.get('codigo', '')).strip()
-    nuevo = data.get('nuevo_email', '').strip()
-    uid   = usuario['id']
-
-    ok, _ = validate_code('email_nuevo', str(uid), code)
-    if not ok:
-        return JSONResponse(status_code=400, content={'error': 'Código incorrecto o expirado.'})
-
-    conn = get_conn()
-    conn.execute('UPDATE usuarios SET email=? WHERE id=?', (nuevo, uid))
-    conn.commit()
-    conn.close()
-    ip = request.client.host if request.client else None
-    registrar_auditoria(uid, 'EMAIL_ACTUALIZADO', f'Nuevo email: {nuevo}', ip)
-    return JSONResponse(content={'status': 'ok', 'mensaje': 'Email actualizado correctamente.', 'nuevo_email': nuevo})
+    """Alias de compatibilidad redirigido a confirmación segura."""
+    return await email_step2(request, usuario)
 
 
 @router.put("/me/password")
@@ -225,9 +289,10 @@ async def change_password_me(request: Request, usuario: dict = Depends(get_curre
     conn.execute('UPDATE usuarios SET password=? WHERE id=?', (hash_password(nueva), uid))
     conn.commit()
     conn.close()
+    revoke_all_user_sessions(uid)
     ip = request.client.host if request.client else None
     registrar_auditoria(uid, 'PASSWORD_CAMBIADA', 'Contraseña actualizada desde perfil', ip)
-    return JSONResponse(content={'status': 'ok', 'mensaje': 'Contraseña actualizada correctamente.'})
+    return JSONResponse(content={'status': 'ok', 'mensaje': 'Contraseña actualizada correctamente. Inicia sesión con tu nueva contraseña.'})
 
 
 @router.post("/me/2fa/activar")

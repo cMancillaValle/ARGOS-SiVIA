@@ -65,19 +65,43 @@
       "nombre": "Troncal Carrera 10",
       "color": "#8A9EA7",
       "descripcion": "Carrera 10 al Portal 20 de Julio"
+    },
+    {
+      "id": "M",
+      "nombre": "Troncal Carrera 7",
+      "color": "#64748B",
+      "descripcion": "Corredor físico de la Carrera 7. Identificador interno M."
+    },
+    {
+      "id": "N",
+      "nombre": "Troncal Calle 6",
+      "color": "#64748B",
+      "descripcion": "Corredor físico de la Calle 6. Identificador interno N."
+    },
+    {
+      "id": "Z",
+      "nombre": "Troncal Avenida Ciudad de Cali",
+      "color": "#64748B",
+      "descripcion": "Extensión física de la troncal Avenida Ciudad de Cali. La clasificación se basa en infraestructura y no únicamente en la letra de servicios zonales."
     }
   ],
   "estaciones": [
     {
       "id": "TM-B-01",
       "codigo": "TM-B-01",
-      "nombre": "Portal Norte",
+      "nombre": "Portal Norte - Unicervantes",
       "troncal_id": "B",
       "troncal": "Troncal Norte",
       "tipo": "portal",
       "lat": 4.7548,
       "lng": -74.0456,
-      "direccion": "Autopista Norte con Calle 170"
+      "direccion": "Autopista Norte con Calle 170",
+      "aliases": [
+        "Portal Norte"
+      ],
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://buscador-rutas.transmilenio.gov.co/paraderos/2000/TM0029/Portal%20Norte%20-%20Unicervantes"
     },
     {
       "id": "TM-B-02",
@@ -88,18 +112,25 @@
       "tipo": "estacion",
       "lat": 4.7472,
       "lng": -74.0494,
-      "direccion": "Autopista Norte con Calle 166"
+      "direccion": "Autopista Norte con Calle 166",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-B-03",
       "codigo": "TM-B-03",
-      "nombre": "Cardio Infantil",
+      "nombre": "Calle 161",
       "troncal_id": "B",
       "troncal": "Troncal Norte",
       "tipo": "estacion",
       "lat": 4.7398,
       "lng": -74.0531,
-      "direccion": "Autopista Norte con Calle 161"
+      "direccion": "Autopista Norte con Calle 161",
+      "aliases": [
+        "Cardio Infantil"
+      ],
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://buscador-rutas.transmilenio.gov.co/paraderos/2102/TM0027/Calle%20161"
     },
     {
       "id": "TM-B-04",
@@ -110,7 +141,8 @@
       "tipo": "estacion",
       "lat": 4.7335,
       "lng": -74.056,
-      "direccion": "Autopista Norte con Calle 152"
+      "direccion": "Autopista Norte con Calle 152",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-B-05",
@@ -121,7 +153,8 @@
       "tipo": "estacion",
       "lat": 4.7266,
       "lng": -74.0587,
-      "direccion": "Autopista Norte con Calle 146"
+      "direccion": "Autopista Norte con Calle 146",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-B-06",
@@ -132,18 +165,23 @@
       "tipo": "estacion",
       "lat": 4.7214,
       "lng": -74.0603,
-      "direccion": "Autopista Norte con Calle 142"
+      "direccion": "Autopista Norte con Calle 142",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-B-07",
       "codigo": "TM-B-07",
-      "nombre": "Alcalá",
+      "nombre": "Alcalá - Colegio S. Tomás Dominicos",
+      "aliases": [
+        "Alcalá"
+      ],
       "troncal_id": "B",
       "troncal": "Troncal Norte",
       "tipo": "estacion",
       "lat": 4.7161,
       "lng": -74.0617,
-      "direccion": "Autopista Norte con Calle 136"
+      "direccion": "Autopista Norte con Calle 136",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-B-08",
@@ -154,7 +192,8 @@
       "tipo": "estacion",
       "lat": 4.7088,
       "lng": -74.0632,
-      "direccion": "Autopista Norte con Calle 128"
+      "direccion": "Autopista Norte con Calle 128",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-B-09",
@@ -165,18 +204,25 @@
       "tipo": "estacion",
       "lat": 4.7032,
       "lng": -74.0645,
-      "direccion": "Autopista Norte con Calle 127"
+      "direccion": "Autopista Norte con Calle 127",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-B-10",
       "codigo": "TM-B-10",
-      "nombre": "Pepe Sierra",
+      "nombre": "Pepe Sierra - Utel Universidad",
       "troncal_id": "B",
       "troncal": "Troncal Norte",
       "tipo": "estacion",
       "lat": 4.6966,
       "lng": -74.0658,
-      "direccion": "Autopista Norte con Calle 116"
+      "direccion": "Autopista Norte con Calle 116",
+      "aliases": [
+        "Pepe Sierra"
+      ],
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://buscador-rutas.transmilenio.gov.co/paraderos/2204/TM0020/Pepe%20Sierra%20-%20Utel%20Universidad"
     },
     {
       "id": "TM-B-11",
@@ -187,18 +233,25 @@
       "tipo": "estacion",
       "lat": 4.6908,
       "lng": -74.0666,
-      "direccion": "Autopista Norte con Calle 106"
+      "direccion": "Autopista Norte con Calle 106",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-B-12",
       "codigo": "TM-B-12",
-      "nombre": "Calle 100",
+      "nombre": "Calle 100 - Marketmedios",
       "troncal_id": "B",
       "troncal": "Troncal Norte",
       "tipo": "intermedio",
       "lat": 4.6853,
       "lng": -74.0673,
-      "direccion": "Autopista Norte con Calle 100"
+      "direccion": "Autopista Norte con Calle 100",
+      "aliases": [
+        "Calle 100"
+      ],
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://buscador-rutas.transmilenio.gov.co/paraderos/2300/2300/Calle%20100%20-%20Marketmedios"
     },
     {
       "id": "TM-B-13",
@@ -209,29 +262,40 @@
       "tipo": "estacion",
       "lat": 4.6757,
       "lng": -74.0664,
-      "direccion": "Autopista Norte con Calle 88"
+      "direccion": "Autopista Norte con Calle 88",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-B-14",
       "codigo": "TM-B-14",
-      "nombre": "Calle 85",
+      "nombre": "Calle 85 - Gato Dumas",
+      "aliases": [
+        "Calle 85"
+      ],
       "troncal_id": "B",
       "troncal": "Troncal Norte",
       "tipo": "estacion",
       "lat": 4.6708,
       "lng": -74.0654,
-      "direccion": "Autopista Norte con Calle 85"
+      "direccion": "Autopista Norte con Calle 85",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-B-15",
       "codigo": "TM-B-15",
-      "nombre": "Héroes",
+      "nombre": "Héroes - Colmena Seguros",
       "troncal_id": "B",
       "troncal": "Troncal Norte",
       "tipo": "intermedio",
       "lat": 4.6669,
       "lng": -74.0645,
-      "direccion": "Autopista Norte con Calle 80"
+      "direccion": "Autopista Norte con Calle 80",
+      "aliases": [
+        "Héroes"
+      ],
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://buscador-rutas.transmilenio.gov.co/rutas/336/B55/TransMilenio/Portal%20de%20la%2080%20-%20Tober%C3%ADn%20-%20Foundever"
     },
     {
       "id": "TM-A-01",
@@ -242,18 +306,27 @@
       "tipo": "estacion",
       "lat": 4.6625,
       "lng": -74.0638,
-      "direccion": "Av. Caracas con Calle 76"
+      "direccion": "Av. Caracas con Calle 76",
+      "estado_operativo": "historica",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/comunicaciones/noticias-de-transmilenio/comunicados-oficiales/nueva-estacion-calle-72-entra-operacion-segunda-estacion-definitiva-caracas-centro"
     },
     {
       "id": "TM-A-02",
       "codigo": "TM-A-02",
-      "nombre": "Calle 72",
+      "nombre": "Calle 72 - Areandina",
+      "aliases": [
+        "Calle 72"
+      ],
       "troncal_id": "A",
       "troncal": "Troncal Caracas",
       "tipo": "estacion",
       "lat": 4.6582,
       "lng": -74.0642,
-      "direccion": "Av. Caracas con Calle 72"
+      "direccion": "Av. Caracas con Calle 72",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/comunicaciones/noticias-de-transmilenio/comunicados-oficiales/nueva-estacion-calle-72-entra-operacion-segunda-estacion-definitiva-caracas-centro"
     },
     {
       "id": "TM-A-03",
@@ -264,7 +337,10 @@
       "tipo": "estacion",
       "lat": 4.654,
       "lng": -74.0649,
-      "direccion": "Av. Caracas con Calle 67"
+      "direccion": "Av. Caracas con Calle 67",
+      "estado_operativo": "cerrada_temporalmente",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/comunicaciones/noticias-de-transmilenio/comunicados-oficiales/nueva-estacion-calle-72-entra-operacion-segunda-estacion-definitiva-caracas-centro"
     },
     {
       "id": "TM-A-04",
@@ -275,7 +351,10 @@
       "tipo": "estacion",
       "lat": 4.6495,
       "lng": -74.0655,
-      "direccion": "Av. Caracas con Calle 63"
+      "direccion": "Av. Caracas con Calle 63",
+      "estado_operativo": "cerrada_temporalmente",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/comunicaciones/noticias-de-transmilenio/comunicados-oficiales/nueva-estacion-calle-72-entra-operacion-segunda-estacion-definitiva-caracas-centro"
     },
     {
       "id": "TM-A-05",
@@ -286,7 +365,8 @@
       "tipo": "estacion",
       "lat": 4.6445,
       "lng": -74.0664,
-      "direccion": "Av. Caracas con Calle 57"
+      "direccion": "Av. Caracas con Calle 57",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-A-06",
@@ -297,7 +377,8 @@
       "tipo": "estacion",
       "lat": 4.6394,
       "lng": -74.0673,
-      "direccion": "Av. Caracas con Calle 49"
+      "direccion": "Av. Caracas con Calle 49",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-A-07",
@@ -308,7 +389,10 @@
       "tipo": "estacion",
       "lat": 4.6342,
       "lng": -74.0683,
-      "direccion": "Av. Caracas con Calle 45"
+      "direccion": "Av. Caracas con Calle 45",
+      "estado_operativo": "cerrada_temporalmente",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/comunicaciones/noticias-de-transmilenio/comunicados-oficiales/nueva-estacion-calle-72-entra-operacion-segunda-estacion-definitiva-caracas-centro"
     },
     {
       "id": "TM-A-08",
@@ -319,7 +403,10 @@
       "tipo": "estacion",
       "lat": 4.6288,
       "lng": -74.0694,
-      "direccion": "Av. Caracas con Calle 39"
+      "direccion": "Av. Caracas con Calle 39",
+      "estado_operativo": "cerrada_temporalmente",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/comunicaciones/noticias-de-transmilenio/comunicados-oficiales/nueva-estacion-calle-72-entra-operacion-segunda-estacion-definitiva-caracas-centro"
     },
     {
       "id": "TM-A-09",
@@ -330,18 +417,25 @@
       "tipo": "estacion",
       "lat": 4.6238,
       "lng": -74.0707,
-      "direccion": "Av. Caracas con Calle 34"
+      "direccion": "Av. Caracas con Calle 34",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-A-10",
       "codigo": "TM-A-10",
-      "nombre": "Calle 26",
+      "nombre": "Calle 26 - Atrio",
+      "aliases": [
+        "Calle 26"
+      ],
       "troncal_id": "A",
       "troncal": "Troncal Caracas",
       "tipo": "intermedio",
       "lat": 4.6186,
       "lng": -74.072,
-      "direccion": "Av. Caracas con Calle 26"
+      "direccion": "Av. Caracas con Calle 26",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/comunicaciones/noticias-de-transmilenio/comunicados-oficiales/nueva-estacion-calle-26-atrio-habilita-completo-marco-obras-metro"
     },
     {
       "id": "TM-A-11",
@@ -352,7 +446,10 @@
       "tipo": "estacion",
       "lat": 4.6094,
       "lng": -74.0743,
-      "direccion": "Av. Caracas con Calle 19"
+      "direccion": "Av. Caracas con Calle 19",
+      "estado_operativo": "cerrada_temporalmente",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/comunicaciones/noticias-de-transmilenio/comunicados-oficiales/nueva-estacion-calle-72-entra-operacion-segunda-estacion-definitiva-caracas-centro"
     },
     {
       "id": "TM-A-12",
@@ -363,7 +460,8 @@
       "tipo": "intermedio",
       "lat": 4.6041,
       "lng": -74.0763,
-      "direccion": "Av. Caracas con Av. Jiménez"
+      "direccion": "Av. Caracas con Av. Jiménez",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-A-13",
@@ -374,18 +472,27 @@
       "tipo": "estacion",
       "lat": 4.5978,
       "lng": -74.0784,
-      "direccion": "Av. Caracas con Calle 6"
+      "direccion": "Av. Caracas con Calle 6",
+      "estado_operativo": "cerrada_temporalmente",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/comunicaciones/noticias-de-transmilenio/comunicados-oficiales/nueva-estacion-calle-72-entra-operacion-segunda-estacion-definitiva-caracas-centro"
     },
     {
       "id": "TM-K-01",
       "codigo": "TM-K-01",
-      "nombre": "Portal El Dorado",
+      "nombre": "Portal El Dorado - C.C. Nuestro Bogotá",
       "troncal_id": "K",
       "troncal": "Troncal Calle 26",
       "tipo": "portal",
       "lat": 4.6756,
       "lng": -74.1332,
-      "direccion": "Av. El Dorado con Carrera 100"
+      "direccion": "Av. El Dorado con Carrera 100",
+      "aliases": [
+        "Portal El Dorado"
+      ],
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://buscador-rutas.transmilenio.gov.co/rutas/355/B16/TransMilenio/Terminal?color=%2380BA27"
     },
     {
       "id": "TM-K-02",
@@ -396,7 +503,8 @@
       "tipo": "estacion",
       "lat": 4.6698,
       "lng": -74.1205,
-      "direccion": "Av. El Dorado con Carrera 82"
+      "direccion": "Av. El Dorado con Carrera 82",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-K-03",
@@ -407,51 +515,68 @@
       "tipo": "estacion",
       "lat": 4.666,
       "lng": -74.113,
-      "direccion": "Av. El Dorado con Carrera 74"
+      "direccion": "Av. El Dorado con Carrera 74",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-K-04",
       "codigo": "TM-K-04",
-      "nombre": "Avenida Rojas",
+      "nombre": "Av. Rojas - Unisalesiana",
+      "aliases": [
+        "Avenida Rojas"
+      ],
       "troncal_id": "K",
       "troncal": "Troncal Calle 26",
       "tipo": "estacion",
       "lat": 4.6625,
       "lng": -74.1062,
-      "direccion": "Av. El Dorado con Carrera 70"
+      "direccion": "Av. El Dorado con Carrera 70",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-K-05",
       "codigo": "TM-K-05",
-      "nombre": "El Tiempo - Maloka",
+      "nombre": "El Tiempo - Cámara de Comercio de Bogotá",
+      "aliases": [
+        "El Tiempo - Maloka"
+      ],
       "troncal_id": "K",
       "troncal": "Troncal Calle 26",
       "tipo": "estacion",
       "lat": 4.6592,
       "lng": -74.0998,
-      "direccion": "Av. El Dorado con Carrera 68D"
+      "direccion": "Av. El Dorado con Carrera 68D",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-K-06",
       "codigo": "TM-K-06",
-      "nombre": "Salitre - El Greco",
+      "nombre": "Salitre El Greco - Vive Claro",
+      "aliases": [
+        "Salitre - El Greco"
+      ],
       "troncal_id": "K",
       "troncal": "Troncal Calle 26",
       "tipo": "estacion",
       "lat": 4.6558,
       "lng": -74.0932,
-      "direccion": "Av. El Dorado con Carrera 66"
+      "direccion": "Av. El Dorado con Carrera 66",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-K-07",
       "codigo": "TM-K-07",
-      "nombre": "CAN",
+      "nombre": "CAN - British Council",
+      "aliases": [
+        "CAN"
+      ],
       "troncal_id": "K",
       "troncal": "Troncal Calle 26",
       "tipo": "estacion",
       "lat": 4.6521,
       "lng": -74.0865,
-      "direccion": "Av. El Dorado con Carrera 59"
+      "direccion": "Av. El Dorado con Carrera 59",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-K-08",
@@ -462,7 +587,8 @@
       "tipo": "estacion",
       "lat": 4.6482,
       "lng": -74.0818,
-      "direccion": "Av. El Dorado con Carrera 50"
+      "direccion": "Av. El Dorado con Carrera 50",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-K-09",
@@ -473,18 +599,23 @@
       "tipo": "estacion",
       "lat": 4.6436,
       "lng": -74.0782,
-      "direccion": "Av. El Dorado con Carrera 40"
+      "direccion": "Av. El Dorado con Carrera 40",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-K-10",
       "codigo": "TM-K-10",
-      "nombre": "Ciudad Universitaria",
+      "nombre": "Ciudad Universitaria - Lotería de Bogotá",
+      "aliases": [
+        "Ciudad Universitaria"
+      ],
       "troncal_id": "K",
       "troncal": "Troncal Calle 26",
       "tipo": "estacion",
       "lat": 4.636,
       "lng": -74.0772,
-      "direccion": "Av. El Dorado con Carrera 33"
+      "direccion": "Av. El Dorado con Carrera 33",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-K-11",
@@ -495,7 +626,8 @@
       "tipo": "estacion",
       "lat": 4.6245,
       "lng": -74.0755,
-      "direccion": "Av. El Dorado con Carrera 19B"
+      "direccion": "Av. El Dorado con Carrera 19B",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-D-01",
@@ -506,7 +638,8 @@
       "tipo": "portal",
       "lat": 4.7099,
       "lng": -74.1105,
-      "direccion": "Calle 80 con Carrera 100"
+      "direccion": "Calle 80 con Carrera 100",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-D-02",
@@ -517,7 +650,8 @@
       "tipo": "estacion",
       "lat": 4.7042,
       "lng": -74.103,
-      "direccion": "Calle 80 con Carrera 94"
+      "direccion": "Calle 80 con Carrera 94",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-D-03",
@@ -528,7 +662,8 @@
       "tipo": "estacion",
       "lat": 4.7005,
       "lng": -74.0975,
-      "direccion": "Calle 80 con Carrera 90"
+      "direccion": "Calle 80 con Carrera 90",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-D-04",
@@ -539,7 +674,8 @@
       "tipo": "intermedio",
       "lat": 4.6972,
       "lng": -74.0924,
-      "direccion": "Calle 80 con Av. Ciudad de Cali"
+      "direccion": "Calle 80 con Av. Ciudad de Cali",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-D-05",
@@ -550,7 +686,8 @@
       "tipo": "estacion",
       "lat": 4.6934,
       "lng": -74.0868,
-      "direccion": "Calle 80 con Carrera 77"
+      "direccion": "Calle 80 con Carrera 77",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-D-06",
@@ -561,7 +698,8 @@
       "tipo": "estacion",
       "lat": 4.6898,
       "lng": -74.0818,
-      "direccion": "Calle 80 con Carrera 73A"
+      "direccion": "Calle 80 con Carrera 73A",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-D-07",
@@ -572,7 +710,8 @@
       "tipo": "estacion",
       "lat": 4.6865,
       "lng": -74.0772,
-      "direccion": "Calle 80 con Av. Boyacá"
+      "direccion": "Calle 80 con Av. Boyacá",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-D-08",
@@ -583,7 +722,8 @@
       "tipo": "estacion",
       "lat": 4.6828,
       "lng": -74.0722,
-      "direccion": "Calle 80 con Carrera 69"
+      "direccion": "Calle 80 con Carrera 69",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-D-09",
@@ -594,7 +734,8 @@
       "tipo": "intermedio",
       "lat": 4.679,
       "lng": -74.067,
-      "direccion": "Calle 80 con Av. 68"
+      "direccion": "Calle 80 con Av. 68",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-D-10",
@@ -605,18 +746,23 @@
       "tipo": "intermedio",
       "lat": 4.672,
       "lng": -74.0645,
-      "direccion": "Calle 80 con Carrera 50"
+      "direccion": "Calle 80 con Carrera 50",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-D-11",
       "codigo": "TM-D-11",
-      "nombre": "Polo",
+      "nombre": "Polo - FINCOMERCIO",
+      "aliases": [
+        "Polo"
+      ],
       "troncal_id": "D",
       "troncal": "Troncal Calle 80",
       "tipo": "estacion",
       "lat": 4.6685,
       "lng": -74.0638,
-      "direccion": "Calle 80 con Carrera 27"
+      "direccion": "Calle 80 con Carrera 27",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-C-01",
@@ -627,7 +773,8 @@
       "tipo": "portal",
       "lat": 4.7505,
       "lng": -74.095,
-      "direccion": "Av. Suba con Carrera 104"
+      "direccion": "Av. Suba con Carrera 104",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-C-02",
@@ -638,7 +785,8 @@
       "tipo": "estacion",
       "lat": 4.7432,
       "lng": -74.0898,
-      "direccion": "Av. Suba con Carrera 98"
+      "direccion": "Av. Suba con Carrera 98",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-C-03",
@@ -649,7 +797,8 @@
       "tipo": "estacion",
       "lat": 4.7375,
       "lng": -74.0855,
-      "direccion": "Av. Suba con Transversal 91"
+      "direccion": "Av. Suba con Transversal 91",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-C-04",
@@ -660,7 +809,8 @@
       "tipo": "estacion",
       "lat": 4.7308,
       "lng": -74.081,
-      "direccion": "Av. Suba con Carrera 84"
+      "direccion": "Av. Suba con Carrera 84",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-C-05",
@@ -671,7 +821,8 @@
       "tipo": "estacion",
       "lat": 4.7235,
       "lng": -74.0768,
-      "direccion": "Av. Suba con Carrera 76"
+      "direccion": "Av. Suba con Carrera 76",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-C-06",
@@ -682,7 +833,8 @@
       "tipo": "intermedio",
       "lat": 4.717,
       "lng": -74.0732,
-      "direccion": "Av. Suba con Av. Boyacá"
+      "direccion": "Av. Suba con Av. Boyacá",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-C-07",
@@ -693,7 +845,8 @@
       "tipo": "estacion",
       "lat": 4.7102,
       "lng": -74.07,
-      "direccion": "Av. Suba con Calle 127"
+      "direccion": "Av. Suba con Calle 127",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-C-08",
@@ -704,7 +857,8 @@
       "tipo": "estacion",
       "lat": 4.7035,
       "lng": -74.0675,
-      "direccion": "Av. Suba con Calle 120"
+      "direccion": "Av. Suba con Calle 120",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-C-09",
@@ -715,7 +869,8 @@
       "tipo": "estacion",
       "lat": 4.6938,
       "lng": -74.066,
-      "direccion": "Av. Suba con Calle 106"
+      "direccion": "Av. Suba con Calle 106",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-C-10",
@@ -726,7 +881,8 @@
       "tipo": "estacion",
       "lat": 4.6882,
       "lng": -74.0655,
-      "direccion": "Av. Suba con Calle 100"
+      "direccion": "Av. Suba con Calle 100",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-C-11",
@@ -737,7 +893,8 @@
       "tipo": "estacion",
       "lat": 4.6795,
       "lng": -74.0645,
-      "direccion": "Av. Suba con Calle 90"
+      "direccion": "Av. Suba con Calle 90",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-C-12",
@@ -748,7 +905,8 @@
       "tipo": "estacion",
       "lat": 4.6735,
       "lng": -74.064,
-      "direccion": "Av. Suba con Calle 85"
+      "direccion": "Av. Suba con Calle 85",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-F-01",
@@ -759,7 +917,8 @@
       "tipo": "portal",
       "lat": 4.6292,
       "lng": -74.1755,
-      "direccion": "Av. Ciudad de Cali con Av. Villavicencio"
+      "direccion": "Av. Ciudad de Cali con Av. Villavicencio",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-F-02",
@@ -770,7 +929,8 @@
       "tipo": "portal",
       "lat": 4.6318,
       "lng": -74.1488,
-      "direccion": "Av. Américas con Carrera 78A"
+      "direccion": "Av. Américas con Carrera 78A",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-F-03",
@@ -781,7 +941,8 @@
       "tipo": "estacion",
       "lat": 4.63,
       "lng": -74.1398,
-      "direccion": "Av. Américas con Carrera 73"
+      "direccion": "Av. Américas con Carrera 73",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-F-04",
@@ -792,7 +953,8 @@
       "tipo": "estacion",
       "lat": 4.6282,
       "lng": -74.1318,
-      "direccion": "Av. Américas con Carrera 71C"
+      "direccion": "Av. Américas con Carrera 71C",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-F-05",
@@ -803,7 +965,8 @@
       "tipo": "estacion",
       "lat": 4.6265,
       "lng": -74.1235,
-      "direccion": "Av. Américas con Carrera 69"
+      "direccion": "Av. Américas con Carrera 69",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-F-06",
@@ -814,7 +977,8 @@
       "tipo": "estacion",
       "lat": 4.6248,
       "lng": -74.1155,
-      "direccion": "Av. Américas con Carrera 65"
+      "direccion": "Av. Américas con Carrera 65",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-F-07",
@@ -825,7 +989,8 @@
       "tipo": "estacion",
       "lat": 4.623,
       "lng": -74.1082,
-      "direccion": "Av. Américas con Carrera 53A"
+      "direccion": "Av. Américas con Carrera 53A",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-F-08",
@@ -836,7 +1001,8 @@
       "tipo": "estacion",
       "lat": 4.6212,
       "lng": -74.1008,
-      "direccion": "Av. Américas con Carrera 47"
+      "direccion": "Av. Américas con Carrera 47",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-F-09",
@@ -847,7 +1013,8 @@
       "tipo": "estacion",
       "lat": 4.6195,
       "lng": -74.0935,
-      "direccion": "Av. Américas con Carrera 43"
+      "direccion": "Av. Américas con Carrera 43",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-F-10",
@@ -858,7 +1025,8 @@
       "tipo": "estacion",
       "lat": 4.6178,
       "lng": -74.0862,
-      "direccion": "Av. Américas con Carrera 32"
+      "direccion": "Av. Américas con Carrera 32",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-F-11",
@@ -869,18 +1037,23 @@
       "tipo": "intermedio",
       "lat": 4.6125,
       "lng": -74.0875,
-      "direccion": "Calle 13 con Carrera 27"
+      "direccion": "Calle 13 con Carrera 27",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-G-01",
       "codigo": "TM-G-01",
-      "nombre": "Portal Sur",
+      "nombre": "Portal Sur - JFK Cooperativa Financiera",
+      "aliases": [
+        "Portal Sur"
+      ],
       "troncal_id": "G",
       "troncal": "Troncal NQS Sur",
       "tipo": "portal",
       "lat": 4.5945,
       "lng": -74.161,
-      "direccion": "Autopista Sur con Calle 59 Sur"
+      "direccion": "Autopista Sur con Calle 59 Sur",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-G-02",
@@ -891,7 +1064,8 @@
       "tipo": "intermedio",
       "lat": 4.593,
       "lng": -74.1275,
-      "direccion": "Autopista Sur con Carrera 50"
+      "direccion": "Autopista Sur con Carrera 50",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-G-03",
@@ -902,7 +1076,8 @@
       "tipo": "estacion",
       "lat": 4.5955,
       "lng": -74.1378,
-      "direccion": "Autopista Sur con Carrera 54"
+      "direccion": "Autopista Sur con Carrera 54",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-G-04",
@@ -913,7 +1088,8 @@
       "tipo": "estacion",
       "lat": 4.5942,
       "lng": -74.1325,
-      "direccion": "Autopista Sur con Carrera 52A"
+      "direccion": "Autopista Sur con Carrera 52A",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-G-05",
@@ -924,7 +1100,8 @@
       "tipo": "estacion",
       "lat": 4.596,
       "lng": -74.112,
-      "direccion": "Av. NQS con Calle 17 Sur"
+      "direccion": "Av. NQS con Calle 17 Sur",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-G-06",
@@ -935,7 +1112,8 @@
       "tipo": "estacion",
       "lat": 4.6025,
       "lng": -74.1015,
-      "direccion": "Av. NQS con Calle 2"
+      "direccion": "Av. NQS con Calle 2",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-G-07",
@@ -946,7 +1124,8 @@
       "tipo": "estacion",
       "lat": 4.6075,
       "lng": -74.0945,
-      "direccion": "Av. NQS con Calle 5"
+      "direccion": "Av. NQS con Calle 5",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-G-08",
@@ -957,7 +1136,8 @@
       "tipo": "estacion",
       "lat": 4.6198,
       "lng": -74.0845,
-      "direccion": "Av. NQS con Calle 19"
+      "direccion": "Av. NQS con Calle 19",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-G-09",
@@ -968,7 +1148,8 @@
       "tipo": "estacion",
       "lat": 4.6285,
       "lng": -74.0832,
-      "direccion": "Av. NQS con Calle 26"
+      "direccion": "Av. NQS con Calle 26",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-G-10",
@@ -979,7 +1160,8 @@
       "tipo": "estacion",
       "lat": 4.661,
       "lng": -74.074,
-      "direccion": "Av. NQS con Calle 72"
+      "direccion": "Av. NQS con Calle 72",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-H-01",
@@ -990,7 +1172,8 @@
       "tipo": "portal",
       "lat": 4.5365,
       "lng": -74.1185,
-      "direccion": "Av. Caracas con Calle 65 Sur"
+      "direccion": "Av. Caracas con Calle 65 Sur",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-H-02",
@@ -1001,7 +1184,8 @@
       "tipo": "portal",
       "lat": 4.5702,
       "lng": -74.137,
-      "direccion": "Av. Villavicencio con Carrera 24"
+      "direccion": "Av. Villavicencio con Carrera 24",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-H-03",
@@ -1012,7 +1196,8 @@
       "tipo": "intermedio",
       "lat": 4.5518,
       "lng": -74.1165,
-      "direccion": "Av. Caracas con Calle 51 Sur"
+      "direccion": "Av. Caracas con Calle 51 Sur",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-H-04",
@@ -1023,7 +1208,8 @@
       "tipo": "estacion",
       "lat": 4.5735,
       "lng": -74.1102,
-      "direccion": "Av. Caracas con Calle 40 Sur"
+      "direccion": "Av. Caracas con Calle 40 Sur",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-H-05",
@@ -1034,7 +1220,8 @@
       "tipo": "estacion",
       "lat": 4.5888,
       "lng": -74.097,
-      "direccion": "Av. Caracas con Calle 19 Sur"
+      "direccion": "Av. Caracas con Calle 19 Sur",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-H-06",
@@ -1045,7 +1232,10 @@
       "tipo": "estacion",
       "lat": 4.5935,
       "lng": -74.0845,
-      "direccion": "Av. Caracas con Calle 1"
+      "direccion": "Av. Caracas con Calle 1",
+      "estado_operativo": "cerrada_temporalmente",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/comunicaciones/noticias-de-transmilenio/comunicados-oficiales/nueva-estacion-calle-72-entra-operacion-segunda-estacion-definitiva-caracas-centro"
     },
     {
       "id": "TM-L-01",
@@ -1056,7 +1246,8 @@
       "tipo": "portal",
       "lat": 4.5685,
       "lng": -74.0935,
-      "direccion": "Carrera 10 con Calle 31 Sur"
+      "direccion": "Carrera 10 con Calle 31 Sur",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-L-02",
@@ -1067,7 +1258,8 @@
       "tipo": "intermedio",
       "lat": 4.6148,
       "lng": -74.0702,
-      "direccion": "Carrera 10 con Calle 26"
+      "direccion": "Carrera 10 con Calle 26",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-L-03",
@@ -1078,7 +1270,8 @@
       "tipo": "estacion",
       "lat": 4.6025,
       "lng": -74.0745,
-      "direccion": "Carrera 10 con Calle 12"
+      "direccion": "Carrera 10 con Calle 12",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-J-01",
@@ -1089,7 +1282,8 @@
       "tipo": "estacion",
       "lat": 4.6015,
       "lng": -74.072,
-      "direccion": "Av. Jiménez con Carrera 6"
+      "direccion": "Av. Jiménez con Carrera 6",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-J-02",
@@ -1100,7 +1294,8 @@
       "tipo": "estacion",
       "lat": 4.602,
       "lng": -74.0685,
-      "direccion": "Av. Jiménez con Carrera 3"
+      "direccion": "Av. Jiménez con Carrera 3",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-G-11",
@@ -1111,7 +1306,8 @@
       "tipo": "estacion",
       "lat": 4.5765,
       "lng": -74.2095,
-      "direccion": "Autopista Sur con Diagonal 38 (Soacha)"
+      "direccion": "Autopista Sur con Diagonal 38 (Soacha)",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-G-12",
@@ -1122,7 +1318,8 @@
       "tipo": "portal",
       "lat": 4.5728,
       "lng": -74.2185,
-      "direccion": "Autopista Sur con Calle 30 (Soacha)"
+      "direccion": "Autopista Sur con Calle 30 (Soacha)",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-G-13",
@@ -1133,7 +1330,8 @@
       "tipo": "estacion",
       "lat": 4.594,
       "lng": -74.1685,
-      "direccion": "Autopista Sur con Calle 62 Sur"
+      "direccion": "Autopista Sur con Calle 62 Sur",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-G-14",
@@ -1144,7 +1342,8 @@
       "tipo": "estacion",
       "lat": 4.5912,
       "lng": -74.175,
-      "direccion": "Autopista Sur con Calle 63 Sur"
+      "direccion": "Autopista Sur con Calle 63 Sur",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-G-15",
@@ -1155,7 +1354,8 @@
       "tipo": "estacion",
       "lat": 4.5975,
       "lng": -74.148,
-      "direccion": "Autopista Sur con Calle 45 Sur"
+      "direccion": "Autopista Sur con Calle 45 Sur",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-F-12",
@@ -1166,7 +1366,8 @@
       "tipo": "estacion",
       "lat": 4.6295,
       "lng": -74.1685,
-      "direccion": "Avenida Ciudad de Cali con Calle 38 Sur"
+      "direccion": "Avenida Ciudad de Cali con Calle 38 Sur",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-F-13",
@@ -1177,7 +1378,8 @@
       "tipo": "estacion",
       "lat": 4.6405,
       "lng": -74.159,
-      "direccion": "Avenida Ciudad de Cali con Calle 6D"
+      "direccion": "Avenida Ciudad de Cali con Calle 6D",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-F-14",
@@ -1188,7 +1390,8 @@
       "tipo": "estacion",
       "lat": 4.6288,
       "lng": -74.152,
-      "direccion": "Avenida de las Américas con Transversal 86"
+      "direccion": "Avenida de las Américas con Transversal 86",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-F-15",
@@ -1199,7 +1402,8 @@
       "tipo": "estacion",
       "lat": 4.621,
       "lng": -74.176,
-      "direccion": "Avenida Ciudad de Cali con Avenida Villavicencio"
+      "direccion": "Avenida Ciudad de Cali con Avenida Villavicencio",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-H-07",
@@ -1210,7 +1414,8 @@
       "tipo": "estacion",
       "lat": 4.5785,
       "lng": -74.099,
-      "direccion": "Avenida Caracas con Calle 27 Sur"
+      "direccion": "Avenida Caracas con Calle 27 Sur",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-H-08",
@@ -1221,7 +1426,8 @@
       "tipo": "estacion",
       "lat": 4.572,
       "lng": -74.1065,
-      "direccion": "Avenida Caracas con Calle 36 Sur"
+      "direccion": "Avenida Caracas con Calle 36 Sur",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-H-09",
@@ -1232,7 +1438,8 @@
       "tipo": "estacion",
       "lat": 4.563,
       "lng": -74.116,
-      "direccion": "Avenida Caracas con Calle 45 Sur"
+      "direccion": "Avenida Caracas con Calle 45 Sur",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-H-10",
@@ -1243,7 +1450,8 @@
       "tipo": "estacion",
       "lat": 4.558,
       "lng": -74.1195,
-      "direccion": "Avenida Caracas con Calle 48 Sur"
+      "direccion": "Avenida Caracas con Calle 48 Sur",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-H-11",
@@ -1254,7 +1462,8 @@
       "tipo": "estacion",
       "lat": 4.5535,
       "lng": -74.1225,
-      "direccion": "Avenida Caracas con Calle 51 Sur"
+      "direccion": "Avenida Caracas con Calle 51 Sur",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-H-12",
@@ -1265,7 +1474,8 @@
       "tipo": "estacion",
       "lat": 4.544,
       "lng": -74.127,
-      "direccion": "Avenida Caracas con Calle 56 Sur"
+      "direccion": "Avenida Caracas con Calle 56 Sur",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-H-13",
@@ -1276,7 +1486,8 @@
       "tipo": "estacion",
       "lat": 4.571,
       "lng": -74.133,
-      "direccion": "Avenida Villavicencio con Carrera 20"
+      "direccion": "Avenida Villavicencio con Carrera 20",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-H-14",
@@ -1287,7 +1498,8 @@
       "tipo": "estacion",
       "lat": 4.574,
       "lng": -74.1305,
-      "direccion": "Avenida Villavicencio con Carrera 19C"
+      "direccion": "Avenida Villavicencio con Carrera 19C",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-H-15",
@@ -1298,7 +1510,8 @@
       "tipo": "estacion",
       "lat": 4.531,
       "lng": -74.117,
-      "direccion": "Avenida Caracas con Calle 74 Sur"
+      "direccion": "Avenida Caracas con Calle 74 Sur",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-H-16",
@@ -1309,7 +1522,8 @@
       "tipo": "estacion",
       "lat": 4.524,
       "lng": -74.113,
-      "direccion": "Avenida Caracas con Diagonal 81 Sur"
+      "direccion": "Avenida Caracas con Diagonal 81 Sur",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-L-04",
@@ -1320,7 +1534,8 @@
       "tipo": "estacion",
       "lat": 4.605,
       "lng": -74.0725,
-      "direccion": "Carrera 10 con Calle 17"
+      "direccion": "Carrera 10 con Calle 17",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-L-05",
@@ -1331,7 +1546,8 @@
       "tipo": "estacion",
       "lat": 4.593,
       "lng": -74.083,
-      "direccion": "Carrera 10 con Calle 1"
+      "direccion": "Carrera 10 con Calle 1",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-L-06",
@@ -1342,7 +1558,8 @@
       "tipo": "estacion",
       "lat": 4.587,
       "lng": -74.087,
-      "direccion": "Carrera 10 con Calle 3 Sur"
+      "direccion": "Carrera 10 con Calle 3 Sur",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-L-07",
@@ -1353,7 +1570,8 @@
       "tipo": "estacion",
       "lat": 4.579,
       "lng": -74.093,
-      "direccion": "Carrera 10 con Calle 11 Sur"
+      "direccion": "Carrera 10 con Calle 11 Sur",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-L-08",
@@ -1364,7 +1582,8 @@
       "tipo": "estacion",
       "lat": 4.5725,
       "lng": -74.0975,
-      "direccion": "Carrera 10 con Avenida Primero de Mayo"
+      "direccion": "Carrera 10 con Avenida Primero de Mayo",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-L-09",
@@ -1375,7 +1594,8 @@
       "tipo": "estacion",
       "lat": 4.568,
       "lng": -74.0995,
-      "direccion": "Carrera 10 con Calle 27 Sur"
+      "direccion": "Carrera 10 con Calle 27 Sur",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-E-04",
@@ -1386,7 +1606,8 @@
       "tipo": "estacion",
       "lat": 4.659,
       "lng": -74.0805,
-      "direccion": "Avenida NQS con Calle 63"
+      "direccion": "Avenida NQS con Calle 63",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-E-05",
@@ -1397,7 +1618,8 @@
       "tipo": "estacion",
       "lat": 4.6465,
       "lng": -74.0785,
-      "direccion": "Avenida NQS con Calle 57"
+      "direccion": "Avenida NQS con Calle 57",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-E-06",
@@ -1408,7 +1630,8 @@
       "tipo": "estacion",
       "lat": 4.639,
       "lng": -74.083,
-      "direccion": "Avenida NQS con Calle 45"
+      "direccion": "Avenida NQS con Calle 45",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-E-07",
@@ -1419,7 +1642,10 @@
       "tipo": "estacion",
       "lat": 4.662,
       "lng": -74.078,
-      "direccion": "Avenida NQS con Calle 68"
+      "direccion": "Avenida NQS con Calle 68",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://buscador-rutas.transmilenio.gov.co/paraderos/7104/7104/7%20de%20Agosto"
     },
     {
       "id": "TM-E-08",
@@ -1430,7 +1656,8 @@
       "tipo": "estacion",
       "lat": 4.6025,
       "lng": -74.1015,
-      "direccion": "Avenida NQS con Calle 8 Sur"
+      "direccion": "Avenida NQS con Calle 8 Sur",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-E-09",
@@ -1441,18 +1668,487 @@
       "tipo": "estacion",
       "lat": 4.591,
       "lng": -74.111,
-      "direccion": "Avenida NQS con Calle 30 Sur"
+      "direccion": "Avenida NQS con Calle 30 Sur",
+      "estado_operativo": "por_verificar"
     },
     {
       "id": "TM-E-10",
       "codigo": "TM-E-10",
-      "nombre": "NQS Calle 38A Sur",
+      "nombre": "NQS - Calle 38A Sur - Centro Mayor",
+      "aliases": [
+        "NQS Calle 38A Sur"
+      ],
       "troncal_id": "E",
       "troncal": "Troncal NQS Central",
       "tipo": "estacion",
       "lat": 4.588,
       "lng": -74.117,
-      "direccion": "Avenida NQS con Calle 38A Sur"
+      "direccion": "Avenida NQS con Calle 38A Sur",
+      "estado_operativo": "por_verificar"
+    },
+    {
+      "id": "TM-B-16",
+      "codigo": "TM-B-16",
+      "nombre": "Calle 187",
+      "troncal_id": "B",
+      "troncal": "Troncal Norte",
+      "tipo": "estacion",
+      "lat": 4.76333017,
+      "lng": -74.04440387,
+      "direccion": "Autopista Norte con Calle 184",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/comunicaciones/noticias-de-transmilenio/boletines-informativos/ampliacion-estaciones-calle-187-terminal",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "02001"
+    },
+    {
+      "id": "TM-B-17",
+      "codigo": "TM-B-17",
+      "nombre": "Terminal",
+      "troncal_id": "B",
+      "troncal": "Troncal Norte",
+      "tipo": "estacion",
+      "lat": 4.76881827,
+      "lng": -74.04356946,
+      "direccion": "Autopista Norte con Calle 190",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/comunicaciones/noticias-de-transmilenio/boletines-informativos/ampliacion-estaciones-calle-187-terminal",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "02502"
+    },
+    {
+      "id": "TM-Z-01",
+      "codigo": "TM-Z-01",
+      "nombre": "Islandia",
+      "troncal_id": "Z",
+      "troncal": "Troncal Avenida Ciudad de Cali",
+      "tipo": "intermedio",
+      "lat": 4.61434757,
+      "lng": -74.19374374,
+      "direccion": "Carrera 70A Sur con Calle 69 Sur",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://bogota.gov.co/mi-ciudad/movilidad/operacion-tres-primeras-estaciones-avenida-ciudad-de-cali-bogota",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "05008"
+    },
+    {
+      "id": "TM-Z-02",
+      "codigo": "TM-Z-02",
+      "nombre": "Los Laureles",
+      "troncal_id": "Z",
+      "troncal": "Troncal Avenida Ciudad de Cali",
+      "tipo": "intermedio",
+      "lat": 4.61109139,
+      "lng": -74.20232841,
+      "direccion": "Entre Calle 80J Sur y Calle 81 Sur",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://bogota.gov.co/mi-ciudad/movilidad/operacion-tres-primeras-estaciones-avenida-ciudad-de-cali-bogota",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "05009"
+    },
+    {
+      "id": "TM-Z-03",
+      "codigo": "TM-Z-03",
+      "nombre": "Tibanica - Primavera",
+      "troncal_id": "Z",
+      "troncal": "Troncal Avenida Ciudad de Cali",
+      "tipo": "estacion",
+      "lat": 4.60672702,
+      "lng": -74.20605303,
+      "direccion": "Calle 78A Sur con Calle 78F Sur",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://bogota.gov.co/mi-ciudad/movilidad/operacion-tres-primeras-estaciones-avenida-ciudad-de-cali-bogota",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "05010"
+    },
+    {
+      "id": "TM-D-12",
+      "codigo": "TM-D-12",
+      "nombre": "Carrera 53",
+      "troncal_id": "D",
+      "troncal": "Troncal Calle 80",
+      "tipo": "estacion",
+      "lat": 4.68182095,
+      "lng": -74.07740128,
+      "direccion": "KR 53",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/files/c263614f-6156-411a-95d7-2af0b734a938/01a01662-b84c-7147-9c6b-cea5807eaddf/Guia-General-de-viaje-de-TransMilenio-a-corte-de-agosto-2026.pdf",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "04105"
+    },
+    {
+      "id": "TM-D-13",
+      "codigo": "TM-D-13",
+      "nombre": "Carrera 47",
+      "troncal_id": "D",
+      "troncal": "Troncal Calle 80",
+      "tipo": "estacion",
+      "lat": 4.67800634,
+      "lng": -74.07364067,
+      "direccion": "KR 46",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/files/c263614f-6156-411a-95d7-2af0b734a938/01a01662-b84c-7147-9c6b-cea5807eaddf/Guia-General-de-viaje-de-TransMilenio-a-corte-de-agosto-2026.pdf",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "04106"
+    },
+    {
+      "id": "TM-C-13",
+      "codigo": "TM-C-13",
+      "nombre": "Suba - Calle 116",
+      "troncal_id": "C",
+      "troncal": "Troncal Suba",
+      "tipo": "estacion",
+      "lat": 4.69924029,
+      "lng": -74.06983919,
+      "direccion": "Av Suba CL 114",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/files/c263614f-6156-411a-95d7-2af0b734a938/01a01662-b84c-7147-9c6b-cea5807eaddf/Guia-General-de-viaje-de-TransMilenio-a-corte-de-agosto-2026.pdf",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "03009"
+    },
+    {
+      "id": "TM-C-14",
+      "codigo": "TM-C-14",
+      "nombre": "Suba - Calle 95",
+      "troncal_id": "C",
+      "troncal": "Troncal Suba",
+      "tipo": "estacion",
+      "lat": 4.68457458,
+      "lng": -74.06315256,
+      "direccion": "Av Suba Cl 97",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/files/c263614f-6156-411a-95d7-2af0b734a938/01a01662-b84c-7147-9c6b-cea5807eaddf/Guia-General-de-viaje-de-TransMilenio-a-corte-de-agosto-2026.pdf",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "03012"
+    },
+    {
+      "id": "TM-K-12",
+      "codigo": "TM-K-12",
+      "nombre": "Quinta Paredes",
+      "troncal_id": "K",
+      "troncal": "Troncal Calle 26",
+      "tipo": "estacion",
+      "lat": 4.63752209,
+      "lng": -74.09310384,
+      "direccion": "KR 47",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/files/c263614f-6156-411a-95d7-2af0b734a938/01a01662-b84c-7147-9c6b-cea5807eaddf/Guia-General-de-viaje-de-TransMilenio-a-corte-de-agosto-2026.pdf",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "06105"
+    },
+    {
+      "id": "TM-K-13",
+      "codigo": "TM-K-13",
+      "nombre": "Concejo de Bogotá",
+      "troncal_id": "K",
+      "troncal": "Troncal Calle 26",
+      "tipo": "estacion",
+      "lat": 4.62598289,
+      "lng": -74.08028041,
+      "direccion": "KR 38",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/files/c263614f-6156-411a-95d7-2af0b734a938/01a01662-b84c-7147-9c6b-cea5807eaddf/Guia-General-de-viaje-de-TransMilenio-a-corte-de-agosto-2026.pdf",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "06108"
+    },
+    {
+      "id": "TM-K-14",
+      "codigo": "TM-K-14",
+      "nombre": "Universidades - CityU",
+      "troncal_id": "K",
+      "troncal": "Troncal Calle 26",
+      "tipo": "intermedio",
+      "lat": 4.60464286,
+      "lng": -74.06730954,
+      "direccion": "KR 4",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/files/c263614f-6156-411a-95d7-2af0b734a938/01a01662-b84c-7147-9c6b-cea5807eaddf/Guia-General-de-viaje-de-TransMilenio-a-corte-de-agosto-2026.pdf",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "06111"
+    },
+    {
+      "id": "TM-E-11",
+      "codigo": "TM-E-11",
+      "nombre": "La Castellana",
+      "troncal_id": "E",
+      "troncal": "Troncal NQS Central",
+      "tipo": "estacion",
+      "lat": 4.67561896,
+      "lng": -74.06444795,
+      "direccion": "KR 30 Kr 24",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/files/c263614f-6156-411a-95d7-2af0b734a938/01a01662-b84c-7147-9c6b-cea5807eaddf/Guia-General-de-viaje-de-TransMilenio-a-corte-de-agosto-2026.pdf",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "07101"
+    },
+    {
+      "id": "TM-E-12",
+      "codigo": "TM-E-12",
+      "nombre": "Calle 75",
+      "troncal_id": "E",
+      "troncal": "Troncal NQS Central",
+      "tipo": "estacion",
+      "lat": 4.67015567,
+      "lng": -74.07131021,
+      "direccion": "Kr 30 - Cl 75A",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/files/c263614f-6156-411a-95d7-2af0b734a938/01a01662-b84c-7147-9c6b-cea5807eaddf/Guia-General-de-viaje-de-TransMilenio-a-corte-de-agosto-2026.pdf",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "07102"
+    },
+    {
+      "id": "TM-E-13",
+      "codigo": "TM-E-13",
+      "nombre": "Movistar Arena",
+      "troncal_id": "E",
+      "troncal": "Troncal NQS Central",
+      "tipo": "estacion",
+      "lat": 4.65003852,
+      "lng": -74.07834591,
+      "direccion": "Kr 30 Cl 57",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/files/c263614f-6156-411a-95d7-2af0b734a938/01a01662-b84c-7147-9c6b-cea5807eaddf/Guia-General-de-viaje-de-TransMilenio-a-corte-de-agosto-2026.pdf",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "07105"
+    },
+    {
+      "id": "TM-E-14",
+      "codigo": "TM-E-14",
+      "nombre": "Avenida El Dorado",
+      "troncal_id": "E",
+      "troncal": "Troncal NQS Central",
+      "tipo": "estacion",
+      "lat": 4.63066292,
+      "lng": -74.07986613,
+      "direccion": "Kr 30 Av 28",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/files/c263614f-6156-411a-95d7-2af0b734a938/01a01662-b84c-7147-9c6b-cea5807eaddf/Guia-General-de-viaje-de-TransMilenio-a-corte-de-agosto-2026.pdf",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "07108"
+    },
+    {
+      "id": "TM-F-16",
+      "codigo": "TM-F-16",
+      "nombre": "Avenida Américas - Avenida Boyacá",
+      "troncal_id": "F",
+      "troncal": "Troncal Américas",
+      "tipo": "estacion",
+      "lat": 4.6301134,
+      "lng": -74.13422505,
+      "direccion": "Av. Americas -KR 71",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/files/c263614f-6156-411a-95d7-2af0b734a938/01a01662-b84c-7147-9c6b-cea5807eaddf/Guia-General-de-viaje-de-TransMilenio-a-corte-de-agosto-2026.pdf",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "05102"
+    },
+    {
+      "id": "TM-F-17",
+      "codigo": "TM-F-17",
+      "nombre": "San Facón - Carrera 22",
+      "troncal_id": "F",
+      "troncal": "Troncal Américas",
+      "tipo": "estacion",
+      "lat": 4.60981799,
+      "lng": -74.08671226,
+      "direccion": "Av. Americas -KR 22",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/files/c263614f-6156-411a-95d7-2af0b734a938/01a01662-b84c-7147-9c6b-cea5807eaddf/Guia-General-de-viaje-de-TransMilenio-a-corte-de-agosto-2026.pdf",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "12004"
+    },
+    {
+      "id": "TM-F-18",
+      "codigo": "TM-F-18",
+      "nombre": "Zona Industrial",
+      "troncal_id": "F",
+      "troncal": "Troncal Américas",
+      "tipo": "estacion",
+      "lat": 4.62032239,
+      "lng": -74.09868859,
+      "direccion": "CL 13 KR 38",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/files/c263614f-6156-411a-95d7-2af0b734a938/01a01662-b84c-7147-9c6b-cea5807eaddf/Guia-General-de-viaje-de-TransMilenio-a-corte-de-agosto-2026.pdf",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "12007"
+    },
+    {
+      "id": "TM-F-19",
+      "codigo": "TM-F-19",
+      "nombre": "De la Sabana",
+      "troncal_id": "F",
+      "troncal": "Troncal Américas",
+      "tipo": "estacion",
+      "lat": 4.60543098,
+      "lng": -74.0818916,
+      "direccion": "CL 13 - KR 16",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/files/c263614f-6156-411a-95d7-2af0b734a938/01a01662-b84c-7147-9c6b-cea5807eaddf/Guia-General-de-viaje-de-TransMilenio-a-corte-de-agosto-2026.pdf",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "14001"
+    },
+    {
+      "id": "TM-H-17",
+      "codigo": "TM-H-17",
+      "nombre": "Fucha",
+      "troncal_id": "H",
+      "troncal": "Troncal Caracas Sur",
+      "tipo": "estacion",
+      "lat": 4.58296368,
+      "lng": -74.09939841,
+      "direccion": "CL 13 Sur - CL 16 Su",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/files/c263614f-6156-411a-95d7-2af0b734a938/01a01662-b84c-7147-9c6b-cea5807eaddf/Guia-General-de-viaje-de-TransMilenio-a-corte-de-agosto-2026.pdf",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "09105"
+    },
+    {
+      "id": "TM-H-18",
+      "codigo": "TM-H-18",
+      "nombre": "Nariño",
+      "troncal_id": "H",
+      "troncal": "Troncal Caracas Sur",
+      "tipo": "estacion",
+      "lat": 4.58628563,
+      "lng": -74.09392637,
+      "direccion": "CL 8 Sur - CL 11 Sur",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/files/c263614f-6156-411a-95d7-2af0b734a938/01a01662-b84c-7147-9c6b-cea5807eaddf/Guia-General-de-viaje-de-TransMilenio-a-corte-de-agosto-2026.pdf",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "09106"
+    },
+    {
+      "id": "TM-H-19",
+      "codigo": "TM-H-19",
+      "nombre": "Hortúa",
+      "troncal_id": "H",
+      "troncal": "Troncal Caracas Sur",
+      "tipo": "estacion",
+      "lat": 4.59084028,
+      "lng": -74.09023752,
+      "direccion": "CL 1 Sur - CL 3 Sur",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/files/c263614f-6156-411a-95d7-2af0b734a938/01a01662-b84c-7147-9c6b-cea5807eaddf/Guia-General-de-viaje-de-TransMilenio-a-corte-de-agosto-2026.pdf",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "09107"
+    },
+    {
+      "id": "TM-L-10",
+      "codigo": "TM-L-10",
+      "nombre": "Bicentenario",
+      "troncal_id": "L",
+      "troncal": "Troncal Carrera 10",
+      "tipo": "intermedio",
+      "lat": 4.59402109,
+      "lng": -74.08183585,
+      "direccion": "Kra 10 -CL 5",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/files/c263614f-6156-411a-95d7-2af0b734a938/01a01662-b84c-7147-9c6b-cea5807eaddf/Guia-General-de-viaje-de-TransMilenio-a-corte-de-agosto-2026.pdf",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "10005"
+    },
+    {
+      "id": "TM-M-01",
+      "codigo": "TM-M-01",
+      "nombre": "Museo Nacional",
+      "troncal_id": "M",
+      "troncal": "Troncal Carrera 7",
+      "tipo": "estacion",
+      "lat": 4.61524712,
+      "lng": -74.06922646,
+      "direccion": "Kra 7- CL 32",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/files/c263614f-6156-411a-95d7-2af0b734a938/01a01662-b84c-7147-9c6b-cea5807eaddf/Guia-General-de-viaje-de-TransMilenio-a-corte-de-agosto-2026.pdf",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "10009"
+    },
+    {
+      "id": "TM-N-01",
+      "codigo": "TM-N-01",
+      "nombre": "Tygua - San José",
+      "troncal_id": "N",
+      "troncal": "Troncal Calle 6",
+      "tipo": "estacion",
+      "lat": 4.59978261,
+      "lng": -74.08876449,
+      "direccion": "kr 18",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/files/c263614f-6156-411a-95d7-2af0b734a938/01a01662-b84c-7147-9c6b-cea5807eaddf/Guia-General-de-viaje-de-TransMilenio-a-corte-de-agosto-2026.pdf",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "07200"
+    },
+    {
+      "id": "TM-G-16",
+      "codigo": "TM-G-16",
+      "nombre": "Bosa",
+      "troncal_id": "G",
+      "troncal": "Troncal NQS Sur",
+      "tipo": "estacion",
+      "lat": 4.59687865,
+      "lng": -74.18122466,
+      "direccion": "Autopista Sur - Av Bosa",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/files/c263614f-6156-411a-95d7-2af0b734a938/01a01662-b84c-7147-9c6b-cea5807eaddf/Guia-General-de-viaje-de-TransMilenio-a-corte-de-agosto-2026.pdf",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "07010"
+    },
+    {
+      "id": "TM-G-17",
+      "codigo": "TM-G-17",
+      "nombre": "León XIII",
+      "troncal_id": "G",
+      "troncal": "Troncal NQS Sur",
+      "tipo": "estacion",
+      "lat": 4.59217919,
+      "lng": -74.19313846,
+      "direccion": "Autopista Sur - CL 48",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/files/c263614f-6156-411a-95d7-2af0b734a938/01a01662-b84c-7147-9c6b-cea5807eaddf/Guia-General-de-viaje-de-TransMilenio-a-corte-de-agosto-2026.pdf",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "07505"
+    },
+    {
+      "id": "TM-G-18",
+      "codigo": "TM-G-18",
+      "nombre": "La Despensa",
+      "troncal_id": "G",
+      "troncal": "Troncal NQS Sur",
+      "tipo": "estacion",
+      "lat": 4.59460134,
+      "lng": -74.18811596,
+      "direccion": "Autopista Sur - Kr 20A",
+      "estado_operativo": "operativa",
+      "estado_verificado_en": "2026-11-07",
+      "estado_fuente": "https://www.transmilenio.gov.co/files/c263614f-6156-411a-95d7-2af0b734a938/01a01662-b84c-7147-9c6b-cea5807eaddf/Guia-General-de-viaje-de-TransMilenio-a-corte-de-agosto-2026.pdf",
+      "fuente_catalogo_oficial": "https://gis.transmilenio.gov.co/arcgis/rest/services/Troncal/consulta_estaciones_troncales/FeatureServer/0",
+      "identificador_oficial_externo": "07506"
     }
   ]
 }

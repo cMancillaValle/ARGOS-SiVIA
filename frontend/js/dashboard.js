@@ -406,7 +406,7 @@ async function loadNotificacionesPanel() {
       ['Pendientes',stats.eventos?.pendientes??0,stats.eventos?.pendientes>0?'red':'green'],
       ['Detectadas hoy',stats.eventos?.hoy??0,'yellow'],
       ['Total procesadas',stats.eventos?.total??0,'blue'],
-      ['Precisión modelo',stats.sistema?.precision_modelo?Math.round(stats.sistema.precision_modelo*100)+'%':'-','green'],
+      ['Tasa confirmación',stats.sistema?.tasa_confirmacion_operador?Math.round(stats.sistema.tasa_confirmacion_operador*100)+'%':'N/E','green'],
     ])}
     <div class="info-block">
       <h3>Canales de notificación</h3>

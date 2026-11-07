@@ -89,6 +89,14 @@ const Auth = {
     // Caller handles redirect
   },
 
+  async logoutAll() {
+    const res = await apiFetch('/auth/logout-all', { method: 'POST' });
+    if (res && res.ok) {
+      Session.clear();
+    }
+    return res;
+  },
+
   async me() {
     const res = await apiFetch('/auth/me');
     return res?.data?.usuario || null;
@@ -322,7 +330,12 @@ const UI = {
 
 const Auditoria = {
   async listar(filtros = {}) {
-    const params = new URLSearchParams(filtros).toString();
+    const f = { ...filtros };
+    if (f.usuario && !f.usuario_param) {
+      f.usuario_param = f.usuario;
+      delete f.usuario;
+    }
+    const params = new URLSearchParams(f).toString();
     const res = await apiFetch(`/auditoria${params ? '?' + params : ''}`);
     return res?.data || { registros: [], total: 0, usuarios: [] };
   },

@@ -28,6 +28,7 @@ DB_PATH = os.path.normpath(os.path.join(
 def get_conn():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    conn.execute('PRAGMA foreign_keys = ON')
     return conn
 
 
@@ -35,13 +36,14 @@ def get_conn():
 def list_auditoria(
     q: Optional[str] = None,
     usuario_param: Optional[str] = None,
+    usuario_filtro: Optional[str] = None,
     fecha: Optional[str] = None,
     limite: int = 100,
     pagina: int = 1,
     usuario: dict = Depends(require_permission("auditoria:ver")),
 ):
     q       = (q or '').strip()
-    u_param = (usuario_param or '').strip()
+    u_param = (usuario_param or usuario_filtro or '').strip()
     fecha   = (fecha or '').strip()
     limite  = min(limite, 500)
     pagina  = max(pagina, 1)

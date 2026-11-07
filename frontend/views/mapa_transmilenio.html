@@ -30,19 +30,19 @@
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 shrink-0">
         <div class="bg-[color:var(--bg3)] border border-[color:var(--borde2)] rounded-lg p-2.5 min-w-[110px]">
           <div class="text-[9px] font-mono uppercase text-[color:var(--dim)] tracking-wider">Estaciones Red</div>
-          <div class="font-rajdhani text-xl font-bold text-[color:var(--texto)]" id="kpi-total-estaciones">—</div>
+        <div class="font-rajdhani text-xl font-bold text-[color:var(--texto)]" id="kpi-total-estaciones">-</div>
         </div>
         <div class="bg-[color:var(--bg3)] border border-[color:var(--borde2)] rounded-lg p-2.5 min-w-[110px]">
           <div class="text-[9px] font-mono uppercase text-[color:var(--dim)] tracking-wider">Cobertura SiViA</div>
-          <div class="font-rajdhani text-xl font-bold text-azul" id="kpi-cobertura">—</div>
+        <div class="font-rajdhani text-xl font-bold text-azul" id="kpi-cobertura">-</div>
         </div>
         <div class="bg-[color:var(--bg3)] border border-[color:var(--borde2)] rounded-lg p-2.5 min-w-[110px]">
           <div class="text-[9px] font-mono uppercase text-[color:var(--dim)] tracking-wider">Cámaras Activas</div>
-          <div class="font-rajdhani text-xl font-bold text-verde" id="kpi-camaras-activas">—</div>
+        <div class="font-rajdhani text-xl font-bold text-verde" id="kpi-camaras-activas">-</div>
         </div>
         <div class="bg-[color:var(--bg3)] border border-[color:var(--borde2)] rounded-lg p-2.5 min-w-[110px]">
           <div class="text-[9px] font-mono uppercase text-[color:var(--dim)] tracking-wider">Evasiones Hoy</div>
-          <div class="font-rajdhani text-xl font-bold text-rojo" id="kpi-evasiones-hoy">—</div>
+        <div class="font-rajdhani text-xl font-bold text-rojo" id="kpi-evasiones-hoy">-</div>
         </div>
       </div>
     </div>
@@ -95,6 +95,8 @@
     <div id="tm-schematic-container" class="w-full h-full relative z-10 flex-1">
       <!-- El renderer SVG TransmilenioSchematicMap inyecta aquí el diagrama -->
     </div>
+
+    <div id="tm-pending-map-message" class="hidden absolute top-14 right-3 z-20 max-w-sm rounded-lg border border-[color:var(--borde2)] bg-[color:var(--bg2)]/95 px-3 py-2 text-[10px] font-mono text-[color:var(--texto)] shadow-lg" role="status" aria-live="polite"></div>
 
     <!-- Barra de Troncales (Filtro Rápido Superior Flotante) -->
     <div id="tm-troncales-bar" class="absolute top-3 left-3 z-20 flex flex-wrap gap-1 max-w-[calc(100%-60px)] sm:max-w-md pointer-events-auto">
@@ -152,9 +154,12 @@
           </div>
           <h2 id="drawer-estacion-nombre" class="font-rajdhani text-xl font-bold text-[color:var(--texto)] leading-tight truncate">Nombre Estación</h2>
           <div id="drawer-estacion-codigo" class="font-mono text-[10px] text-[color:var(--dim)] truncate">TM-XX-00 · Dirección</div>
+          <div id="drawer-estado-operativo" class="font-mono text-[9px] text-[color:var(--dim)] mt-1">Estado: por verificar</div>
         </div>
         <button id="btn-cerrar-drawer" class="text-2xl text-[color:var(--dim)] hover:text-rojo transition-colors leading-none cursor-pointer p-1" aria-label="Cerrar panel">&times;</button>
       </div>
+
+    <div id="drawer-load-status" class="hidden px-4 py-2 text-[11px] font-mono text-[color:var(--texto)] bg-[color:var(--bg3)] border-b border-[color:var(--borde2)]" role="status" aria-live="polite"></div>
 
       <!-- Drawer Body (Scrollable) -->
       <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
@@ -259,21 +264,29 @@
   .tm-station-node {
     cursor: pointer;
     outline: none;
-    transition: transform 0.15s ease, opacity 0.2s ease;
+    transition: opacity 0.2s ease;
   }
-  .tm-station-node:hover {
-    transform: scale(1.3);
+  .tm-station--hovered .tm-station-shape {
+    stroke: var(--azul);
   }
-  .tm-station-node:focus-visible {
-    filter: drop-shadow(0 0 6px var(--azul));
+  .tm-station-node:focus-visible .tm-station-shape {
+    stroke: var(--azul);
   }
   .tm-station--dimmed {
     opacity: 0.2;
   }
   .tm-station--selected .tm-station-shape {
     stroke: var(--rojo) !important;
-    stroke-width: 3.5px !important;
-    filter: drop-shadow(0 0 8px var(--rojo));
+  }
+  .tm-station-hit {
+    fill: transparent;
+    stroke: none;
+    pointer-events: all;
+  }
+  .tm-station-node .tm-station-shape,
+  .tm-station-node .tm-portal-center,
+  .tm-station-node .tm-interchange-inner {
+    pointer-events: none;
   }
 
   /* Formas geométricas */
@@ -312,43 +325,10 @@
   .tm-status-critical .tm-station-shape {
     stroke: var(--rojo) !important;
     fill: var(--rojo) !important;
-    animation: tm-critical-pulse 1.8s ease-in-out infinite;
   }
   .tm-status-unmonitored .tm-station-shape {
     stroke: var(--muted);
     fill: var(--bg3);
-  }
-
-  @keyframes tm-critical-pulse {
-    0%, 100% { filter: drop-shadow(0 0 3px var(--rojo)); }
-    50% { filter: drop-shadow(0 0 10px var(--rojo)); }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .tm-status-critical .tm-station-shape {
-      animation: none !important;
-    }
-    .tm-station-node {
-      transition: none !important;
-    }
-  }
-
-  /* Etiquetas de texto */
-  .tm-station-label {
-    font-family: 'Share Tech Mono', 'IBM Plex Mono', monospace;
-    font-size: 8px;
-    fill: var(--texto);
-    pointer-events: none;
-    letter-spacing: 0.2px;
-    font-weight: 500;
-  }
-  .tm-label-portal {
-    font-weight: 700;
-    font-size: 9px;
-  }
-  .tm-label--selected {
-    fill: var(--rojo);
-    font-weight: 700;
   }
 
   /* Controles Zoom Flotantes */
@@ -386,25 +366,35 @@
 
   /* Tooltip Flotante */
   .tm-schematic-tooltip {
-    position: absolute;
+    position: fixed;
+    box-sizing: border-box;
     pointer-events: none;
-    z-index: 40;
-    background: var(--bg2);
-    border: 1px solid var(--borde2);
-    border-radius: 8px;
-    padding: 10px 12px;
-    color: var(--texto);
-    font-family: 'Share Tech Mono', monospace;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    min-width: 200px;
-    max-width: 260px;
-    opacity: 0;
-    transform: translateY(4px);
-    transition: opacity 0.15s ease, transform 0.15s ease;
+    z-index: 2147483000;
+    background: #111927;
+    border: 1px solid #40506a;
+    border-radius: 10px;
+    padding: 11px 13px;
+    color: #f1f5f9;
+    font-family: 'Share Tech Mono', 'IBM Plex Mono', monospace;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.42);
+    width: max-content;
+    min-width: min(210px, calc(100vw - 16px));
+    max-width: min(290px, calc(100vw - 16px));
+    max-height: calc(100vh - 16px);
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    opacity: 1;
+    filter: none;
+    backdrop-filter: none;
+    mix-blend-mode: normal;
+    transform: none;
+    transition: none;
+    animation: none;
+    visibility: hidden;
   }
   .tm-schematic-tooltip.is-visible {
     opacity: 1;
-    transform: translateY(0);
+    visibility: visible;
   }
   .tm-tip-header {
     display: flex;
@@ -414,53 +404,42 @@
     margin-bottom: 2px;
   }
   .tm-tip-title {
-    font-size: 11px;
-    color: var(--texto);
+    min-width: 0;
+    font-size: 13px;
+    line-height: 1.35;
+    color: #f1f5f9;
+    overflow-wrap: anywhere;
   }
   .tm-tip-code {
-    font-size: 9px;
-    color: var(--dim);
+    font-size: 10px;
+    color: #a9b8cb;
+    white-space: nowrap;
   }
   .tm-tip-meta {
-    font-size: 9px;
-    color: var(--rojo);
-    margin-bottom: 6px;
+    font-size: 10px;
+    color: #8ed4f1;
+    margin: 5px 0 8px;
   }
   .tm-tip-row {
     display: flex;
     justify-content: space-between;
-    font-size: 10px;
-    margin-top: 2px;
-    color: var(--dim);
+    gap: 12px;
+    font-size: 11px;
+    line-height: 1.4;
+    margin-top: 4px;
+    color: #a9b8cb;
   }
   .tm-tip-row strong {
-    color: var(--texto);
-  }
-  .tm-text-alert {
-    color: var(--rojo) !important;
+    color: #f1f5f9;
+    font-weight: 600;
+    text-align: right;
   }
   .tm-tip-footer {
-    margin-top: 6px;
-    padding-top: 5px;
-    border-top: 1px solid var(--borde2);
-  }
-  .tm-tip-badge {
-    font-size: 9px;
-    padding: 2px 6px;
-    border-radius: 4px;
-    display: inline-block;
-  }
-  .tm-badge-normal {
-    background: rgba(0, 229, 160, 0.12);
-    color: var(--verde);
-  }
-  .tm-badge-warning {
-    background: rgba(255, 200, 0, 0.12);
-    color: var(--amarillo);
-  }
-  .tm-badge-critical {
-    background: rgba(232, 0, 29, 0.15);
-    color: var(--rojo);
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid #40506a;
+    color: #ffc977;
+    font-size: 10px;
   }
 </style>
 
@@ -472,8 +451,20 @@
   let estacionesData = [];
   let troncalesData = [];
   let estacionSeleccionada = null;
+  let drawerRequestId = 0;
 
   const TOKEN = () => sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token') || '';
+
+  function normalizarBusquedaEstacion(valor) {
+    return String(valor || '')
+      .normalize('NFKD')
+      .replace(/[\u2010-\u2015\u2212]/g, '-')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s*-\s*/g, ' - ')
+      .trim()
+      .replace(/\s+/g, ' ')
+      .toLocaleLowerCase();
+  }
 
   // Elementos DOM de cabecera
   const $kpiTotalEstaciones = document.getElementById('kpi-total-estaciones');
@@ -486,9 +477,17 @@
   const $btnResetVista       = document.getElementById('btn-reset-vista');
   const $btnRefrescar        = document.getElementById('btn-refrescar-mapa');
   const $troncalesBar        = document.getElementById('tm-troncales-bar');
+  const $pendingMapMessage  = document.getElementById('tm-pending-map-message');
+
+  function mostrarAvisoMapa(mensaje) {
+    if (!$pendingMapMessage) return;
+    $pendingMapMessage.textContent = mensaje || '';
+    $pendingMapMessage.classList.toggle('hidden', !mensaje);
+  }
 
   // Drawer fields
   const $drawer              = document.getElementById('drawer-detalle-estacion');
+  const $drawerStatus        = document.getElementById('drawer-load-status');
   const $btnCerrarDrawer     = document.getElementById('btn-cerrar-drawer');
   const $dNombre             = document.getElementById('drawer-estacion-nombre');
   const $dCodigo             = document.getElementById('drawer-estacion-codigo');
@@ -623,31 +622,98 @@
       busqueda: bVal
     });
 
+    let aviso = '';
+    const layoutStations = schematicMap.layout.stations || {};
+
     // Si la búsqueda coincide exactamente con una estación, centrar en ella
     if (bVal && bVal.trim().length >= 3) {
-      const bNorm = bVal.trim().toLowerCase();
+      const bNorm = normalizarBusquedaEstacion(bVal);
       const match = estacionesData.find(e => 
-        e.nombre.toLowerCase() === bNorm || e.codigo.toLowerCase() === bNorm
+        normalizarBusquedaEstacion(e.nombre) === bNorm ||
+        normalizarBusquedaEstacion(e.codigo) === bNorm ||
+        (e.aliases || []).some(alias => normalizarBusquedaEstacion(alias) === bNorm)
       );
       if (match) {
-        schematicMap.centerOnStation(match.codigo);
+        if (schematicMap.hasStationPosition(match.codigo)) {
+          schematicMap.centerOnStation(match.codigo);
+        } else {
+          aviso = `${match.nombre} existe en el catálogo, pero está pendiente de representación esquemática.`;
+          openStationDrawer(match.codigo);
+        }
+      } else {
+        const bNormParcial = normalizarBusquedaEstacion(bVal);
+        const sinPosicion = estacionesData.filter(est => {
+          const valores = [est.nombre, est.codigo, ...(est.aliases || [])];
+          return valores.some(valor => normalizarBusquedaEstacion(valor).includes(bNormParcial)) &&
+            !schematicMap.hasStationPosition(est.codigo);
+        });
+        if (sinPosicion.length) {
+          aviso = `${sinPosicion.length} estación(es) coincidente(s) están pendientes de representación esquemática.`;
+        }
       }
     }
+
+    if (!aviso && tVal) {
+      const estacionesTroncal = estacionesData.filter(est => est.troncal_id === tVal);
+      if (estacionesTroncal.length && estacionesTroncal.every(est => !layoutStations[est.codigo])) {
+        const troncal = troncalesData.find(item => item.id === tVal);
+        aviso = `${troncal ? troncal.nombre : 'Esta troncal'} está pendiente de representación esquemática.`;
+      }
+    }
+    mostrarAvisoMapa(aviso);
   }
 
   // Abrir Drawer con datos completos de la estación
   async function openStationDrawer(idOCodigo) {
+    const requestId = ++drawerRequestId;
+    const known = estacionesData.find(item => item.codigo === idOCodigo || item.id === idOCodigo);
+    estacionSeleccionada = null;
+    $drawer.classList.remove('translate-x-full');
+    $dNombre.textContent = known?.nombre || 'Cargando estación...';
+    $dCodigo.textContent = known?.codigo || String(idOCodigo);
+    $dTroncalBadge.textContent = known?.troncal || 'Troncal';
+    $dTipoBadge.textContent = (known?.tipo || 'estacion').toUpperCase();
+    document.getElementById('drawer-estado-operativo').textContent = 'Estado: pendiente de carga';
+    $drawerStatus.textContent = 'Cargando información de la estación...';
+    $drawerStatus.classList.remove('hidden');
+    $dRiesgoBox.classList.add('hidden');
+    $dCamCount.textContent = 'Cargando...';
+    $dCamList.textContent = '';
+    $dEvList.textContent = '';
+    $dEvTotal.textContent = '-';
+    $dEvConf.textContent = '-';
+    $dEvPend.textContent = '-';
+    $btnIrCamaras.disabled = true;
+    $btnIrEventos.disabled = true;
     try {
       const res = await fetch(`/api/transmilenio/estaciones/${idOCodigo}`, {
         headers: { 'X-Token': TOKEN() }
       });
-      if (!res.ok) return;
+      if (requestId !== drawerRequestId) return;
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const est = await res.json();
+      if (requestId !== drawerRequestId) return;
       estacionSeleccionada = est;
+      $btnIrCamaras.disabled = false;
+      $btnIrEventos.disabled = false;
+      $drawerStatus.classList.add('hidden');
+      $dRiesgoBox.classList.remove('hidden');
 
       // Header
       $dNombre.textContent = est.nombre || 'Estación';
       $dCodigo.textContent = `${est.codigo || ''} · ${est.direccion || est.troncal || ''}`;
+      const estadoOperativoLabels = {
+        operativa: 'Operativa',
+        temporal: 'Temporal en operación',
+        cerrada_temporalmente: 'Cerrada temporalmente',
+        historica: 'Histórica',
+        por_verificar: 'Por verificar'
+      };
+      const $estadoOperativo = document.getElementById('drawer-estado-operativo');
+      if ($estadoOperativo) {
+        const estadoOperativo = est.estado_operativo || 'por_verificar';
+        $estadoOperativo.textContent = `Estado: ${estadoOperativoLabels[estadoOperativo] || estadoOperativoLabels.por_verificar}`;
+      }
       $dTroncalBadge.textContent = est.troncal || 'Troncal';
       $dTipoBadge.textContent = (est.tipo || 'estacion').toUpperCase();
 
@@ -742,18 +808,23 @@
       $drawer.classList.remove('translate-x-full');
 
       // Centrar el SVG en la estación
-      if (schematicMap && est.codigo) {
+      if (schematicMap && est.codigo && schematicMap.hasStationPosition(est.codigo)) {
         schematicMap.centerOnStation(est.codigo);
       }
 
     } catch (e) {
+      if (requestId !== drawerRequestId) return;
       console.error('[MapaTM] Error abriendo detalle de estación:', e);
+      $drawerStatus.textContent = 'No se pudo cargar el detalle. Selecciona la estación de nuevo para reintentar.';
+      $drawerStatus.classList.remove('hidden');
     }
   }
 
   // Cerrar Drawer
   function closeDrawer() {
+    drawerRequestId += 1;
     if ($drawer) $drawer.classList.add('translate-x-full');
+    if ($drawerStatus) $drawerStatus.classList.add('hidden');
     estacionSeleccionada = null;
     if (schematicMap) {
       schematicMap.estacionSeleccionada = null;

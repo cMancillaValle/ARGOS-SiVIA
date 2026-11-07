@@ -230,7 +230,10 @@
 
   let cameras = [];
   let sseSource = null;
+  let sseReconnectTimer = null;
   let syncInterval = null;
+  let viewActive = true;
+  const eventEvidenceUrls = new Set();
   let panelFuentesAbierto = localStorage.getItem('argos_fuentes_open') !== 'false';
 
   // Control Webcam Local
@@ -323,6 +326,33 @@
       throw new Error(err.error || `HTTP ${res.status}`);
     }
     return res.json();
+  }
+
+  // Helper para Tickets de Streaming Efimeros (R03)
+  async function obtenerStreamUrl(camId) {
+    const res = await api('POST', `/api/camaras/${camId}/stream-ticket`);
+    if (!res?.stream_url) throw new Error('El servidor no emitió un ticket de streaming.');
+    return res.stream_url + '&ts=' + Date.now();
+  }
+
+  function evidencePath(path) {
+    return String(path || '').replaceAll('\\', '/').replace(/^evidence\//, '')
+      .split('/').filter(Boolean).map(encodeURIComponent).join('/');
+  }
+
+  async function fetchEvidenceObjectUrl(path) {
+    const res = await fetch(`/api/camaras/evidencia/${evidencePath(path)}`, {
+      headers: { 'X-Token': TOKEN() },
+      cache: 'no-store',
+      referrerPolicy: 'no-referrer'
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return URL.createObjectURL(await res.blob());
+  }
+
+  function releaseEventEvidenceUrls() {
+    eventEvidenceUrls.forEach(url => URL.revokeObjectURL(url));
+    eventEvidenceUrls.clear();
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -426,7 +456,7 @@
         <div class="relative w-full flex-1 bg-black overflow-hidden flex items-center justify-center">
           ${isOnline ? `
             <!-- Video Frame Activo -->
-            <img id="slot-img-${slot.id}" class="w-full h-full object-contain" alt="${cam.codigo}" src="/api/camaras/${cam.id}/stream?t=${encodeURIComponent(TOKEN())}&ts=${Date.now()}" onerror="window.handleStreamError(${slot.id})" />
+            <img id="slot-img-${slot.id}" class="w-full h-full object-contain" alt="${cam.codigo}" ${slot.streamUrl ? `src="${slot.streamUrl}"` : ''} onerror="window.handleStreamError(${slot.id})" />
             
             <!-- HUD Overlay -->
             <div class="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
@@ -503,11 +533,20 @@
   }
 
   // Manejador global de error en stream MJPEG
-  window.handleStreamError = (slotId) => {
+  window.handleStreamError = async (slotId) => {
     const slot = slots[slotId];
-    if (slot && slot.isOnline) {
+    if (viewActive && slot && slot.isOnline && !slot.reconnecting) {
+      slot.reconnecting = true;
       console.warn(`[Slot ${slotId + 1}] Stream interrumpido.`);
-      // No desconectar bruscamente, pero verificar en la siguiente sincronización
+      try {
+        slot.streamUrl = await obtenerStreamUrl(slot.camId);
+        const img = document.getElementById(`slot-img-${slotId}`);
+        if (img && slot.isOnline) img.src = slot.streamUrl;
+      } catch (error) {
+        console.warn(`[Slot ${slotId + 1}] No se pudo renovar el ticket:`, error.message);
+      } finally {
+        slot.reconnecting = false;
+      }
     }
   };
 
@@ -677,6 +716,7 @@
     if (runningStatus) {
       slot.isOnline = true;
       slot.mode = runningStatus.mode || 'acceso';
+      slot.streamUrl = await obtenerStreamUrl(camId);
     } else {
       slot.isOnline = false;
     }
@@ -696,6 +736,7 @@
 
     slot.camId = null;
     slot.camData = null;
+    slot.streamUrl = null;
     slot.isOnline = false;
     slot.isConnecting = false;
     guardarAsignacionesSlots();
@@ -737,6 +778,7 @@
         await api('POST', `/api/camaras/${camId}/connect`, body);
       }
 
+      slot.streamUrl = await obtenerStreamUrl(camId);
       slot.isOnline = true;
       slot.isConnecting = false;
       slot.confidence = 0.95;
@@ -772,6 +814,7 @@
       desactivarWebcam();
     }
 
+    slot.streamUrl = null;
     slot.isOnline = false;
     slot.isConnecting = false;
     renderSlotHtmlDirect(slotId);
@@ -989,6 +1032,15 @@
         }
       });
 
+      await Promise.all(slots.filter(s => s.isOnline && s.camId && !s.streamUrl).map(async slot => {
+        try {
+          slot.streamUrl = await obtenerStreamUrl(slot.camId);
+          huboCambio = true;
+        } catch (error) {
+          console.warn(`[StreamTicket] Cámara ${slot.camId}:`, error.message);
+        }
+      }));
+
       // Auto-selección desde el Mapa TransMilenio (por cámara específica o por estación)
       const autoCamId = sessionStorage.getItem('argos_auto_connect_cam');
       const filtroEstacion = sessionStorage.getItem('argos_filtro_estacion_cam');
@@ -1053,15 +1105,21 @@
     }
   }
 
-  function startSSE() {
+  async function startSSE() {
+    if (!viewActive) return;
     if (sseSource) {
       sseSource.close();
       sseSource = null;
     }
+    if (sseReconnectTimer) {
+      clearTimeout(sseReconnectTimer);
+      sseReconnectTimer = null;
+    }
 
     try {
-      // El endpoint correcto en el backend es /api/camaras/eventos/stream
-      sseSource = new EventSource(`/api/camaras/eventos/stream?t=${encodeURIComponent(TOKEN())}`);
+      const ticket = await api('POST', '/api/camaras/eventos/stream-ticket');
+      if (!ticket?.stream_url) throw new Error('El servidor no emitió un ticket SSE.');
+      sseSource = new EventSource(ticket.stream_url);
       
       sseSource.onmessage = e => {
         try {
@@ -1073,7 +1131,9 @@
       };
 
       sseSource.onerror = () => {
-        // Reconexión automática de EventSource
+        if (sseSource) sseSource.close();
+        sseSource = null;
+        if (viewActive) sseReconnectTimer = setTimeout(() => startSSE(), 1500);
       };
     } catch (err) {
       console.warn('[SSE] Error al iniciar stream de eventos:', err);
@@ -1128,11 +1188,9 @@
     // Normalizar ruta de la captura de evidencia
     let evidenciaHtml = '';
     if (ev.evidencia) {
-      const rawPath = String(ev.evidencia).split('\\').join('/').replace(/^evidence\//, '');
-      const imgUrl = `/api/camaras/evidencia/${rawPath}`;
       evidenciaHtml = `
-        <div class="mt-1 relative rounded overflow-hidden border border-white/10 bg-black/60 group cursor-pointer" onclick="window.open('${imgUrl}', '_blank')">
-          <img src="${imgUrl}" class="w-full max-h-32 object-cover transition-transform group-hover:scale-105" alt="Captura Evidencia" onerror="this.parentElement.style.display='none'">
+        <div class="event-evidence mt-1 relative rounded overflow-hidden border border-white/10 bg-black/60 group cursor-pointer">
+          <img class="w-full max-h-32 object-cover transition-transform group-hover:scale-105" alt="Captura Evidencia">
           <div class="absolute bottom-1 right-1 bg-black/80 backdrop-blur-sm px-1.5 py-0.5 rounded text-[7px] font-mono text-white/90">
             🔍 Ver Captura
           </div>
@@ -1160,6 +1218,19 @@
       $eventsFeed.prepend(item);
     } else {
       $eventsFeed.appendChild(item);
+    }
+
+    if (ev.evidencia) {
+      const box = item.querySelector('.event-evidence');
+      const img = box?.querySelector('img');
+      fetchEvidenceObjectUrl(ev.evidencia).then(url => {
+        if (!item.isConnected) return URL.revokeObjectURL(url);
+        eventEvidenceUrls.add(url);
+        img.src = url;
+        box.addEventListener('click', () => window.open(url, '_blank', 'noopener'));
+      }).catch(() => {
+        if (box) box.style.display = 'none';
+      });
     }
 
     // Actualizar timestamp en el HUD del slot correspondiente
@@ -1198,6 +1269,7 @@
   $btnCloseEvt.addEventListener('click', () => togglePanelEventos(false));
 
   $btnClearEventos.addEventListener('click', () => {
+    releaseEventEvidenceUrls();
     $eventsFeed.innerHTML = '<div class="text-center text-[color:var(--dim)] text-[10px] font-mono py-8 opacity-50" id="eventos-empty">Sin eventos en memoria operativa.<br>A la espera de detecciones de Athena.</div>';
     totalEventos = 0;
     $eventsCount.textContent = '0';
@@ -1552,7 +1624,7 @@
     togglePanelEventos(panelEventosAbierto);
     await loadCameras();
     await loadRecentEvents();
-    startSSE();
+    await startSSE();
     // Bucle de sincronización de estado en tiempo real (cada 3 seg)
     syncInterval = setInterval(sincronizarEstadoAthena, 3000);
   }
@@ -1561,6 +1633,15 @@
   window.addEventListener('hashchange', () => {
     if (syncInterval) clearInterval(syncInterval);
     if (sseSource) sseSource.close();
+    if (webcamActive) desactivarWebcam();
+  }, { once: true });
+
+  document.addEventListener('argos:navaway', () => {
+    viewActive = false;
+    if (syncInterval) clearInterval(syncInterval);
+    if (sseSource) sseSource.close();
+    if (sseReconnectTimer) clearTimeout(sseReconnectTimer);
+    releaseEventEvidenceUrls();
     if (webcamActive) desactivarWebcam();
   }, { once: true });
 

@@ -29,10 +29,13 @@ import time
 import json
 import queue
 import logging
+import subprocess
+import platform
+import re
 from typing import Optional
 
 from werkzeug.utils import secure_filename
-from fastapi import APIRouter, Request, Depends, UploadFile, File
+from fastapi import APIRouter, Request, Depends, UploadFile, File, Header
 from fastapi.responses import JSONResponse, StreamingResponse, Response
 
 from services.auth_service import (
@@ -41,6 +44,11 @@ from services.auth_service import (
     require_any_permission,
     registrar_auditoria,
     validate_token,
+    issue_stream_ticket,
+    validate_stream_ticket,
+    issue_sse_ticket,
+    validate_sse_ticket,
+    tiene_permiso,
 )
 from api.routers.camera_client import get_client_by_camera
 
@@ -74,6 +82,7 @@ def _get_athena():
 def get_conn():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    conn.execute('PRAGMA foreign_keys = ON')
     return conn
 
 
@@ -94,11 +103,6 @@ def _resolve_source(cam_row: dict):
         if os.path.isfile(ip):
             return ip
     return 0
-
-
-def _validate_token_qp(request: Request) -> bool:
-    token = request.query_params.get('t') or request.headers.get('X-Token')
-    return bool(validate_token(token))
 
 
 def _get_confidence() -> float:
@@ -276,13 +280,30 @@ def athena_diagnostics(
         return JSONResponse(status_code=500, content={'error': 'Diagnóstico no disponible'})
 
 
+@router.post("/eventos/stream-ticket")
+def solicitar_sse_ticket(
+    usuario: dict = Depends(require_permission("eventos:ver")),
+    x_token: Optional[str] = Header(default=None, alias="X-Token"),
+):
+    if not x_token:
+        return JSONResponse(status_code=401, content={'error': 'Token de sesión requerido.'})
+    ticket = issue_sse_ticket(usuario['id'], x_token, ttl_seconds=90)
+    return JSONResponse(content={
+        'ticket': ticket,
+        'expires_in': 90,
+        'stream_url': f'/api/camaras/eventos/stream?sse_ticket={ticket}',
+    })
+
+
 @router.get("/eventos/stream")
 def eventos_sse(request: Request):
     """
     SSE global de eventos IA.
-    Acepta ?t=<token> o cabecera X-Token.
+    Acepta un ticket SSE efímero o la cabecera X-Token.
     """
-    if not _validate_token_qp(request):
+    sse_ticket = request.query_params.get('sse_ticket')
+    user = validate_sse_ticket(sse_ticket) if sse_ticket else validate_token(request.headers.get('X-Token'))
+    if not user or not tiene_permiso(user, 'eventos:ver'):
         def _gen_unauth():
             yield 'data: ' + json.dumps({'error': 'No autorizado'}) + '\n\n'
         return StreamingResponse(
@@ -409,8 +430,15 @@ async def delete_camera(
         except Exception as e:
             logger.warning(f"No se pudo detener Athena cam={cam_id}: {e}")
 
-    conn.execute('DELETE FROM camaras WHERE id=?', (cam_id,))
-    conn.commit()
+    try:
+        conn.execute('DELETE FROM camaras WHERE id=?', (cam_id,))
+        conn.commit()
+    except sqlite3.IntegrityError as e:
+        conn.close()
+        return JSONResponse(
+            status_code=409,
+            content={'error': f'No se puede eliminar la cámara {cam["codigo"]} porque tiene eventos asociados registrados en el sistema.'}
+        )
     conn.close()
 
     ip = request.client.host if request.client else None
@@ -529,14 +557,56 @@ def disconnect_camera(
         return JSONResponse(status_code=500, content={'error': f'No se pudo detener Athena: {str(e)}'})
 
 
+@router.post("/{cam_id}/stream-ticket")
+def solicitar_stream_ticket(
+    cam_id: int,
+    usuario: dict = Depends(require_permission("camaras:ver")),
+    x_token: Optional[str] = Header(default=None, alias="X-Token"),
+):
+    """
+    Emite un ticket efímero de corta duración (60s) para reproducir el stream MJPEG.
+    Requiere autenticación válida y permiso 'camaras:ver'.
+    """
+    if not x_token:
+        return JSONResponse(status_code=401, content={'error': 'Token de sesión requerido.'})
+    ticket = issue_stream_ticket(
+        usuario["id"], cam_id, ttl_seconds=60, session_token=x_token
+    )
+    return JSONResponse(content={
+        "ticket": ticket,
+        "cam_id": cam_id,
+        "expires_in": 60,
+        "stream_url": f"/api/camaras/{cam_id}/stream?stream_ticket={ticket}"
+    })
+
+
 @router.get("/{cam_id}/stream")
 def stream_video(cam_id: int, request: Request):
     """
     Stream MJPEG procesado por Athena para una cámara específica.
-    Acepta ?t=<token> o cabecera X-Token.
+    Seguridad:
+    1. Autorización mediante stream_ticket efímero (?stream_ticket=<ticket>).
+    2. Autorización directa mediante cabecera X-Token.
+    Los tickets efímeros previenen la exposición de tokens de sesión ordinarios en URLs.
     """
-    if not _validate_token_qp(request):
-        return Response('Unauthorized', status_code=401)
+    stream_ticket = request.query_params.get("stream_ticket")
+    user = None
+    if stream_ticket:
+        user = validate_stream_ticket(stream_ticket, cam_id)
+        if not user:
+            return Response("Ticket de streaming inválido o expirado", status_code=401)
+        if not tiene_permiso(user, "camaras:ver"):
+            return Response("Acceso denegado: permiso camaras:ver requerido", status_code=403)
+    else:
+        # Validación de cabecera X-Token
+        token = request.headers.get("X-Token")
+        if not token:
+            return Response("Unauthorized", status_code=401)
+        user = validate_token(token)
+        if not user:
+            return Response("Unauthorized", status_code=401)
+        if not tiene_permiso(user, "camaras:ver"):
+            return Response("Acceso denegado: permiso camaras:ver requerido", status_code=403)
 
     athena = _get_athena()
     if not athena:
@@ -566,3 +636,147 @@ def stream_video(cam_id: int, request: Request):
 async def _has_body(request: Request) -> bool:
     body = await request.body()
     return bool(body)
+
+
+
+# ── GET /api/camaras/{cam_id}/ping (F28: Diagnóstico Real) ──────────────────
+@router.get("/{cam_id}/ping")
+def ping_camera(
+    cam_id: int,
+    request: Request,
+    usuario: dict = Depends(require_permission("camaras:ver")),
+):
+    """
+    Ejecuta un diagnóstico real de conectividad de red contra la cámara especificada.
+    Valida existencia en BD, sanitiza el host contra SSRF y ejecuta una prueba ICMP real con timeout estricto.
+    """
+    conn = get_conn()
+    cam = conn.execute("SELECT id, codigo, ip, estado FROM camaras WHERE id = ?", (cam_id,)).fetchone()
+    conn.close()
+
+    if not cam:
+        return JSONResponse(status_code=404, content={"error": f"Cámara con id {cam_id} no encontrada."})
+
+    ip_raw = (cam['ip'] or '').strip()
+    codigo = cam['codigo']
+
+    if not ip_raw:
+        return JSONResponse(content={
+            "cam_id": cam_id,
+            "codigo": codigo,
+            "ip": None,
+            "tipo": "no_configurada",
+            "online": False,
+            "latencia_ms": None,
+            "detalle": "Dirección IP no configurada en el sistema."
+        })
+
+    if ip_raw.lower() == 'webcam':
+        return JSONResponse(content={
+            "cam_id": cam_id,
+            "codigo": codigo,
+            "ip": "webcam",
+            "tipo": "webcam",
+            "online": True,
+            "latencia_ms": 0,
+            "detalle": "Dispositivo local cliente (Webcam)."
+        })
+
+    if ip_raw.lower().endswith(('.mp4', '.avi', '.mkv', '.mov')) or ip_raw == '0':
+        return JSONResponse(content={
+            "cam_id": cam_id,
+            "codigo": codigo,
+            "ip": ip_raw,
+            "tipo": "archivo_o_dispositivo",
+            "online": True,
+            "latencia_ms": 0,
+            "detalle": "Fuente sintética o archivo de video local."
+        })
+
+    # Extraer y sanitizar host
+    host = ip_raw
+    if '://' in host:
+        host = host.split('://', 1)[1]
+    if '/' in host:
+        host = host.split('/', 1)[0]
+    if '@' in host:
+        host = host.split('@', 1)[1]
+    if ':' in host:
+        host = host.split(':', 1)[0]
+
+    # Validación estricta de formato host / IP para prevenir inyección y SSRF
+    if not re.match(r'^[a-zA-Z0-9.-]+$', host) or host.startswith('-'):
+        return JSONResponse(status_code=400, content={
+            "cam_id": cam_id,
+            "codigo": codigo,
+            "ip": ip_raw,
+            "tipo": "invalida",
+            "online": False,
+            "latencia_ms": None,
+            "detalle": "Formato de host o IP inválido para diagnóstico."
+        })
+
+    # Ejecución real de ping con timeout estricto
+    param = '-n' if platform.system().lower() == 'windows' else '-c'
+    timeout_param = '-w' if platform.system().lower() == 'windows' else '-W'
+    timeout_val = '1000' if platform.system().lower() == 'windows' else '1'
+    cmd = ['ping', param, '1', timeout_param, timeout_val, host]
+
+    t0 = time.time()
+    try:
+        proc = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=2.0
+        )
+        elapsed_ms = round((time.time() - t0) * 1000, 1)
+        out = proc.stdout
+
+        if proc.returncode == 0:
+            m = re.search(r'tiempo[=<](\d+)\s*ms|time[=<](\d+)\s*ms', out, re.I)
+            lat = int(m.group(1) or m.group(2)) if m else elapsed_ms
+            return JSONResponse(content={
+                "cam_id": cam_id,
+                "codigo": codigo,
+                "ip": ip_raw,
+                "tipo": "red_ip",
+                "online": True,
+                "latencia_ms": lat,
+                "detalle": f"Conectado ({lat} ms)"
+            })
+        else:
+            if 'inaccesible' in out.lower() or 'unreachable' in out.lower():
+                detalle = "Host de cámara inaccesible en red"
+            else:
+                detalle = "Tiempo de espera agotado (Offline)"
+            return JSONResponse(content={
+                "cam_id": cam_id,
+                "codigo": codigo,
+                "ip": ip_raw,
+                "tipo": "red_ip",
+                "online": False,
+                "latencia_ms": None,
+                "detalle": detalle
+            })
+    except subprocess.TimeoutExpired:
+        return JSONResponse(content={
+            "cam_id": cam_id,
+            "codigo": codigo,
+            "ip": ip_raw,
+            "tipo": "red_ip",
+            "online": False,
+            "latencia_ms": None,
+            "detalle": "Tiempo límite agotado (Timeout >2s)"
+        })
+    except Exception as e:
+        return JSONResponse(status_code=500, content={
+            "cam_id": cam_id,
+            "codigo": codigo,
+            "ip": ip_raw,
+            "tipo": "error",
+            "online": False,
+            "latencia_ms": None,
+            "detalle": f"Fallo al ejecutar diagnóstico: {str(e)}"
+        })

@@ -27,6 +27,7 @@ DB_PATH = os.path.normpath(
 def _get_conn():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    conn.execute('PRAGMA foreign_keys = ON')
     return conn
 
 
@@ -281,7 +282,7 @@ def get_ia_config(usuario: dict = Depends(require_permission("sistema:ver_estado
 
 
 @router.put("/ia-config")
-async def put_ia_config(request: Request, usuario: dict = Depends(require_permission("sistema:ver_estado"))):
+async def put_ia_config(request: Request, usuario: dict = Depends(require_permission("configuracion:ia"))):
     _ensure_config_table()
     data = await request.json() if await _has_body(request) else {}
     claves_permitidas = {
@@ -313,3 +314,167 @@ async def put_ia_config(request: Request, usuario: dict = Depends(require_permis
 async def _has_body(request: Request) -> bool:
     body = await request.body()
     return bool(body)
+
+
+
+# ── GET /api/sistema/config (F30) ─────────────────────────────────
+@router.get("/config")
+def get_sistema_config(usuario: dict = Depends(require_permission("configuracion:ver"))):
+    """
+    Retorna la configuración general del sistema.
+    Requiere permiso 'configuracion:ver' (Admin y Técnico).
+    """
+    _ensure_config_table()
+    defaults = {
+        'timezone': 'America/Bogota',
+        'modo': 'produccion',
+        'debug': 'false',
+        'ret_eventos': '90',
+        'ret_audit': '365',
+        'ret_snap': '30',
+        'autoclean': 'true',
+        'session_ttl': '480',
+        'max_fail': '5',
+        'lockout_min': '15',
+        'fa2_force': 'true',
+        'log_ip': 'true',
+        'maintenance': 'false',
+        'nombre_sistema': 'ARGOS SiViA - TransMilenio',
+    }
+    result = {}
+    try:
+        conn = _get_conn()
+        rows = conn.execute("SELECT clave, valor FROM configuracion WHERE clave NOT LIKE 'ia_%'").fetchall()
+        conn.close()
+        stored = {r['clave']: r['valor'] for r in rows}
+        for k, v in defaults.items():
+            result[k] = stored.get(k, v)
+    except Exception as e:
+        result = dict(defaults)
+        result['error'] = str(e)
+    return JSONResponse(content=result)
+
+
+# ── PUT /api/sistema/config (F30) ─────────────────────────────────
+@router.put("/config")
+async def put_sistema_config(
+    request: Request,
+    usuario: dict = Depends(require_permission("configuracion:editar"))
+):
+    """
+    Guarda y persiste las variables de configuración general del sistema.
+    Requiere permiso 'configuracion:editar' (Admin).
+    """
+    _ensure_config_table()
+    data = await request.json() if await _has_body(request) else {}
+    if not isinstance(data, dict):
+        return JSONResponse(status_code=400, content={'error': 'El cuerpo debe ser un objeto JSON.'})
+
+    claves_permitidas = {
+        'timezone', 'modo', 'debug', 'ret_eventos', 'ret_audit',
+        'ret_snap', 'autoclean', 'session_ttl', 'max_fail',
+        'lockout_min', 'fa2_force', 'log_ip', 'maintenance',
+        'nombre_sistema'
+    }
+
+    # Validaciones básicas de rangos
+    if 'session_ttl' in data:
+        try:
+            ttl_val = int(data['session_ttl'])
+            if ttl_val < 30 or ttl_val > 1440:
+                return JSONResponse(status_code=400, content={'error': 'session_ttl debe estar entre 30 y 1440 minutos.'})
+        except (ValueError, TypeError):
+            return JSONResponse(status_code=400, content={'error': 'session_ttl inválido.'})
+
+    if 'max_fail' in data:
+        try:
+            mf = int(data['max_fail'])
+            if mf < 3 or mf > 20:
+                return JSONResponse(status_code=400, content={'error': 'max_fail debe estar entre 3 y 20 intentos.'})
+        except (ValueError, TypeError):
+            return JSONResponse(status_code=400, content={'error': 'max_fail inválido.'})
+
+    guardadas = []
+    try:
+        conn = _get_conn()
+        for clave, valor in data.items():
+            if clave not in claves_permitidas:
+                continue
+            conn.execute("""
+                INSERT INTO configuracion (clave, valor, actualizado)
+                VALUES (?, ?, datetime('now'))
+                ON CONFLICT(clave) DO UPDATE SET
+                    valor = excluded.valor,
+                    actualizado = excluded.actualizado
+            """, (clave, str(valor)))
+            guardadas.append(clave)
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        return JSONResponse(status_code=500, content={'error': str(e)})
+
+    return JSONResponse(content={'status': 'ok', 'guardadas': guardadas})
+
+
+# ── POST /api/sistema/test-smtp (F30) ────────────────────────────────
+@router.post("/test-smtp")
+def post_test_smtp(usuario: dict = Depends(require_permission("configuracion:editar"))):
+    """
+    Verifica de manera real y segura la conectividad y configuración del transporte SMTP
+    utilizando las credenciales configuradas en las variables de entorno del servidor.
+    No expone secretos, contraseñas ni tokens.
+    Requiere permiso administrativo 'configuracion:editar'.
+    """
+    import smtplib
+    import ssl
+
+    host = os.environ.get('SMTP_HOST', '').strip() or 'smtp.gmail.com'
+    port_str = os.environ.get('SMTP_PORT', '587').strip()
+    try:
+        port = int(port_str)
+    except ValueError:
+        port = 587
+
+    user = os.environ.get('SMTP_USER', '').strip()
+    password = os.environ.get('SMTP_PASS', '').strip()
+
+    if not user or not password:
+        return JSONResponse(status_code=400, content={
+            'status': 'error',
+            'error': 'Servicio SMTP no configurado: faltan variables SMTP_USER / SMTP_PASS en el servidor.'
+        })
+
+    # Probar conexión y handshake real con timeout estricto de 5s
+    try:
+        ctx = ssl.create_default_context()
+        with smtplib.SMTP(host, port, timeout=5) as server:
+            server.ehlo()
+            if port == 587:
+                server.starttls(context=ctx)
+                server.ehlo()
+            server.login(user, password)
+
+        return JSONResponse(content={
+            'status': 'ok',
+            'mensaje': f'Conexión y autenticación SMTP exitosa con {host}:{port}'
+        })
+    except smtplib.SMTPAuthenticationError:
+        return JSONResponse(status_code=401, content={
+            'status': 'error',
+            'error': f'Fallo de autenticación con el servidor SMTP ({host}:{port}). Verifique usuario y clave.'
+        })
+    except (smtplib.SMTPConnectError, ConnectionRefusedError, OSError) as e:
+        return JSONResponse(status_code=502, content={
+            'status': 'error',
+            'error': f'No se pudo conectar al host SMTP {host}:{port}.'
+        })
+    except TimeoutError:
+        return JSONResponse(status_code=504, content={
+            'status': 'error',
+            'error': f'Tiempo de espera agotado al conectar a {host}:{port} (>5s).'
+        })
+    except Exception as e:
+        return JSONResponse(status_code=500, content={
+            'status': 'error',
+            'error': f'Error durante la verificación SMTP: {type(e).__name__}'
+        })

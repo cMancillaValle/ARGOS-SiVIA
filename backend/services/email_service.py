@@ -18,6 +18,7 @@ import secrets
 import string
 import smtplib
 import ssl
+import logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
@@ -38,15 +39,35 @@ DEV_MODE     = os.environ.get('ARGOS_DEV_MODE', '0') == '1'
 BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "")
 USE_BREVO = bool(BREVO_API_KEY)
 
-SMTP_CONFIGURED = bool(SMTP_USER and SMTP_PASS)
+def is_dev_mode() -> bool:
+    """Determina si el modo desarrollo está explícitamente habilitado vía ARGOS_DEV_MODE."""
+    return os.environ.get('ARGOS_DEV_MODE', '').strip().lower() in ('1', 'true', 'yes')
+
+
+def is_smtp_configured() -> bool:
+    """Determina si los parámetros de autenticación SMTP están configurados."""
+    return bool(os.environ.get('SMTP_USER', '').strip() and os.environ.get('SMTP_PASS', '').strip())
+
+
+SMTP_CONFIGURED = is_smtp_configured()
 
 # ── Almacenamiento en memoria de códigos pendientes ────────────────────────
 # Estructura: { "namespace:identifier": {"code": str, "expires": datetime, "data": dict} }
 _codes: dict[str, dict] = {}
+_code_cooldowns: dict[str, datetime] = {}
 _codes_lock = Lock()
+
+logger = logging.getLogger(__name__)
 
 CODE_TTL_MINUTES = 10
 CODE_LENGTH      = 6
+MAX_CODE_ATTEMPTS = 5
+CODE_RESEND_COOLDOWN_SECONDS = 60
+CODE_LOCKOUT_MINUTES = 5
+
+
+class CodeRequestThrottled(Exception):
+    """La cuenta o flujo debe esperar antes de emitir otro código."""
 
 
 # ── Generador de código ────────────────────────────────────────────────────
@@ -61,11 +82,29 @@ def store_code(namespace: str, identifier: str, extra_data: Optional[dict] = Non
     Genera y almacena un código temporal.
     Devuelve el código en texto plano (para enviarlo por email).
     """
-    code    = _gen_code()
     key     = f'{namespace}:{identifier}'
-    expires = datetime.utcnow() + timedelta(minutes=CODE_TTL_MINUTES)
+    now     = datetime.utcnow()
     with _codes_lock:
-        _codes[key] = {'code': code, 'expires': expires, 'data': extra_data or {}}
+        cooldown_until = _code_cooldowns.get(key)
+        if cooldown_until and now < cooldown_until:
+            raise CodeRequestThrottled()
+        if cooldown_until:
+            _code_cooldowns.pop(key, None)
+
+        current = _codes.get(key)
+        if current and now <= current['expires']:
+            issued_at = current.get('issued_at', now)
+            if (now - issued_at).total_seconds() < CODE_RESEND_COOLDOWN_SECONDS:
+                raise CodeRequestThrottled()
+
+        code = _gen_code()
+        _codes[key] = {
+            'code': code,
+            'expires': now + timedelta(minutes=CODE_TTL_MINUTES),
+            'issued_at': now,
+            'attempts': 0,
+            'data': extra_data or {},
+        }
     return code
 
 
@@ -78,14 +117,24 @@ def validate_code(namespace: str, identifier: str, code: str) -> tuple[bool, dic
     with _codes_lock:
         entry = _codes.get(key)
         if not entry:
-            return False, {}
-        if datetime.utcnow() > entry['expires']:
+            return False, {'reason': 'missing'}
+        now = datetime.utcnow()
+        if now > entry['expires']:
             _codes.pop(key, None)
-            return False, {}
+            return False, {'reason': 'expired'}
         if entry['code'] != str(code).strip():
-            return False, {}
+            entry['attempts'] = int(entry.get('attempts', 0)) + 1
+            if entry['attempts'] >= MAX_CODE_ATTEMPTS:
+                _codes.pop(key, None)
+                _code_cooldowns[key] = now + timedelta(minutes=CODE_LOCKOUT_MINUTES)
+                return False, {'reason': 'attempts_exceeded'}
+            return False, {
+                'reason': 'invalid',
+                'attempts_remaining': MAX_CODE_ATTEMPTS - entry['attempts'],
+            }
         data = entry.get('data', {})
         _codes.pop(key, None)
+        _code_cooldowns.pop(key, None)
         return True, data
 
 
@@ -141,51 +190,79 @@ def _build_email_html(subject: str, message: str, code: Optional[str] = None) ->
 
 def send_email(to_email: str, subject: str, message: str, code: Optional[str] = None) -> dict:
     """
-    Envía un email HTML. Si SMTP no está configurado o DEV_MODE=1,
-    devuelve {'dev': True, 'code': code} para mostrar en la UI.
+    Envía un email HTML.
+    - Si el modo desarrollo está explícitamente activado (ARGOS_DEV_MODE=1/true),
+      retorna dev=True y el código para pruebas locales.
+    - Si SMTP no está configurado y no hay modo desarrollo explícito, retorna
+      enviado=False, dev=False, sin exponer ningún código.
+    - Si SMTP está configurado, intenta el despacho real vía TLS.
     """
-    if not SMTP_CONFIGURED or DEV_MODE:
+    dev_enabled = is_dev_mode()
+    smtp_ready  = is_smtp_configured()
+
+    if dev_enabled:
         return {
             'enviado': False,
             'dev': True,
-            'mensaje': 'SMTP no configurado. Código disponible en respuesta (modo desarrollo).',
+            'mensaje': 'Modo desarrollo activo (ARGOS_DEV_MODE). Código disponible para pruebas.',
             'code': code,
+        }
+
+    if not smtp_ready:
+        return {
+            'enviado': False,
+            'dev': False,
+            'error': 'Servicio de correo SMTP no configurado.',
         }
 
     html = _build_email_html(subject, message, code)
     msg  = MIMEMultipart('alternative')
     msg['Subject'] = f'[ARGOS SiViA] {subject}'
-    msg['From']    = SMTP_FROM
+    msg['From']    = os.environ.get('SMTP_FROM', '') or os.environ.get('SMTP_USER', '')
     msg['To']      = to_email
     msg.attach(MIMEText(message, 'plain', 'utf-8'))
     msg.attach(MIMEText(html, 'html', 'utf-8'))
 
     try:
+        host = os.environ.get('SMTP_HOST', 'smtp.gmail.com')
+        port = int(os.environ.get('SMTP_PORT', '587'))
+        user = os.environ.get('SMTP_USER', '')
+        password = os.environ.get('SMTP_PASS', '')
+        from_addr = os.environ.get('SMTP_FROM', '') or user
+
         ctx = ssl.create_default_context()
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=10) as server:
+        with smtplib.SMTP(host, port, timeout=10) as server:
             server.ehlo()
             server.starttls(context=ctx)
-            server.login(SMTP_USER, SMTP_PASS)
-            server.sendmail(SMTP_FROM, [to_email], msg.as_string())
+            server.login(user, password)
+            server.sendmail(from_addr, [to_email], msg.as_string())
         return {'enviado': True, 'dev': False}
     except Exception as e:
-        return {'enviado': False, 'dev': False, 'error': str(e)}
+        return {'enviado': False, 'dev': False, 'error': f'Fallo al enviar correo: {str(e)}'}
 
 # ── Funciones de alto nivel para cada caso de uso ─────────────────────────────
 def enviar_codigo_cambio_email(user_id: int, email_destino: str,
-                               nuevo_email: Optional[str] = None) -> dict:
-    """Genera y envía código para verificar cambio de email."""
-    ns   = 'email_cambio' if nuevo_email is None else 'email_nuevo'
-    code = store_code(ns, str(user_id), {'nuevo_email': nuevo_email})
+                               nuevo_email: str) -> dict:
+    """
+    Genera y envía código para verificar cambio de email.
+    Asocia unívocamente el código a user_id y guarda el nuevo_email verificado.
+    """
+    try:
+        code = store_code('cambio_email', str(user_id), {'nuevo_email': nuevo_email})
+    except CodeRequestThrottled:
+        return {'enviado': False, 'dev': False, 'rate_limited': True}
     subj = 'Verificación de cambio de email'
-    msg  = ('Recibimos una solicitud para cambiar el email de tu cuenta ARGOS SiViA. '
-            'Ingresa el siguiente código para confirmar:')
+    msg  = (f'Recibimos una solicitud para cambiar el email de tu cuenta ARGOS SiViA a {nuevo_email}. '
+            'Ingresa el siguiente código para confirmar el cambio:')
     return send_email(email_destino, subj, msg, code)
 
 
 def enviar_codigo_reset_password(email: str, username: str) -> dict:
     """Genera y envía código para restablecer contraseña."""
-    code = store_code('reset_pass', username)
+    try:
+        code = store_code('reset_pass', username)
+    except CodeRequestThrottled:
+        return {'enviado': False, 'dev': False, 'rate_limited': True}
     subj = 'Restablecer contraseña'
     msg  = (f'Hola {username}, recibimos una solicitud para restablecer la contraseña '
             'de tu cuenta ARGOS SiViA. Usa el siguiente código:')

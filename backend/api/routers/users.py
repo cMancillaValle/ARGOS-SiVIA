@@ -15,8 +15,8 @@ from fastapi import APIRouter, Request, Depends
 from fastapi.responses import JSONResponse
 
 from services.auth_service import (
-    hash_password, registrar_auditoria, get_current_user,
-    require_permission, tiene_permiso,
+    hash_password, verify_password, registrar_auditoria, get_current_user,
+    require_permission, tiene_permiso, revoke_all_user_sessions,
 )
 from utils.validators import validate_email, validate_password, format_error
 
@@ -31,6 +31,7 @@ ROLES_VALIDOS = ('admin', 'supervisor', 'operador', 'analista', 'tecnico', 'audi
 def get_conn():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    conn.execute('PRAGMA foreign_keys = ON')
     return conn
 
 
@@ -151,16 +152,39 @@ async def change_password(user_id: int, request: Request,
     if not es_propio and not es_admin:
         return JSONResponse(status_code=403, content={'error': 'No tienes permiso para cambiar esta contraseña.'})
 
+    conn = get_conn()
+    target_user = conn.execute('SELECT id, username, password FROM usuarios WHERE id=?', (user_id,)).fetchone()
+    if not target_user:
+        conn.close()
+        return JSONResponse(status_code=404, content={'error': 'Usuario no encontrado.'})
+
     data  = await request.json()
+
+    # Si es cambio voluntario por el propio usuario (no admin actuando sobre terceros),
+    # es obligatorio validar la contraseña actual.
+    if es_propio and not es_admin:
+        actual = data.get('actual', '').strip()
+        if not actual:
+            conn.close()
+            return format_error('La contraseña actual es obligatoria.')
+        if not verify_password(actual, target_user['password']):
+            conn.close()
+            return JSONResponse(status_code=403, content={'error': 'Contraseña actual incorrecta.'})
+
     nueva = data.get('nueva_password', '').strip()
     pass_ok, pass_msg = validate_password(nueva)
     if not pass_ok:
+        conn.close()
         return format_error(f'La contraseña es débil: {pass_msg}')
 
-    conn = get_conn()
     conn.execute('UPDATE usuarios SET password=? WHERE id=?', (hash_password(nueva), user_id))
     conn.commit()
     conn.close()
+
+    # Invalidación estricta de todas las sesiones activas del usuario afectado
+    revoke_all_user_sessions(user_id)
+
     ip = request.client.host if request.client else None
-    registrar_auditoria(usuario['id'], 'PASSWORD_CAMBIADA', f'Usuario ID {user_id}', ip)
-    return JSONResponse(content={'status': 'ok', 'mensaje': 'Contraseña actualizada.'})
+    accion = 'PASSWORD_RESET_ADMIN' if es_admin and not es_propio else 'PASSWORD_CAMBIADA'
+    registrar_auditoria(usuario['id'], accion, f'Usuario {target_user["username"]} (ID {user_id})', ip)
+    return JSONResponse(content={'status': 'ok', 'mensaje': 'Contraseña actualizada correctamente.'})

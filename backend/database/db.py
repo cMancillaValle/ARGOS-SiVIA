@@ -46,14 +46,15 @@ CREATE TABLE IF NOT EXISTS usuarios (
     creado_en   TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
--- Sesiones activas (tokens simples + seguimiento de módulo en tiempo real)
+-- Sesiones activas (tokens simples + seguimiento de módulo en tiempo real + soporte 2FA)
 CREATE TABLE IF NOT EXISTS sesiones (
     token             TEXT    PRIMARY KEY,
     usuario_id        INTEGER NOT NULL REFERENCES usuarios(id),
     creado_en         TEXT    NOT NULL DEFAULT (datetime('now')),
     expira_en         TEXT    NOT NULL,
     modulo_actual     TEXT,
-    ultima_actividad  TEXT    DEFAULT (datetime('now'))
+    ultima_actividad  TEXT    DEFAULT (datetime('now')),
+    es_temporal       INTEGER NOT NULL DEFAULT 0
 );
 
 -- Cámaras instaladas en estaciones
@@ -97,6 +98,15 @@ CREATE TABLE IF NOT EXISTS auditoria (
     fecha       TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Escalamiento interno de alertas/eventos
+CREATE TABLE IF NOT EXISTS escalamientos (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    evento_id   INTEGER NOT NULL REFERENCES eventos(id) ON DELETE CASCADE,
+    usuario_id  INTEGER NOT NULL REFERENCES usuarios(id),
+    motivo      TEXT    NOT NULL,
+    creado_en   TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
 -- Configuración global del sistema
 CREATE TABLE IF NOT EXISTS configuracion (
     clave       TEXT PRIMARY KEY,
@@ -124,6 +134,9 @@ def _migrar_sesiones(conn):
             conn.execute('ALTER TABLE sesiones ADD COLUMN ultima_actividad TEXT')
             conn.execute("UPDATE sesiones SET ultima_actividad = creado_en WHERE ultima_actividad IS NULL")
             print('[DB] Migración: columna ultima_actividad agregada a sesiones')
+        if 'es_temporal' not in columnas:
+            conn.execute('ALTER TABLE sesiones ADD COLUMN es_temporal INTEGER NOT NULL DEFAULT 0')
+            print('[DB] Migración: columna es_temporal agregada a sesiones')
     except Exception as e:
         print(f'[DB] Advertencia en migración sesiones: {e}')
 

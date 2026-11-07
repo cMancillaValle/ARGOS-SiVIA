@@ -107,6 +107,13 @@ installer/
 modelos_nuevos/
 # Tests locales (no hacen parte del repositorio académico principal)
 tests/
+!tests/
+tests/*
+!tests/test_transmilenio_catalog_aliases.py
+!tests/test_transmilenio_schematic_map.py
+!tests/test_transmilenio_layout_geometry.py
+!tests/test_transmilenio_tooltip.js
+!tests/test_transmilenio_browser.js
 
 # ── 10. Logs y Archivos de Diagnóstico de Ejecución ─────────────────────────
 logs/
@@ -158,3 +165,8 @@ copias/
 # ── 15. Herramientas y Agentes de Desarrollo ────────────────────────────────
 .agents/
 skills-lock.json
+
+# ── 16. Documentación e informes generados localmente ───────────────────────
+# La documentación técnica versionada dentro de backend/ se conserva.
+/docs/
+/Informe_*.md

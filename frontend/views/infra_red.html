@@ -84,13 +84,18 @@
       if(r.ok) {
         const d = await r.json();
         if(d.red?.disponible) {
-          document.getElementById('red-enviado').textContent = d.red.bytes_enviados_mb;
-          document.getElementById('red-recibido').textContent = d.red.bytes_recibidos_mb;
-          document.getElementById('red-conexiones').textContent = d.red.conexiones_activas ?? '-';
+          const elEnv = document.getElementById('red-enviado');
+          if (elEnv) elEnv.textContent = d.red.bytes_enviados_mb;
+          const elRec = document.getElementById('red-recibido');
+          if (elRec) elRec.textContent = d.red.bytes_recibidos_mb;
+          const elCon = document.getElementById('red-conexiones');
+          if (elCon) elCon.textContent = d.red.conexiones_activas ?? '-';
           const err = (d.red.errores_entrada||0) + (d.red.errores_salida||0);
           const errEl = document.getElementById('red-errores');
-          errEl.textContent = err;
-          errEl.className = `font-rajdhani text-3xl font-bold ${err > 0 ? 'text-rojo' : 'text-verde'}`;
+          if (errEl) {
+            errEl.textContent = err;
+            errEl.className = `font-rajdhani text-3xl font-bold ${err > 0 ? 'text-rojo' : 'text-verde'}`;
+          }
         }
       }
     } catch(e) { console.warn('red metrics:', e.message); }
@@ -107,14 +112,14 @@
 
   function renderCamTable(cams) {
     const tb = document.getElementById('red-cam-tbody');
+    if (!tb) return;
     const estadoNet = {
-      'activa':        { badge: 'bg-verde/10 text-verde border-verde/30', txt: '🟢 En línea', latencia: () => Math.floor(Math.random()*30+5)+'ms' },
-      'offline':       { badge: 'bg-rojo/10 text-rojo border-rojo/30',    txt: '🔴 Sin conexión', latencia: () => 'Timeout' },
-      'mantenimiento': { badge: 'bg-amarillo/10 text-amarillo border-amarillo/30', txt: '🟡 Mantenimiento', latencia: () => '-' },
+      'activa':        { badge: 'bg-verde/10 text-verde border-verde/30', txt: '🟢 Activa' },
+      'offline':       { badge: 'bg-rojo/10 text-rojo border-rojo/30',    txt: '🔴 Offline' },
+      'mantenimiento': { badge: 'bg-amarillo/10 text-amarillo border-amarillo/30', txt: '🟡 Mantenimiento' },
     };
     tb.innerHTML = cams.map(c => {
       const net = estadoNet[c.estado] || estadoNet['offline'];
-      const lat = net.latencia();
       return `
         <tr class="border-b border-panelBorde/30 hover:bg-white/3 transition-colors">
           <td class="px-4 py-3 font-mono text-xs text-azul">${c.codigo}</td>
@@ -122,10 +127,10 @@
           <td class="px-4 py-3">
             <span class="text-[10px] font-bold border px-2 py-0.5 rounded-full ${net.badge}">${net.txt}</span>
           </td>
-          <td class="px-4 py-3 font-mono text-xs hidden md:table-cell ${lat==='Timeout'?'text-rojo':lat==='-'?'text-texto-dim':'text-verde'}">${lat}</td>
+          <td class="px-4 py-3 font-mono text-xs hidden md:table-cell text-texto-dim" id="ping-lat-${c.id}">-</td>
           <td class="px-4 py-3 text-xs text-texto-dim hidden lg:table-cell" id="ping-ts-${c.id}">-</td>
           <td class="px-4 py-3">
-            <button onclick="pingCam(${c.id},'${c.ip||''}')" class="text-xs bg-azul/10 text-azul border border-azul/20 px-2 py-0.5 rounded hover:bg-azul hover:text-white transition-colors">Ping</button>
+            <button id="btn-ping-${c.id}" onclick="pingCam(${c.id},'${c.ip||''}')" class="text-xs bg-azul/10 text-azul border border-azul/20 px-2 py-0.5 rounded hover:bg-azul hover:text-white transition-colors">Ping</button>
           </td>
         </tr>`;
     }).join('') || '<tr><td colspan="6" class="text-center py-6 text-texto-dim text-xs">Sin cámaras registradas</td></tr>';
@@ -140,6 +145,7 @@
       if(c.estado==='activa') estaciones[c.estacion].activas++;
     });
     const cont = document.getElementById('red-bw-list');
+    if (!cont) return;
     const estList = Object.entries(estaciones);
     if(!estList.length){ cont.innerHTML='<div class="text-xs text-texto-dim">Sin datos</div>'; return; }
     const maxBw = Math.max(...estList.map(([,v]) => v.activas)) || 1;
@@ -161,27 +167,82 @@
 
   window.redRefresh = redRefresh;
 
-  window.pingCam = function(id, ip) {
+  let _pingsActivos = {};
+  window.pingCam = async function(id, ip) {
+    if (_pingsActivos[id]) return;
+    _pingsActivos[id] = true;
     const ts = document.getElementById(`ping-ts-${id}`);
-    if(ts) ts.textContent = 'Enviando...';
-    const delay = Math.random()*200+20;
-    setTimeout(() => {
-      if(ts) ts.textContent = new Date().toLocaleTimeString('es-CO') + ' (' + Math.floor(delay)+'ms)';
-    }, 800);
+    const lat = document.getElementById(`ping-lat-${id}`);
+    const btn = document.getElementById(`btn-ping-${id}`);
+
+    if (ts) ts.textContent = 'Diagnosticando...';
+    if (lat) lat.textContent = '...';
+    if (btn) btn.disabled = true;
+
+    try {
+      const r = await fetch(`/api/camaras/${id}/ping`, { headers: { 'X-Token': token() } });
+      const d = await r.json();
+      const nowStr = new Date().toLocaleTimeString('es-CO');
+
+      if (r.ok) {
+        if (d.online) {
+          const latVal = d.latencia_ms !== null ? `${d.latencia_ms}ms` : '0ms';
+          if (lat) {
+            lat.textContent = latVal;
+            lat.className = 'px-4 py-3 font-mono text-xs hidden md:table-cell text-verde';
+          }
+          if (ts) ts.textContent = `${nowStr} (✓)`;
+        } else {
+          if (lat) {
+            lat.textContent = 'Timeout';
+            lat.className = 'px-4 py-3 font-mono text-xs hidden md:table-cell text-rojo';
+          }
+          if (ts) ts.textContent = `${nowStr} (${d.detalle || 'Offline'})`;
+        }
+      } else {
+        if (lat) {
+          lat.textContent = 'Error';
+          lat.className = 'px-4 py-3 font-mono text-xs hidden md:table-cell text-amarillo';
+        }
+        if (ts) ts.textContent = `${nowStr} (Error HTTP ${r.status})`;
+      }
+    } catch (err) {
+      if (lat) {
+        lat.textContent = 'Error';
+        lat.className = 'px-4 py-3 font-mono text-xs hidden md:table-cell text-rojo';
+      }
+      if (ts) ts.textContent = 'Error de conexión';
+    } finally {
+      _pingsActivos[id] = false;
+      if (btn) btn.disabled = false;
+    }
   };
 
-  window.redDiagnosticar = function() {
-    document.querySelectorAll('[id^="ping-ts-"]').forEach(el => el.textContent = 'Testeando...');
-    _cams.forEach(c => {
-      const delay = Math.random()*300+50;
-      setTimeout(() => {
-        const ts = document.getElementById(`ping-ts-${c.id}`);
-        if(ts) ts.textContent = c.estado==='offline' ? 'Timeout ✗' : new Date().toLocaleTimeString('es-CO')+' ('+Math.floor(delay)+'ms)';
-      }, Math.random()*1500+200);
-    });
+  let _diagnosticandoTodo = false;
+  window.redDiagnosticar = async function() {
+    if (_diagnosticandoTodo) return;
+    _diagnosticandoTodo = true;
+    const btnDiag = document.querySelector('button[onclick="redDiagnosticar()"]');
+    if (btnDiag) {
+      btnDiag.disabled = true;
+      btnDiag.textContent = '⏳ Diagnosticando red...';
+    }
+
+    try {
+      for (const c of _cams) {
+        await window.pingCam(c.id, c.ip || '');
+      }
+    } finally {
+      _diagnosticandoTodo = false;
+      if (btnDiag) {
+        btnDiag.disabled = false;
+        btnDiag.textContent = '⚡ Ejecutar Diagnóstico';
+      }
+    }
   };
 
   redRefresh();
-  setInterval(redRefresh, 30000);
+  const _redInterval = setInterval(redRefresh, 30000);
+  document.addEventListener('argos:navaway', () => clearInterval(_redInterval), { once: true });
 })();
 </script>

@@ -31,6 +31,7 @@ DATA_FILE = os.path.normpath(
 def _get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    conn.execute('PRAGMA foreign_keys = ON')
     return conn
 
 
@@ -63,7 +64,7 @@ def listar_estaciones(
     hoy_str = date.today().strftime('%Y-%m-%d')
 
     cursor.execute("""
-        SELECT 
+        SELECT
             COALESCE(codigo_estacion, '') as cod_est,
             LOWER(estacion) as nombre_norm,
             COUNT(*) as total_camaras,
@@ -89,7 +90,7 @@ def listar_estaciones(
         cam_por_nombre[r['nombre_norm']] = info
 
     cursor.execute("""
-        SELECT 
+        SELECT
             COALESCE(c.codigo_estacion, '') as cod_est,
             LOWER(c.estacion) as nombre_norm,
             COUNT(e.id) as total_evasiones_hoy,
@@ -192,8 +193,8 @@ def detalle_estacion(id_o_codigo: str, usuario: dict = Depends(get_current_user)
     camaras = [dict(r) for r in cursor.fetchall()]
 
     cursor.execute("""
-        SELECT 
-            e.id, e.camara_id, e.tipo, e.confianza, e.estado, e.observaciones, 
+        SELECT
+            e.id, e.camara_id, e.tipo, e.confianza, e.estado, e.observaciones,
             e.detectado_en, c.codigo as camara_codigo, c.ubicacion as camara_ubicacion,
             u.nombre as operador_nombre
         FROM eventos e
@@ -207,7 +208,7 @@ def detalle_estacion(id_o_codigo: str, usuario: dict = Depends(get_current_user)
 
     hoy_str = date.today().strftime('%Y-%m-%d')
     cursor.execute("""
-        SELECT 
+        SELECT
             COUNT(e.id) as total_historico,
             SUM(CASE WHEN DATE(e.detectado_en) = ? THEN 1 ELSE 0 END) as hoy_total,
             SUM(CASE WHEN DATE(e.detectado_en) = ? AND e.estado = 'confirmado' THEN 1 ELSE 0 END) as hoy_confirmadas,
@@ -251,7 +252,7 @@ def resumen_global(usuario: dict = Depends(get_current_user)):
     hoy_str = date.today().strftime('%Y-%m-%d')
 
     cursor.execute("""
-        SELECT 
+        SELECT
             COUNT(*) as total,
             SUM(CASE WHEN estado = 'activa' THEN 1 ELSE 0 END) as activas,
             SUM(CASE WHEN estado = 'offline' THEN 1 ELSE 0 END) as offline,
@@ -261,7 +262,7 @@ def resumen_global(usuario: dict = Depends(get_current_user)):
     cam_stats = cursor.fetchone()
 
     cursor.execute("""
-        SELECT 
+        SELECT
             COUNT(*) as total_hoy,
             SUM(CASE WHEN estado = 'confirmado' THEN 1 ELSE 0 END) as confirmados,
             SUM(CASE WHEN estado = 'pendiente' THEN 1 ELSE 0 END) as pendientes
@@ -271,7 +272,7 @@ def resumen_global(usuario: dict = Depends(get_current_user)):
     ev_stats = cursor.fetchone()
 
     cursor.execute("""
-        SELECT 
+        SELECT
             COALESCE(c.codigo_estacion, '') as cod_est,
             c.estacion as nombre,
             COUNT(e.id) as cantidad

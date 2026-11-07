@@ -156,6 +156,8 @@
   let paginaActual = 1;
   const limite = 15;
   let eventoSeleccionado = null;
+  let modalEvidenceUrl = null;
+  const thumbnailEvidenceUrls = new Set();
 
   const TOKEN = () =>
     sessionStorage.getItem('argos_token') ||
@@ -203,6 +205,49 @@
     return res.json();
   }
 
+  function evidencePath(path) {
+    return String(path || '')
+      .replaceAll('\\', '/')
+      .replace(/^evidence\//, '')
+      .split('/')
+      .filter(Boolean)
+      .map(encodeURIComponent)
+      .join('/');
+  }
+
+  async function fetchEvidenceObjectUrl(path) {
+    const res = await fetch(`/api/camaras/evidencia/${evidencePath(path)}`, {
+      headers: { 'X-Token': TOKEN() },
+      cache: 'no-store',
+      referrerPolicy: 'no-referrer'
+    });
+    if (!res.ok) throw new Error(`Evidencia no disponible (HTTP ${res.status})`);
+    return URL.createObjectURL(await res.blob());
+  }
+
+  function releaseThumbnailUrls() {
+    thumbnailEvidenceUrls.forEach(url => URL.revokeObjectURL(url));
+    thumbnailEvidenceUrls.clear();
+  }
+
+  function releaseModalUrl() {
+    if (modalEvidenceUrl) URL.revokeObjectURL(modalEvidenceUrl);
+    modalEvidenceUrl = null;
+  }
+
+  async function hydrateEvidenceThumbnails() {
+    const images = [...$tablaBody.querySelectorAll('img[data-evidence]')];
+    await Promise.allSettled(images.map(async img => {
+      const url = await fetchEvidenceObjectUrl(decodeURIComponent(img.dataset.evidence));
+      if (!img.isConnected) {
+        URL.revokeObjectURL(url);
+        return;
+      }
+      thumbnailEvidenceUrls.add(url);
+      img.src = url;
+    }));
+  }
+
   function formatTipo(tipo) {
     const t = (tipo || '').toLowerCase();
     if (t === 'evasion') return '<span class="text-rojo font-bold uppercase tracking-wider text-[10px]">🚨 Evasión</span>';
@@ -243,6 +288,7 @@
   }
 
   function renderTabla(eventos, total) {
+    releaseThumbnailUrls();
     if (!eventos.length) {
       $tablaBody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-xs font-mono text-texto-dim opacity-70">No se encontraron eventos con los filtros seleccionados.</td></tr>`;
       $infoPaginacion.textContent = 'Mostrando 0 de 0 eventos';
@@ -259,7 +305,7 @@
       const prec = typeof ev.confianza === 'number' ? (ev.confianza > 1 ? ev.confianza : ev.confianza * 100).toFixed(1) + '%' : '—';
       const evImg = ev.evidencia
         ? `<div class="relative group/thumb cursor-pointer inline-block" data-action="ver" data-id="${ev.id}">
-             <img src="/api/camaras/evidencia/${ev.evidencia}" class="w-14 h-10 object-cover rounded border border-white/10 group-hover/thumb:border-rojo transition-all" alt="Captura">
+             <img data-evidence="${encodeURIComponent(ev.evidencia)}" class="w-14 h-10 object-cover rounded border border-white/10 group-hover/thumb:border-rojo transition-all" alt="Captura">
              <span class="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center text-[10px] text-white rounded transition-opacity">🔍</span>
            </div>`
         : `<span class="text-[10px] font-mono text-texto-dim/50 italic">Sin captura</span>`;
@@ -286,6 +332,7 @@
     });
 
     $tablaBody.innerHTML = html;
+    hydrateEvidenceThumbnails();
 
     // Listeners para botones de revisar / miniaturas
     $tablaBody.querySelectorAll('[data-action="ver"]').forEach(el => {
@@ -335,7 +382,7 @@
     });
   }
 
-  function abrirModalEvidencia(ev) {
+  async function abrirModalEvidencia(ev) {
     eventoSeleccionado = ev;
     $modalEvTitulo.textContent = `Detalle de Evento #EVT-${String(ev.id).padStart(3, '0')}`;
     $modalEvCamara.textContent = `${ev.estacion || 'Estación'} (${ev.camara_codigo || 'CAM-?'})`;
@@ -347,15 +394,27 @@
     $modalEvObs.value = ev.observaciones || '';
 
     if (ev.evidencia) {
-      const src = `/api/camaras/evidencia/${ev.evidencia}`;
-      $modalEvImg.src = src;
-      $modalEvImg.classList.remove('hidden');
-      $modalEvPlh.classList.add('hidden');
-      $modalEvLink.href = src;
-      $modalEvLink.classList.remove('hidden');
+      releaseModalUrl();
+      $modalEvImg.classList.add('hidden');
+      $modalEvPlh.textContent = 'Cargando evidencia...';
+      $modalEvPlh.classList.remove('hidden');
+      $modalEvLink.classList.add('hidden');
+      try {
+        modalEvidenceUrl = await fetchEvidenceObjectUrl(ev.evidencia);
+        if (eventoSeleccionado !== ev) return;
+        $modalEvImg.src = modalEvidenceUrl;
+        $modalEvImg.classList.remove('hidden');
+        $modalEvPlh.classList.add('hidden');
+        $modalEvLink.href = modalEvidenceUrl;
+        $modalEvLink.classList.remove('hidden');
+      } catch (error) {
+        $modalEvPlh.textContent = error.message;
+      }
     } else {
+      releaseModalUrl();
       $modalEvImg.src = '';
       $modalEvImg.classList.add('hidden');
+      $modalEvPlh.textContent = '📷 Sin imagen de evidencia disponible';
       $modalEvPlh.classList.remove('hidden');
       $modalEvLink.classList.add('hidden');
     }
@@ -368,6 +427,8 @@
     $modalEv.classList.add('hidden');
     $modalEv.classList.remove('flex');
     eventoSeleccionado = null;
+    $modalEvImg.src = '';
+    releaseModalUrl();
   }
 
   async function actualizarEstado(nuevoEstado) {
@@ -400,6 +461,11 @@
     window._busqTimeout = setTimeout(() => cargarEventos(1), 400);
   });
   $btnRecargar.addEventListener('click', () => cargarEventos(paginaActual));
+
+  document.addEventListener('argos:navaway', () => {
+    releaseThumbnailUrls();
+    releaseModalUrl();
+  }, { once: true });
 
   // Carga inicial (revisar si venimos navegando desde Mapa TransMilenio)
   const filtroEstacionPrev = sessionStorage.getItem('argos_filtro_estacion_ev');

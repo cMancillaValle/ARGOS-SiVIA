@@ -16,8 +16,9 @@ from fastapi.responses import JSONResponse
 from typing import Optional
 
 from services.auth_service import (
-    hash_password, verify_password, create_session, validate_token,
-    revoke_token, registrar_auditoria, get_current_user,
+    hash_password, verify_password, create_session, create_temp_2fa_session,
+    validate_token, validate_temp_2fa_token,
+    revoke_token, revoke_all_user_sessions, registrar_auditoria, get_current_user,
 )
 from utils.limiter import limiter
 from utils.validators import validate_email, validate_password, validate_avatar, format_error
@@ -33,37 +34,42 @@ DB_PATH = os.path.normpath(os.path.join(
 def get_conn():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    conn.execute('PRAGMA foreign_keys = ON')
     return conn
 
 
 # ── POST /api/auth/registro ───────────────────────────────
 @router.post("/registro")
 @limiter.limit("5/minute")
-def registro(request: Request):
+async def registro(request: Request):
     """
     Registro público - el usuario nace con activo=0 (pendiente de aprobación admin).
-    Body JSON: { nombre, username, password, rol, avatar_url (opcional) }
+    Body JSON: { nombre, username, password, rol, email (opcional), avatar_url (opcional) }
     """
-    import json
     try:
-        data = request._json if hasattr(request, '_json') else {}
+        data = await request.json()
+        if not isinstance(data, dict):
+            return format_error('El cuerpo de la solicitud debe ser un objeto JSON.')
     except Exception:
-        data = {}
+        return format_error('JSON malformado o inválido.')
 
-    nombre   = data.get('nombre', '').strip()
-    username = data.get('username', '').strip()
-    password = data.get('password', '').strip()
-    rol      = data.get('rol', '').strip()
-    email    = data.get('email', '').strip() or f"{username}@argos.local"
-    avatar   = data.get('avatar_url', '')
+    nombre   = str(data.get('nombre', '') or '').strip()
+    username = str(data.get('username', '') or '').strip()
+    password = str(data.get('password', '') or '').strip()
+    rol      = str(data.get('rol', '') or '').strip()
+    raw_email = str(data.get('email', '') or '').strip()
+    email    = raw_email or f"{username}@argos.local"
+    avatar   = str(data.get('avatar_url', '') or '')
 
-    ROLES_VALIDOS = ('supervisor', 'operador', 'analista', 'tecnico')
+    ROLES_VALIDOS = ('supervisor', 'operador', 'analista')
 
     if not all([nombre, username, password, rol]):
         return format_error('Faltan campos obligatorios (nombre, username, password, rol).')
+    if rol in ('admin', 'tecnico'):
+        return format_error('Rol no permitido para registro público.')
     if rol not in ROLES_VALIDOS:
         return format_error(f'Rol inválido. Opciones: {", ".join(ROLES_VALIDOS)}')
-    if email and not validate_email(email):
+    if raw_email and not validate_email(raw_email):
         return format_error('El formato de correo electrónico es inválido')
 
     pass_ok, pass_msg = validate_password(password)
@@ -74,12 +80,20 @@ def registro(request: Request):
 
     conn = get_conn()
     try:
-        existe = conn.execute('SELECT id FROM usuarios WHERE username = ?', (username,)).fetchone()
-        if existe:
+        existe_user = conn.execute('SELECT id FROM usuarios WHERE username = ?', (username,)).fetchone()
+        if existe_user:
             return JSONResponse(
                 status_code=409,
                 content={'error': f'El nombre de usuario "{username}" ya está en uso.'}
             )
+
+        existe_email = conn.execute('SELECT id FROM usuarios WHERE email = ?', (email,)).fetchone()
+        if existe_email:
+            return JSONResponse(
+                status_code=409,
+                content={'error': f'El correo electrónico "{email}" ya está registrado.'}
+            )
+
         conn.execute(
             '''INSERT INTO usuarios (username, password, nombre, email, rol, activo, avatar_url)
                VALUES (?, ?, ?, ?, ?, 0, ?)''',
@@ -141,7 +155,7 @@ async def login(request: Request):
         fa2 = 0
 
     if fa2:
-        temp_token = create_session(user['id'])
+        temp_token = create_temp_2fa_session(user['id'], minutos=5)
         return JSONResponse(content={
             'status': '2fa_requerido',
             '2fa_requerido': True,
@@ -179,7 +193,7 @@ async def login_2fa(request: Request):
     if not token_temp or not codigo:
         return JSONResponse(status_code=400, content={'error': 'token_temp y codigo son obligatorios.'})
 
-    usuario = validate_token(token_temp)
+    usuario = validate_temp_2fa_token(token_temp)
     if not usuario:
         return JSONResponse(status_code=401, content={'error': 'Token temporal inválido o expirado.'})
 
@@ -251,6 +265,26 @@ async def logout(
     if x_token:
         revoke_token(x_token)
     return JSONResponse(content={'status': 'ok', 'mensaje': 'Sesión cerrada correctamente.'})
+
+
+# ── POST /api/auth/logout-all (F11) ────────────────────────────────────────────────
+@router.post("/logout-all")
+async def logout_all(
+    request: Request,
+    usuario: dict = Depends(get_current_user),
+):
+    """
+    Cierra y revoca todas las sesiones activas del usuario autenticado,
+    incluyendo la sesión actual y sus tickets efímeros de streaming.
+    """
+    user_id = usuario['id']
+    ip = request.client.host if request.client else None
+    registrar_auditoria(user_id, 'LOGOUT_ALL', 'Cierre global de todas las sesiones activas', ip)
+    revoke_all_user_sessions(user_id)
+    return JSONResponse(content={
+        'status': 'ok',
+        'mensaje': 'Todas las sesiones activas han sido revocadas exitosamente.'
+    })
 
 
 # ── GET /api/auth/me ──────────────────────────────────

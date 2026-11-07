@@ -20,6 +20,7 @@ import sys
 import logging
 from contextlib import asynccontextmanager
 from typing import Optional
+from urllib.parse import urlparse
 
 # Asegurar que 'backend' esté en sys.path
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -55,6 +56,10 @@ def _load_env():
 
 _load_env()
 
+
+import pathlib
+import mimetypes
+from services.auth_service import validate_token, tiene_permiso
 from fastapi import FastAPI, Request, HTTPException, status
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -103,11 +108,36 @@ logging.basicConfig(
 logger = logging.getLogger("argos.backend")
 
 
+def _cors_origins() -> list[str]:
+    """Orígenes adicionales explícitos; el frontend integrado funciona por mismo origen."""
+    configured = os.environ.get('ARGOS_CORS_ORIGINS', '')
+    origins = []
+    for raw in configured.split(','):
+        origin = raw.strip().rstrip('/')
+        if not origin:
+            continue
+        parsed = urlparse(origin)
+        if parsed.scheme not in ('http', 'https') or not parsed.netloc or parsed.path not in ('', '/'):
+            logger.warning('Origen CORS ignorado por formato inválido: %s', origin)
+            continue
+        if '*' in origin:
+            logger.warning('Origen CORS ignorado porque contiene comodín: %s', origin)
+            continue
+        if origin not in origins:
+            origins.append(origin)
+    return origins
+
+
 # ── Lifespan de FastAPI ──────────────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Inicialización en arranque
     logger.info("Iniciando ARGOS-SiViA Backend (FastAPI)...")
+    if os.environ.get('ARGOS_DEV_MODE', '').strip().lower() in ('1', 'true', 'yes'):
+        logger.warning(
+            'ARGOS_DEV_MODE está activo: los códigos de verificación se incluyen en respuestas de pruebas. '
+            'No use este modo en despliegues públicos.'
+        )
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     init_db(DB_PATH)
     seed_db(DB_PATH)
@@ -139,8 +169,8 @@ app.state.limiter = limiter
 # ── CORS Middleware ──────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=_cors_origins(),
+    allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "X-Token"],
 )
@@ -229,28 +259,70 @@ def health():
 # ── Evidencias con Protección contra Path Traversal ──────────────────────────
 @app.get("/api/camaras/evidencia/{filepath:path}")
 @app.get("/api/evidencia/{filepath:path}")
-def get_evidencia(filepath: str):
+def get_evidencia(filepath: str, request: Request):
     """
-    Sirve las imágenes guardadas por capture_manager.
-    Protegido estrictamente contra ataques de path traversal.
+    Sirve las imágenes de evidencia guardadas por capture_manager.
+    Protecciones:
+    1. Autenticación y RBAC (permiso eventos:ver o camaras:ver) mediante cabecera X-Token.
+    2. Prevención rigurosa de Path Traversal mediante resolución canónica y comprobación is_relative_to().
+    3. Bloqueo de rutas absolutas, enlaces simbólicos fuera del directorio y extensiones no permitidas.
+    4. Tipado MIME estricto sin filtrado de rutas internas.
     """
-    if filepath.startswith('evidence/') or filepath.startswith('evidence\\'):
-        full_path = os.path.join(BASE_DIR, filepath)
-    else:
-        full_path = os.path.join(EVIDENCE_DIR, filepath)
+    token = request.headers.get("X-Token")
+    if not token:
+        raise HTTPException(status_code=401, detail="Autenticación requerida para acceder a evidencias.")
 
-    full_path = os.path.normpath(full_path)
+    user = validate_token(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Token inválido o expirado.")
 
-    # Protección contra path traversal: debe residir estrictamente en EVIDENCE_DIR o BASE_DIR/evidence
-    real_evidence_dir = os.path.abspath(EVIDENCE_DIR)
-    resolved_path = os.path.abspath(full_path)
-    if not resolved_path.startswith(real_evidence_dir):
-        raise HTTPException(status_code=403, detail="Acceso denegado a ruta externa.")
+    if not (tiene_permiso(user, "eventos:ver") or tiene_permiso(user, "camaras:ver")):
+        raise HTTPException(
+            status_code=403,
+            detail={"error": "Acceso denegado.", "permiso_requerido": "eventos:ver"}
+        )
 
-    if not os.path.isfile(resolved_path):
+    # Sanitización y resolución segura de rutas
+    clean_fp = filepath.replace('\\', '/').strip('/')
+    if clean_fp.startswith('evidence/'):
+        clean_fp = clean_fp[len('evidence/'):]
+
+    base_evidence_path = pathlib.Path(EVIDENCE_DIR).resolve()
+    target_candidate = (base_evidence_path / clean_fp).resolve()
+
+    # Comprobación de que la ruta resuelta reside estrictamente dentro de EVIDENCE_DIR
+    try:
+        is_inside = target_candidate.is_relative_to(base_evidence_path)
+    except AttributeError:
+        try:
+            target_candidate.relative_to(base_evidence_path)
+            is_inside = True
+        except ValueError:
+            is_inside = False
+
+    if not is_inside or target_candidate == base_evidence_path:
+        raise HTTPException(status_code=403, detail="Acceso denegado: ruta no autorizada.")
+
+    # Restricción de extensiones permitidas
+    if target_candidate.suffix.lower() not in {'.jpg', '.jpeg', '.png', '.webp'}:
+        raise HTTPException(status_code=403, detail="Tipo de archivo no permitido.")
+
+    if not target_candidate.is_file():
         raise HTTPException(status_code=404, detail="Archivo de evidencia no encontrado.")
 
-    return FileResponse(resolved_path)
+    mime_type, _ = mimetypes.guess_type(str(target_candidate))
+    if not mime_type:
+        mime_type = "image/jpeg"
+
+    return FileResponse(
+        str(target_candidate),
+        media_type=mime_type,
+        headers={
+            "Cache-Control": "no-store, private",
+            "Pragma": "no-cache",
+            "Referrer-Policy": "no-referrer",
+        }
+    )
 
 
 # ── Páginas del Frontend ─────────────────────────────────────────────────────

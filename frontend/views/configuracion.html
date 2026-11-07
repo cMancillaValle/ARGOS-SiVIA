@@ -12,7 +12,7 @@
       <h1 class="font-rajdhani text-2xl font-bold" style="color:var(--texto)">Configuración del Sistema</h1>
       <div class="text-xs mt-1" style="color:var(--dim)">Parámetros globales de operación · Solo Admin y Técnico</div>
     </div>
-    <button onclick="guardarConfigSistema()" class="btn btn-primary">
+    <button id="cfg-save" onclick="guardarConfigSistema()" class="btn btn-primary">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
         <path stroke-linecap="round" d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4Z"/><path d="M17 3v4H7V3M12 12v6m-3-3h6"/>
       </svg>
@@ -26,6 +26,7 @@
     <!-- ── Sistema General ── -->
     <div class="rounded-xl border p-5" style="background-color:var(--bg2);border-color:var(--borde2)">
       <div class="font-mono uppercase tracking-widest mb-4" style="font-size:9px;color:var(--rojo)">Sistema General</div>
+      <div class="text-xs mb-4" style="color:var(--amarillo)">Estos valores se conservan, pero no modifican aún el comportamiento operativo.</div>
       <div class="flex flex-col gap-4">
         <div>
           <label class="argos-label">Zona Horaria</label>
@@ -65,7 +66,7 @@
         <div>
           <label class="argos-label">Retención de Eventos (días)</label>
           <input id="cfg-ret-eventos" type="number" value="90" min="1" max="365" class="argos-input">
-          <div class="text-xs mt-1" style="color:var(--dim)">Eventos más antiguos se eliminan automáticamente.</div>
+          <div class="text-xs mt-1" style="color:var(--amarillo)">Configuración no operativa actualmente; no ejecuta eliminaciones.</div>
         </div>
         <div>
           <label class="argos-label">Retención de Logs de Auditoría (días)</label>
@@ -78,7 +79,7 @@
         <label class="flex justify-between items-center">
           <div>
             <div class="text-sm font-medium" style="color:var(--texto)">Limpieza Automática</div>
-            <div class="text-xs" style="color:var(--dim)">Ejecutar a las 03:00 AM</div>
+            <div class="text-xs" style="color:var(--amarillo)">Configuración no operativa actualmente.</div>
           </div>
           <label class="toggle"><input type="checkbox" id="cfg-autoclean" checked><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
         </label>
@@ -156,20 +157,22 @@
         <div>
           <label class="argos-label">Tiempo de Sesión (minutos)</label>
           <input id="cfg-session-ttl" type="number" value="480" min="30" max="1440" class="argos-input">
-          <div class="text-xs mt-1" style="color:var(--dim)">Expiración del token JWT. Recomendado: 480 min (8h).</div>
+          <div class="text-xs mt-1" style="color:var(--dim)">Expiración de nuevos tokens de sesión opacos. Recomendado: 480 min (8h).</div>
         </div>
         <div>
           <label class="argos-label">Intentos de login fallidos antes de bloqueo</label>
           <input id="cfg-max-fail" type="number" value="5" min="3" max="20" class="argos-input">
+          <div class="text-xs mt-1" style="color:var(--amarillo)">Configuración no operativa actualmente.</div>
         </div>
         <div>
           <label class="argos-label">Duración de bloqueo (minutos)</label>
           <input id="cfg-lockout-min" type="number" value="15" min="1" max="60" class="argos-input">
+          <div class="text-xs mt-1" style="color:var(--amarillo)">Configuración no operativa actualmente.</div>
         </div>
         <label class="flex justify-between items-center">
           <div>
             <div class="text-sm font-medium" style="color:var(--texto)">2FA Obligatorio para Admin</div>
-            <div class="text-xs" style="color:var(--dim)">Forzar TOTP al rol admin</div>
+            <div class="text-xs" style="color:var(--amarillo)">Configuración no operativa actualmente.</div>
           </div>
           <label class="toggle"><input type="checkbox" id="cfg-2fa-force" checked><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
         </label>
@@ -183,7 +186,7 @@
         <label class="flex justify-between items-center">
           <div>
             <div class="text-sm font-medium" style="color:var(--texto)">Modo Mantenimiento</div>
-            <div class="text-xs" style="color:var(--dim)">Bloquea acceso de usuarios regulares</div>
+            <div class="text-xs" style="color:var(--amarillo)">Configuración no operativa actualmente.</div>
           </div>
           <label class="toggle"><input type="checkbox" id="cfg-maintenance"><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
         </label>
@@ -202,6 +205,49 @@
 <script>
 (function() {
   const token = () => sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token');
+  const saveButton = document.getElementById('cfg-save');
+  let configLoaded = false;
+  const unsupportedIds = [
+    'cfg-timezone', 'cfg-modo', 'cfg-nombre', 'cfg-debug',
+    'cfg-ret-eventos', 'cfg-ret-audit', 'cfg-ret-snap', 'cfg-autoclean',
+    'cfg-max-fail', 'cfg-lockout-min', 'cfg-2fa-force', 'cfg-log-ip', 'cfg-maintenance'
+  ];
+
+  function boolValue(value) {
+    return value === true || String(value).toLowerCase() === 'true' || String(value) === '1';
+  }
+
+  function setValue(id, value, isBoolean = false) {
+    const el = document.getElementById(id);
+    if (!el || value === undefined || value === null) return;
+    if (isBoolean) el.checked = boolValue(value);
+    else el.value = String(value);
+  }
+
+  function setBusy(busy, label) {
+    const root = saveButton?.closest('.fade-in');
+    root?.querySelectorAll('input, select, button').forEach(el => {
+      el.disabled = busy || unsupportedIds.includes(el.id);
+    });
+    if (!saveButton) return;
+    saveButton.disabled = busy || !configLoaded;
+    saveButton.classList.toggle('opacity-60', busy);
+    if (label) saveButton.lastChild.textContent = label;
+  }
+
+  async function readJson(response) {
+    return response.json().catch(() => ({}));
+  }
+
+  function errorMessage(status, data, fallback) {
+    const defined = data?.error || data?.detail;
+    if (typeof defined === 'string') return defined;
+    if (status === 401) return 'La sesión expiró. Inicia sesión nuevamente.';
+    if (status === 403) return 'No tienes permiso para modificar esta configuración.';
+    if (status === 422) return 'Uno o más valores no tienen el formato esperado.';
+    if (status >= 500) return 'El servidor no pudo procesar la configuración.';
+    return fallback;
+  }
 
   function showMsg(elId, txt, color = 'verde') {
     const el = document.getElementById(elId);
@@ -222,6 +268,10 @@
 
   // Guardar configuración
   window.guardarConfigSistema = async function() {
+    if (!configLoaded) {
+      showToast('No se puede guardar hasta cargar la configuración del servidor.', 'rojo');
+      return;
+    }
     const cfg = {
       timezone:    document.getElementById('cfg-timezone')?.value,
       modo:        document.getElementById('cfg-modo')?.value,
@@ -235,19 +285,63 @@
       lockout_min: document.getElementById('cfg-lockout-min')?.value,
       fa2_force:   document.getElementById('cfg-2fa-force')?.checked,
       log_ip:      document.getElementById('cfg-log-ip')?.checked,
+      maintenance: document.getElementById('cfg-maintenance')?.checked,
+      nombre_sistema: document.getElementById('cfg-nombre')?.value,
     };
+    setBusy(true, ' Guardando...');
     try {
       const r = await fetch('/api/sistema/config', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'X-Token': token() },
         body: JSON.stringify(cfg),
       });
-      if (r.ok) showToast('✓ Configuración guardada', 'verde');
-      else showToast('Error al guardar configuración', 'rojo');
-    } catch {
-      showToast('✓ Configuración guardada localmente', 'verde');
+      const data = await readJson(r);
+      if (!r.ok) {
+        showToast(errorMessage(r.status, data, 'No se pudo guardar la configuración.'), 'rojo');
+        return;
+      }
+      showToast('✓ Configuración confirmada por el servidor', 'verde');
+    } catch (error) {
+      showToast('Sin conexión con el servidor. No se guardaron cambios.', 'rojo');
+    } finally {
+      setBusy(false, ' Guardar Cambios');
     }
   };
+
+  async function cargarConfigSistema() {
+    setBusy(true, ' Cargando...');
+    try {
+      const r = await fetch('/api/sistema/config', { headers: { 'X-Token': token() } });
+      const data = await readJson(r);
+      if (!r.ok) {
+        showToast(errorMessage(r.status, data, 'No se pudo cargar la configuración.'), 'rojo');
+        return;
+      }
+      setValue('cfg-timezone', data.timezone);
+      setValue('cfg-modo', data.modo);
+      setValue('cfg-nombre', data.nombre_sistema);
+      setValue('cfg-debug', data.debug, true);
+      setValue('cfg-ret-eventos', data.ret_eventos);
+      setValue('cfg-ret-audit', data.ret_audit);
+      setValue('cfg-ret-snap', data.ret_snap);
+      setValue('cfg-autoclean', data.autoclean, true);
+      setValue('cfg-session-ttl', data.session_ttl);
+      setValue('cfg-max-fail', data.max_fail);
+      setValue('cfg-lockout-min', data.lockout_min);
+      setValue('cfg-2fa-force', data.fa2_force, true);
+      setValue('cfg-log-ip', data.log_ip, true);
+      setValue('cfg-maintenance', data.maintenance, true);
+      configLoaded = true;
+    } catch (error) {
+      showToast('Sin conexión con el servidor. Se muestran valores predeterminados.', 'rojo');
+    } finally {
+      unsupportedIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = true;
+      });
+      setBusy(!configLoaded, configLoaded ? ' Guardar Cambios' : ' No disponible');
+    }
+  }
 
   // Test SMTP
   window.testSmtp = async function() {
@@ -275,5 +369,7 @@
     showMsg('tm-test-msg', '⏳ Iniciando sincronización...', 'dim');
     setTimeout(() => showMsg('tm-test-msg', '⚠️ Configure el Endpoint API TM antes de sincronizar', 'amarillo'), 1200);
   };
+
+  cargarConfigSistema();
 })();
 </script>

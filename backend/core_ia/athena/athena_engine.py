@@ -453,6 +453,7 @@ class AthenaThread(threading.Thread):
                 return
 
             conn = sqlite3.connect(db_path, timeout=5)
+            conn.execute('PRAGMA foreign_keys = ON')
             tipo_raw = str(ev.get("tipo", "evasion")).lower()
 
             if "evasion" in tipo_raw:
@@ -1048,10 +1049,20 @@ class AthenaManager:
                     safe=""
                 )
 
+                # R03: Generar ticket efímero de streaming para el pipeline local de Athena
+                try:
+                    from services.auth_service import issue_stream_ticket
+                    internal_ticket = issue_stream_ticket(user_id=1, cam_id=cam_id, ttl_seconds=86400)
+                    ticket_param = f"&stream_ticket={internal_ticket}"
+                except Exception as e:
+                    logger.warning(f"[AthenaEngine] No se pudo generar ticket de streaming para webcam: {e}")
+                    ticket_param = ""
+
                 engine_source = (
                     "http://127.0.0.1:5000"
                     "/api/camaras/client/mjpeg"
                     f"?client_id={safe_client_id}"
+                    f"{ticket_param}"
                 )
 
             else:

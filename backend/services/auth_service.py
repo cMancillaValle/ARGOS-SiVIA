@@ -34,6 +34,7 @@ DB_PATH = os.path.normpath(os.path.join(
 def get_conn():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    conn.execute('PRAGMA foreign_keys = ON')
     return conn
 
 
@@ -55,12 +56,46 @@ def generate_token() -> str:
 
 # ── Sesiones ──────────────────────────────────────────────────
 
+def _get_session_ttl_minutes(conn=None) -> int:
+    """Lee el TTL para sesiones nuevas; tolera instalaciones sin tabla de configuración."""
+    owns_connection = conn is None
+    db = conn or get_conn()
+    try:
+        row = db.execute(
+            "SELECT valor FROM configuracion WHERE clave = 'session_ttl' LIMIT 1"
+        ).fetchone()
+        value = int(row['valor']) if row else 480
+        return value if 30 <= value <= 1440 else 480
+    except (sqlite3.Error, TypeError, ValueError, KeyError, IndexError):
+        return 480
+    finally:
+        if owns_connection:
+            db.close()
+
 def create_session(usuario_id: int) -> str:
     token  = generate_token()
-    expira = (datetime.now() + timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S')
+    conn   = get_conn()
+    ttl_minutes = _get_session_ttl_minutes(conn)
+    expira = (datetime.now() + timedelta(minutes=ttl_minutes)).strftime('%Y-%m-%d %H:%M:%S')
+    conn.execute(
+        'INSERT INTO sesiones (token, usuario_id, expira_en, es_temporal) VALUES (?,?,?,0)',
+        (token, usuario_id, expira)
+    )
+    conn.commit()
+    conn.close()
+    return token
+
+
+def create_temp_2fa_session(usuario_id: int, minutos: int = 5) -> str:
+    """
+    Crea un token temporal exclusivo para el paso de verificación 2FA.
+    Expira en 5 minutos y no autoriza endpoints normales.
+    """
+    token  = generate_token()
+    expira = (datetime.now() + timedelta(minutes=minutos)).strftime('%Y-%m-%d %H:%M:%S')
     conn   = get_conn()
     conn.execute(
-        'INSERT INTO sesiones (token, usuario_id, expira_en) VALUES (?,?,?)',
+        'INSERT INTO sesiones (token, usuario_id, expira_en, es_temporal) VALUES (?,?,?,1)',
         (token, usuario_id, expira)
     )
     conn.commit()
@@ -69,6 +104,10 @@ def create_session(usuario_id: int) -> str:
 
 
 def validate_token(token: str):
+    """
+    Valida tokens de sesión normal. Rechaza tokens inexistentes, expirados,
+    de usuarios inactivos o tokens temporales pendientes de 2FA.
+    """
     if not token:
         return None
     conn  = get_conn()
@@ -77,7 +116,29 @@ def validate_token(token: str):
         '''SELECT u.id, u.username, u.nombre, u.email, u.rol, u.activo
            FROM sesiones s
            JOIN usuarios u ON u.id = s.usuario_id
-           WHERE s.token = ? AND s.expira_en > ? AND u.activo = 1''',
+           WHERE s.token = ? AND s.expira_en > ? AND u.activo = 1
+             AND (s.es_temporal = 0 OR s.es_temporal IS NULL)''',
+        (token, ahora)
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def validate_temp_2fa_token(token: str):
+    """
+    Valida exclusivamente tokens temporales para el endpoint /api/auth/login-2fa.
+    Rechaza tokens normales, expirados o de usuarios inactivos.
+    """
+    if not token:
+        return None
+    conn  = get_conn()
+    ahora = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    row   = conn.execute(
+        '''SELECT u.id, u.username, u.nombre, u.email, u.rol, u.activo
+           FROM sesiones s
+           JOIN usuarios u ON u.id = s.usuario_id
+           WHERE s.token = ? AND s.expira_en > ? AND u.activo = 1
+             AND s.es_temporal = 1''',
         (token, ahora)
     ).fetchone()
     conn.close()
@@ -89,6 +150,21 @@ def revoke_token(token: str):
     conn.execute('DELETE FROM sesiones WHERE token = ?', (token,))
     conn.commit()
     conn.close()
+
+
+def revoke_all_user_sessions(usuario_id: int):
+    """
+    Invalida y elimina todas las sesiones (ordinarias y temporales)
+    de un usuario especifico, y revoca sus tickets efimeros de streaming.
+    """
+    conn = get_conn()
+    conn.execute('DELETE FROM sesiones WHERE usuario_id = ?', (usuario_id,))
+    conn.commit()
+    conn.close()
+    try:
+        revoke_stream_tickets_for_user(usuario_id)
+    except Exception:
+        pass
 
 
 # ── Auditoría (sin depender de request Flask) ─────────────────
@@ -139,12 +215,14 @@ def listar_sesiones_activas():
         JOIN usuarios u ON u.id = s.usuario_id
         WHERE s.expira_en > ?
           AND u.activo = 1
+          AND (s.es_temporal = 0 OR s.es_temporal IS NULL)
           AND s.ultima_actividad >= datetime('now', '-30 minutes')
           AND s.token = (
               SELECT s2.token
               FROM sesiones s2
               WHERE s2.usuario_id = s.usuario_id
                 AND s2.expira_en > ?
+                AND (s2.es_temporal = 0 OR s2.es_temporal IS NULL)
               ORDER BY s2.ultima_actividad DESC, s2.creado_en DESC
               LIMIT 1
           )
@@ -257,3 +335,126 @@ def requiere_rol(*roles):
             raise RuntimeError("requiere_rol (Flask) no debe usarse en FastAPI.")
         return decorated
     return decorator
+
+
+# ════════════════════════════════════════════════════════════════
+# TICKETS EFÍMEROS DE STREAMING (Corta duración, alcance restringido)
+# ════════════════════════════════════════════════════════════════
+import time
+import threading
+
+_stream_tickets = {}
+_stream_tickets_lock = threading.Lock()
+_sse_tickets = {}
+_sse_tickets_lock = threading.Lock()
+
+
+def issue_stream_ticket(
+    user_id: int,
+    cam_id: int,
+    ttl_seconds: int = 45,
+    session_token: str = None,
+) -> str:
+    """
+    Genera un ticket criptográfico temporal de un solo propósito para reproducir
+    el stream MJPEG de una cámara específica.
+    """
+    ticket = secrets.token_urlsafe(32)
+    ahora = time.time()
+    with _stream_tickets_lock:
+        expirados = [t for t, data in _stream_tickets.items() if data['expira_en'] < ahora]
+        for t in expirados:
+            _stream_tickets.pop(t, None)
+
+        _stream_tickets[ticket] = {
+            'user_id': user_id,
+            'cam_id': cam_id,
+            'expira_en': ahora + ttl_seconds,
+            'creado_en': ahora,
+            'session_token': session_token,
+        }
+    return ticket
+
+
+def validate_stream_ticket(ticket: str, cam_id: int):
+    """
+    Valida un ticket temporal de streaming para una cámara específica.
+    Comprueba existencia, vigencia y si el usuario correspondiente
+    aún tiene sesión activa y no ha sido desactivado.
+    """
+    if not ticket:
+        return None
+
+    ahora = time.time()
+    with _stream_tickets_lock:
+        data = _stream_tickets.get(ticket)
+        if not data:
+            return None
+        if data['expira_en'] < ahora:
+            _stream_tickets.pop(ticket, None)
+            return None
+        if data['cam_id'] != cam_id:
+            return None
+
+    conn = get_conn()
+    row = conn.execute(
+        'SELECT id, username, rol, activo FROM usuarios WHERE id = ? AND activo = 1',
+        (data['user_id'],)
+    ).fetchone()
+    conn.close()
+
+    if not row:
+        return None
+
+    if data.get('session_token') and not validate_token(data['session_token']):
+        return None
+
+    return dict(row)
+
+
+def issue_sse_ticket(user_id: int, session_token: str, ttl_seconds: int = 90) -> str:
+    """Emite una credencial corta y exclusiva para abrir el canal SSE de eventos."""
+    ticket = secrets.token_urlsafe(32)
+    now = time.time()
+    with _sse_tickets_lock:
+        expired = [t for t, data in _sse_tickets.items() if data['expira_en'] < now]
+        for old in expired:
+            _sse_tickets.pop(old, None)
+        _sse_tickets[ticket] = {
+            'user_id': user_id,
+            'session_token': session_token,
+            'expira_en': now + ttl_seconds,
+        }
+    return ticket
+
+
+def validate_sse_ticket(ticket: str):
+    """Valida alcance, vigencia y sesión emisora de un ticket SSE."""
+    if not ticket:
+        return None
+    now = time.time()
+    with _sse_tickets_lock:
+        data = _sse_tickets.get(ticket)
+        if not data:
+            return None
+        if data['expira_en'] < now:
+            _sse_tickets.pop(ticket, None)
+            return None
+        session_token = data['session_token']
+        expected_user_id = data['user_id']
+    user = validate_token(session_token)
+    if not user or user['id'] != expected_user_id:
+        return None
+    return user
+
+
+def revoke_stream_tickets_for_user(user_id: int):
+    """Revoca inmediatamente todos los tickets de streaming de un usuario."""
+    with _stream_tickets_lock:
+        a_eliminar = [t for t, data in _stream_tickets.items() if data['user_id'] == user_id]
+        for t in a_eliminar:
+            _stream_tickets.pop(t, None)
+    with _sse_tickets_lock:
+        a_eliminar = [t for t, data in _sse_tickets.items() if data['user_id'] == user_id]
+        for t in a_eliminar:
+            _sse_tickets.pop(t, None)

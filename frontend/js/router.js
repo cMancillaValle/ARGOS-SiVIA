@@ -12,7 +12,7 @@ const AppRouter = (() => {
   // ─── Mapa de módulos ─────────────────────────────────────────────────────────
   const MODULES = {
     home:              { file: 'dashboard_home.html',  roles: null },
-    mapa_transmilenio: { file: 'mapa_transmilenio.html',roles: ['admin','supervisor','operador','analista'] },
+    mapa_transmilenio: { file: 'mapa_transmilenio.html?v=c4-hover-4',roles: ['admin','supervisor','operador','analista'] },
     camaras:           { file: 'camaras.html',         roles: ['admin','supervisor','operador','analista','tecnico','auditor'] },
     eventos:           { file: 'eventos.html',         roles: ['admin','supervisor','operador','analista','tecnico','auditor'] },
     estadisticas:      { file: 'estadisticas.html',    roles: ['admin','supervisor','operador','analista'] },

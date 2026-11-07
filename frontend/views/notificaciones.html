@@ -295,28 +295,77 @@
     document.getElementById('det-actions').innerHTML  = `
       <button onclick="alertAccion('confirmar')" class="text-xs bg-verde/10 text-verde border border-verde/30 px-3 py-1.5 rounded hover:bg-verde hover:text-bg transition-colors">✓ Confirmar</button>
       <button onclick="alertAccion('descartar')" class="text-xs bg-rojo/10 text-rojo border border-rojo/30 px-3 py-1.5 rounded hover:bg-rojo hover:text-white transition-colors">✗ Falsa alarma</button>
-      <button onclick="alertAccion('escalar')"   class="text-xs bg-amarillo/10 text-amarillo border border-amarillo/30 px-3 py-1.5 rounded hover:bg-amarillo hover:text-bg transition-colors">↑ Escalar</button>
-      <button onclick="alertAccion('resolver')"  class="text-xs bg-azul/10 text-azul border border-azul/30 px-3 py-1.5 rounded hover:bg-azul hover:text-white transition-colors">● Resolver</button>`;
+      <button onclick="alertAccion('escalar')"   class="text-xs bg-amarillo/10 text-amarillo border border-amarillo/30 px-3 py-1.5 rounded hover:bg-amarillo hover:text-bg transition-colors" title="Escalamiento interno a supervisión (R16-B)">↑ Escalar a supervisión</button>`;
     document.getElementById('alert-detail').classList.remove('hidden');
     document.getElementById('alert-detail').scrollIntoView({behavior:'smooth',block:'nearest'});
   };
 
   window.alertAccion = async function(accion) {
     if(!_alertSel) return;
-    const estadoMap = {confirmar:'confirmado',descartar:'descartado',resolver:'descartado',escalar:'pendiente'};
+    const commentInput = document.getElementById('det-comment');
+    const observaciones = commentInput ? commentInput.value.trim() : '';
+
+    if(accion === 'escalar') {
+      if(!observaciones) {
+        alert('Para escalar esta alerta internamente, por favor escribe una justificación u observación en el campo de texto.');
+        if(commentInput) commentInput.focus();
+        return;
+      }
+      try {
+        const r = await fetch(`/api/eventos/${_alertSel.id}/escalar`, {
+          method:'POST',
+          headers:{'Content-Type':'application/json','X-Token':token()},
+          body: JSON.stringify({motivo: observaciones}),
+        });
+        const d = await r.json().catch(() => ({}));
+        if(r.ok) {
+          alert('✓ Alerta escalada internamente a supervisión con éxito.');
+          if(commentInput) commentInput.value = '';
+          await loadAlertas();
+          document.getElementById('alert-detail').classList.add('hidden');
+        } else {
+          alert(d.error || d.detail || 'Error al escalar el evento.');
+        }
+      } catch(e) {
+        alert('Error de conexión al escalar evento: ' + e.message);
+      }
+      return;
+    }
+
+    const estadoMap = {confirmar:'confirmado',descartar:'descartado'};
+    const nuevoEstado = estadoMap[accion];
+    if(!nuevoEstado) {
+      alert('Acción no permitida. Solo puede confirmar, descartar o escalar eventos.');
+      return;
+    }
+
     try {
-      const r = await fetch(`/api/eventos/${_alertSel.id}`, {
+      const r = await fetch(`/api/eventos/${_alertSel.id}/estado`, {
         method:'PUT',
         headers:{'Content-Type':'application/json','X-Token':token()},
-        body: JSON.stringify({estado: estadoMap[accion] || 'pendiente'}),
+        body: JSON.stringify({estado: nuevoEstado, observaciones: observaciones}),
       });
-      if(r.ok) { loadAlertas(); document.getElementById('alert-detail').classList.add('hidden'); }
-    } catch(e) { alert(e.message); }
+      if(r.ok) {
+        if(commentInput) commentInput.value = '';
+        await loadAlertas();
+        document.getElementById('alert-detail').classList.add('hidden');
+      } else {
+        const d = await r.json().catch(() => ({}));
+        alert(d.error || d.detail || 'Error al actualizar el estado del evento');
+      }
+    } catch(e) {
+      alert('Error de conexión al actualizar evento: ' + e.message);
+    }
   };
 
-  window.alertGuardarComment = function() {
+  window.alertGuardarComment = async function() {
+    if(!_alertSel) return;
     const c = document.getElementById('det-comment').value.trim();
-    if(c) { alert('Comentario guardado: '+c); document.getElementById('det-comment').value=''; }
+    if(!c) {
+      alert('Por favor escribe un comentario antes de guardar.');
+      return;
+    }
+    alert('Comentario listo. Haz clic en "✓ Confirmar", "✗ Falsa alarma" o "↑ Escalar a supervisión" para procesar el evento con esta nota.');
   };
 
   // Tabs
@@ -330,6 +379,7 @@
   };
 
   loadAlertas();
-  setInterval(loadAlertas, 60000);
+  const _notifInterval = setInterval(loadAlertas, 60000);
+  document.addEventListener('argos:navaway', () => clearInterval(_notifInterval), { once: true });
 })();
 </script>

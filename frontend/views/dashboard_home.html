@@ -429,17 +429,25 @@
 
   window.marcarRevisadaId = async function(id, btn) {
     try {
-      const r = await fetch(`/api/eventos/${id}`, {
+      const r = await fetch(`/api/eventos/${id}/estado`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'X-Token': token() },
-        body: JSON.stringify({ estado: 'confirmado' }),
+        body: JSON.stringify({ estado: 'confirmado', observaciones: 'Confirmado desde dashboard' }),
       });
-      if (r.ok && btn) {
-        btn.textContent = '✓✓';
-        btn.style.color = 'var(--verde)';
-        btn.disabled = true;
+      if (r.ok) {
+        if (btn) {
+          btn.textContent = '✓✓';
+          btn.style.color = 'var(--verde)';
+          btn.disabled = true;
+        }
+        await loadAlertas();
+      } else {
+        const errData = await r.json().catch(() => ({}));
+        alert(errData.error || errData.detail || 'Error al actualizar estado del evento');
       }
-    } catch {}
+    } catch (err) {
+      alert('Error de conexión al actualizar evento: ' + err.message);
+    }
   };
 
   // ── Arranque ──────────────────────────────────────────────────────────────────

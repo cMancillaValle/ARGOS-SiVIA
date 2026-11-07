@@ -9,8 +9,8 @@
     href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Exo+2:ital,wght@0,300;0,400;0,600;1,300&family=Share+Tech+Mono&family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="css/argos-design.css">
-  <script src="js/transmilenio-layout.js"></script>
-  <script src="js/transmilenio-schematic-map.js"></script>
+  <script src="js/transmilenio-layout.js?v=c4-geometry-2"></script>
+  <script src="js/transmilenio-schematic-map.js?v=c4-hover-4"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -195,18 +195,11 @@
                   <button onclick="emailSolicitar()" class="btn btn-edit btn-sm w-full">Enviar código →</button>
                 </div>
                 <div id="email-step-2" class="hidden">
-                  <p class="text-[11px] mb-1" style="color:var(--verde)">✓ Código enviado al email actual</p>
-                  <label class="argos-label">Código del email actual</label>
+                  <p class="text-[11px] mb-1" style="color:var(--verde)">✓ Código enviado al nuevo email</p>
+                  <label class="argos-label">Código de verificación recibido</label>
                   <input id="email-codigo-1" type="text" placeholder="123456" maxlength="6"
                     class="argos-input mb-2 font-mono text-center text-lg tracking-widest">
-                  <button onclick="emailConfirmar()" class="btn btn-edit btn-sm w-full">Verificar →</button>
-                </div>
-                <div id="email-step-3" class="hidden">
-                  <p class="text-[11px] mb-1" style="color:var(--verde)">✓ Código enviado al nuevo email</p>
-                  <label class="argos-label">Código del nuevo email</label>
-                  <input id="email-codigo-2" type="text" placeholder="123456" maxlength="6"
-                    class="argos-input mb-2 font-mono text-center text-lg tracking-widest">
-                  <button onclick="emailFinalizar()" class="btn btn-primary btn-sm w-full">Confirmar cambio ✓</button>
+                  <button onclick="emailConfirmar()" class="btn btn-primary btn-sm w-full">Confirmar cambio ✓</button>
                 </div>
                 <p id="email-msg" class="text-[11px] hidden"></p>
               </div>
@@ -359,13 +352,42 @@
          ═══════════════════════════════════════════════════════════════ -->
     <hermes-widget id="hermes-ai-widget" api-base="/api" modulo="dashboard"></hermes-widget>
 
+    <!-- ═══════════════════════════════════════════════════════════════
+         MODAL CONFIRMACIÓN: CERRAR TODAS LAS SESIONES
+         ═══════════════════════════════════════════════════════════════ -->
+    <div id="modal-logout-all" class="fixed inset-0 z-[9999] items-center justify-center hidden" role="dialog" aria-modal="true" aria-labelledby="modal-logout-all-title">
+      <div class="absolute inset-0 bg-black/75 backdrop-blur-sm" onclick="cerrarModalLogoutAll()"></div>
+      <div class="relative bg-panel border border-panelBorde rounded-2xl p-6 sm:p-8 max-w-md w-full mx-4 text-center shadow-2xl argos-modal fade-in z-10" style="background-color:var(--bg2);border-color:var(--borde)">
+        <div class="w-14 h-14 mx-auto mb-4 rounded-full flex items-center justify-center text-2xl border" style="background:rgba(232,0,29,0.12);border-color:rgba(232,0,29,0.3);color:var(--rojo)">
+          ⚠️
+        </div>
+        <h3 id="modal-logout-all-title" class="font-rajdhani text-2xl font-bold mb-2" style="color:var(--texto)">¿Cerrar todas las sesiones?</h3>
+        <p class="text-sm leading-relaxed mb-6" style="color:var(--dim)">
+          Esta acción revocará inmediatamente todos los tokens y sesiones activas en todos tus dispositivos. Deberás volver a iniciar sesión para ingresar al sistema.
+        </p>
+        <div class="flex items-center justify-center gap-3">
+          <button id="btn-cancelar-logout-all" onclick="cerrarModalLogoutAll()" type="button"
+                  class="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider border transition-colors"
+                  style="background-color:var(--bg3);border-color:var(--borde2);color:var(--texto)">
+            Cancelar
+          </button>
+          <button id="btn-confirmar-logout-all" onclick="ejecutarCerrarTodasSesiones()" type="button"
+                  class="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider text-white transition-all shadow-lg"
+                  style="background:var(--rojo)">
+            Cerrar Todo
+          </button>
+        </div>
+      </div>
+    </div>
+
+
   </div><!-- /#app-shell -->
 
   <!-- Scripts -->
   <script src="/hermes/hermes-widget.js"></script>
   <script src="js/api.js"></script>
   <script src="js/rbac.js"></script>
-  <script src="js/router.js"></script>
+  <script src="js/router.js?v=c4-hover-4"></script>
 
   <script>
     // ┌───────────────────────────────────────────────────────────────
@@ -529,49 +551,44 @@
       }
     };
 
-    // Cambio email - Step 2
+    // Cambio email - Step 2 (Confirmación segura)
     window.emailConfirmar = async function () {
       const codigo = document.getElementById('email-codigo-1').value;
       const token = sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token');
-      const r = await fetch('/api/perfil/me/email/confirmar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Token': token },
-        body: JSON.stringify({ codigo }),
-      });
-      const d = await r.json();
       const msg = document.getElementById('email-msg');
-      if (r.ok) {
-        document.getElementById('email-step-2').classList.add('hidden');
-        document.getElementById('email-step-3').classList.remove('hidden');
-        msg.textContent = d.aviso || ''; msg.classList.toggle('hidden', !d.aviso);
-        if (d.dev_code) { msg.textContent += `  Código (DEV): ${d.dev_code}`; msg.classList.remove('hidden'); }
-      } else {
-        msg.textContent = d.error; msg.style.color = 'var(--rojo)'; msg.classList.remove('hidden');
+      try {
+        const r = await fetch('/api/perfil/me/email/confirmar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Token': token },
+          body: JSON.stringify({ codigo }),
+        });
+        const d = await r.json();
+        if (r.ok) {
+          showDrawerToast('Email actualizado correctamente ✓', 'verde');
+          document.getElementById('email-step-2').classList.add('hidden');
+          document.getElementById('email-step-1').classList.remove('hidden');
+          document.getElementById('email-password').value = '';
+          document.getElementById('email-nuevo').value = '';
+          document.getElementById('email-codigo-1').value = '';
+          document.getElementById('email-actual-label').textContent = d.nuevo_email || '';
+          msg.textContent = 'Email actualizado correctamente.';
+          msg.style.color = 'var(--verde)';
+          msg.classList.remove('hidden');
+          setTimeout(() => msg.classList.add('hidden'), 4000);
+        } else {
+          msg.textContent = d.error || 'Error al confirmar cambio de email.';
+          msg.style.color = 'var(--rojo)';
+          msg.classList.remove('hidden');
+        }
+      } catch (err) {
+        msg.textContent = 'Error de conexión con el servidor.';
+        msg.style.color = 'var(--rojo)';
+        msg.classList.remove('hidden');
       }
     };
 
-    // Cambio email - Step 3
-    window.emailFinalizar = async function () {
-      const codigo = document.getElementById('email-codigo-2').value;
-      const nuevo = document.getElementById('email-nuevo').value.trim();
-      const token = sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token');
-      const r = await fetch('/api/perfil/me/email/finalizar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Token': token },
-        body: JSON.stringify({ codigo, nuevo_email: nuevo }),
-      });
-      const d = await r.json();
-      const msg = document.getElementById('email-msg');
-      if (r.ok) {
-        showDrawerToast('Email actualizado ✓', 'verde');
-        document.getElementById('email-step-3').classList.add('hidden');
-        document.getElementById('email-step-1').classList.remove('hidden');
-        document.getElementById('email-actual-label').textContent = nuevo;
-        msg.classList.add('hidden');
-      } else {
-        msg.textContent = d.error; msg.style.color = 'var(--rojo)'; msg.classList.remove('hidden');
-      }
-    };
+    // Alias retrocompatible
+    window.emailFinalizar = window.emailConfirmar;
 
     // Cambiar contraseña
     window.cambiarPassword = async function () {
@@ -587,13 +604,119 @@
       });
       const d = await r.json();
       msg.classList.remove('hidden');
-      if (r.ok) { msg.textContent = '✓ Contraseña actualizada.'; msg.style.color = 'var(--verde)'; }
-      else { msg.textContent = d.error; msg.style.color = 'var(--rojo)'; }
+      if (r.ok) {
+        msg.textContent = '✓ Contraseña actualizada. Redirigiendo al login...';
+        msg.style.color = 'var(--verde)';
+        setTimeout(() => {
+          sessionStorage.removeItem('argos_token');
+          sessionStorage.removeItem('argos_user');
+          localStorage.removeItem('argos_token');
+          localStorage.removeItem('argos_user');
+          window.location.replace('login.html');
+        }, 1200);
+      } else {
+        msg.textContent = d.error || 'Error al cambiar contraseña.';
+        msg.style.color = 'var(--rojo)';
+      }
     };
 
-    // cerrar todas las sesiones
-    window.cerrarTodasSesiones = async function () {
-      showDrawerToast('Sesiones cerradas ✓', 'verde');
+    // cerrar todas las sesiones (F11: Revocación real en backend con Modal ARGOS)
+    let _cerrandoSesiones = false;
+
+    window.cerrarTodasSesiones = function () {
+      if (_cerrandoSesiones) return;
+      const modal = document.getElementById('modal-logout-all');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        const confirmBtn = document.getElementById('btn-confirmar-logout-all');
+        if (confirmBtn) confirmBtn.focus();
+      }
+    };
+
+    window.cerrarModalLogoutAll = function () {
+      if (_cerrandoSesiones) return;
+      const modal = document.getElementById('modal-logout-all');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    };
+
+    // Cerrar modal con tecla Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const modal = document.getElementById('modal-logout-all');
+        if (modal && !modal.classList.contains('hidden')) {
+          cerrarModalLogoutAll();
+        }
+      }
+    });
+
+    window.ejecutarCerrarTodasSesiones = async function () {
+      if (_cerrandoSesiones) return;
+      _cerrandoSesiones = true;
+
+      const confirmBtn = document.getElementById('btn-confirmar-logout-all');
+      const cancelBtn = document.getElementById('btn-cancelar-logout-all');
+      const drawerBtn = document.querySelector('button[onclick="cerrarTodasSesiones()"]');
+
+      if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Cerrando...';
+      }
+      if (cancelBtn) cancelBtn.disabled = true;
+      if (drawerBtn) drawerBtn.disabled = true;
+
+      try {
+        const token = sessionStorage.getItem('argos_token') || localStorage.getItem('argos_token');
+        if (!token) {
+          window.location.replace('login.html');
+          return;
+        }
+
+        const res = await fetch('/api/auth/logout-all', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Token': token
+          }
+        });
+
+        if (res.ok) {
+          cerrarModalLogoutAll();
+          showDrawerToast('Todas las sesiones han sido cerradas ✓', 'verde');
+          sessionStorage.removeItem('argos_token');
+          sessionStorage.removeItem('argos_user');
+          localStorage.removeItem('argos_token');
+          localStorage.removeItem('argos_user');
+          setTimeout(() => {
+            window.location.replace('login.html');
+          }, 1000);
+        } else {
+          const data = await res.json().catch(() => ({}));
+          cerrarModalLogoutAll();
+          showDrawerToast(data.error || 'Error al cerrar las sesiones en el servidor.', 'rojo');
+          if (drawerBtn) drawerBtn.disabled = false;
+          if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Cerrar Todo';
+          }
+          if (cancelBtn) cancelBtn.disabled = false;
+          _cerrandoSesiones = false;
+        }
+      } catch (err) {
+        console.error('[LogoutAll] Error de red:', err);
+        cerrarModalLogoutAll();
+        showDrawerToast('No se pudo conectar con el servidor para cerrar sesiones.', 'rojo');
+        if (drawerBtn) drawerBtn.disabled = false;
+        if (confirmBtn) {
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = 'Cerrar Todo';
+        }
+        if (cancelBtn) cancelBtn.disabled = false;
+        _cerrandoSesiones = false;
+      }
     };
 
     // 2FA - Activar

@@ -29,6 +29,7 @@ DB_PATH = os.path.normpath(os.path.join(
 def get_conn():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    conn.execute('PRAGMA foreign_keys = ON')
     return conn
 
 
@@ -167,3 +168,127 @@ async def update_event_status(
     registrar_auditoria(usuario['id'], 'EVENTO_REVISADO',
                         f'Evento {event_id} marcado como {estado}', ip)
     return JSONResponse(content=dict(updated))
+
+# ── POST /api/eventos/{event_id}/escalar ─────────────────
+def _ensure_escalamientos_table(conn):
+    """Garantiza la existencia idempotente de la tabla de escalamientos."""
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS escalamientos (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            evento_id   INTEGER NOT NULL REFERENCES eventos(id) ON DELETE CASCADE,
+            usuario_id  INTEGER NOT NULL REFERENCES usuarios(id),
+            motivo      TEXT    NOT NULL,
+            creado_en   TEXT    NOT NULL DEFAULT (datetime('now'))
+        )
+    """)
+
+
+@router.post("/{event_id}/escalar")
+async def escalar_evento(
+    event_id: int,
+    request: Request,
+    usuario: dict = Depends(require_permission("eventos:revisar")),
+):
+    """
+    Escala internamente un evento a supervisión/seguridad.
+    Requiere permiso 'eventos:revisar'. No altera el estado (confirmado/descartado/pendiente)
+    del evento en sí, permitiendo una trazabilidad auditable independiente.
+    Body JSON: { "motivo": "..." } (obligatorio, no vacío)
+    """
+    try:
+        data = await request.json()
+        if not isinstance(data, dict):
+            return JSONResponse(status_code=400, content={'error': 'El cuerpo debe ser un objeto JSON.'})
+    except Exception:
+        return JSONResponse(status_code=400, content={'error': 'JSON malformado o inválido.'})
+
+    motivo = str(data.get('motivo', '') or data.get('observaciones', '') or '').strip()
+    if not motivo:
+        return JSONResponse(
+            status_code=400,
+            content={'error': 'El motivo u observación de escalamiento es obligatorio.'}
+        )
+
+    conn = get_conn()
+    try:
+        _ensure_escalamientos_table(conn)
+        ev = conn.execute('SELECT id, tipo, estado FROM eventos WHERE id = ?', (event_id,)).fetchone()
+        if not ev:
+            return JSONResponse(status_code=404, content={'error': 'Evento no encontrado.'})
+
+        # Evitar escalamientos idénticos duplicados consecutivos si ya existe uno con mismo motivo en 5 min
+        reciente = conn.execute(
+            """SELECT id FROM escalamientos 
+               WHERE evento_id = ? AND usuario_id = ? AND motivo = ?
+                 AND creado_en >= datetime('now', '-5 minutes')""",
+            (event_id, usuario['id'], motivo)
+        ).fetchone()
+        if reciente:
+            return JSONResponse(
+                status_code=409,
+                content={'error': 'Este evento ya fue escalado recientemente con la misma justificación.'}
+            )
+
+        cur = conn.execute(
+            """INSERT INTO escalamientos (evento_id, usuario_id, motivo)
+               VALUES (?, ?, ?)""",
+            (event_id, usuario['id'], motivo)
+        )
+        escalamiento_id = cur.lastrowid
+        conn.commit()
+
+        row = conn.execute(
+            """SELECT esc.id, esc.evento_id, esc.usuario_id, esc.motivo, esc.creado_en,
+                      u.username, u.nombre as usuario_nombre
+               FROM escalamientos esc
+               JOIN usuarios u ON u.id = esc.usuario_id
+               WHERE esc.id = ?""",
+            (escalamiento_id,)
+        ).fetchone()
+
+        ip = request.client.host if request.client else None
+        registrar_auditoria(
+            usuario['id'],
+            'EVENTO_ESCALADO',
+            f'Evento {event_id} escalado internamente a supervisión: {motivo[:60]}',
+            ip
+        )
+        return JSONResponse(
+            status_code=201,
+            content={
+                'mensaje': 'Alerta escalada internamente a supervisión con éxito.',
+                'escalamiento': dict(row)
+            }
+        )
+    except Exception:
+        conn.rollback()
+        return JSONResponse(status_code=500, content={'error': 'Error interno al registrar el escalamiento.'})
+    finally:
+        conn.close()
+
+
+@router.get("/{event_id}/escalamientos")
+def listar_escalamientos_evento(
+    event_id: int,
+    usuario: dict = Depends(require_permission("eventos:ver_detalle")),
+):
+    """Consulta el historial de escalamientos registrados para un evento."""
+    conn = get_conn()
+    try:
+        _ensure_escalamientos_table(conn)
+        ev = conn.execute('SELECT id FROM eventos WHERE id = ?', (event_id,)).fetchone()
+        if not ev:
+            return JSONResponse(status_code=404, content={'error': 'Evento no encontrado.'})
+
+        rows = conn.execute(
+            """SELECT esc.id, esc.evento_id, esc.usuario_id, esc.motivo, esc.creado_en,
+                      u.username, u.nombre as usuario_nombre
+               FROM escalamientos esc
+               JOIN usuarios u ON u.id = esc.usuario_id
+               WHERE esc.evento_id = ?
+               ORDER BY esc.creado_en DESC""",
+            (event_id,)
+        ).fetchall()
+        return JSONResponse(content={'total': len(rows), 'escalamientos': [dict(r) for r in rows]})
+    finally:
+        conn.close()

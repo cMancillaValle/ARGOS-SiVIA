@@ -27,7 +27,14 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from starlette.concurrency import run_in_threadpool
 
 # Reutilizar servicios y buffer existentes
-from services.auth_service import validate_token
+from fastapi import Depends, Request, Response
+from services.auth_service import (
+    validate_token,
+    get_current_user,
+    require_permission,
+    validate_stream_ticket,
+    tiene_permiso,
+)
 from core_ia.athena.client_frame_buffer import client_buffer
 
 logger = logging.getLogger(__name__)
@@ -243,7 +250,7 @@ async def ws_client_push(websocket: WebSocket):
 # STATUS & MJPEG
 # ─────────────────────────────────────────────────────────────────────────────
 @router.get("/client/status")
-def client_status():
+def client_status(usuario: dict = Depends(require_permission("camaras:ver"))):
     """Devuelve el estado de todos los clientes conectados."""
     if not client_buffer:
         return JSONResponse(content={
@@ -276,11 +283,33 @@ def client_status():
 
 
 @router.get("/client/mjpeg")
-def client_mjpeg(client_id: Optional[str] = None):
+def client_mjpeg(request: Request, client_id: Optional[str] = None):
     """
     Stream MJPEG de un cliente específico.
     /api/camaras/client/mjpeg?client_id=XXXXXXXX
+    Requiere autorización vía stream_ticket efímero o cabecera X-Token válida
+    con permiso 'camaras:ver'.
     """
+    stream_ticket = request.query_params.get("stream_ticket")
+    user = None
+    cam_id = get_client_camera(client_id) if client_id else None
+
+    if stream_ticket:
+        user = validate_stream_ticket(stream_ticket, cam_id if cam_id is not None else 0)
+        if not user:
+            return Response("Ticket de streaming inválido o expirado", status_code=401)
+        if not tiene_permiso(user, "camaras:ver"):
+            return Response("Acceso denegado: permiso camaras:ver requerido", status_code=403)
+    else:
+        token = request.headers.get("X-Token")
+        if not token:
+            return Response("Unauthorized", status_code=401)
+        user = validate_token(token)
+        if not user:
+            return Response("Unauthorized", status_code=401)
+        if not tiene_permiso(user, "camaras:ver"):
+            return Response("Acceso denegado: permiso camaras:ver requerido", status_code=403)
+
     if not client_id:
         return JSONResponse(status_code=400, content={"error": "client_id requerido"})
 

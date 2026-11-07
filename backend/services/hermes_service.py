@@ -45,6 +45,7 @@ DB_PATH = os.path.normpath(os.path.join(
 def _conn() -> sqlite3.Connection:
     c = sqlite3.connect(DB_PATH)
     c.row_factory = sqlite3.Row
+    c.execute('PRAGMA foreign_keys = ON')
     return c
 
 

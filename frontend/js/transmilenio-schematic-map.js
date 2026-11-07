@@ -26,6 +26,25 @@
 
   const SVG_NS = 'http://www.w3.org/2000/svg';
 
+  const ESTADOS_OPERATIVOS_LABELS = {
+    operativa: 'Operativa',
+    temporal: 'Temporal en operación',
+    cerrada_temporalmente: 'Cerrada temporalmente',
+    historica: 'Histórica',
+    por_verificar: 'Por verificar'
+  };
+
+  function normalizarBusqueda(valor) {
+    return String(valor || '')
+      .normalize('NFKD')
+      .replace(/[\u2010-\u2015\u2212]/g, '-')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s*-\s*/g, ' - ')
+      .trim()
+      .replace(/\s+/g, ' ')
+      .toLocaleLowerCase();
+  }
+
   class TransmilenioSchematicMap {
     /**
      * @param {Object} options
@@ -61,8 +80,7 @@
       this.panX = 0;
       this.panY = 0;
       this.isPanning = false;
-      this.startX = 0;
-      this.startY = 0;
+      this._mousePanStart = null;
 
       // Elementos SVG
       this.svg = null;
@@ -70,8 +88,10 @@
       this.corridorsGroup = null;
       this.connectionsGroup = null;
       this.stationsGroup = null;
-      this.labelsGroup = null;
       this.tooltip = null;
+      this.hoveredCode = null;
+      this.hoveredNode = null;
+      this.inputMode = 'mouse';
 
       this._init();
     }
@@ -116,6 +136,7 @@
       this.svg.classList.add('tm-schematic-svg');
       this.svg.style.display = 'block';
       this.svg.style.cursor = 'grab';
+      this.svg.style.touchAction = 'none';
 
       // Definiciones (filtros, halos)
       const defs = document.createElementNS(SVG_NS, 'defs');
@@ -152,13 +173,9 @@
       this.stationsGroup = document.createElementNS(SVG_NS, 'g');
       this.stationsGroup.setAttribute('class', 'tm-layer-stations');
 
-      this.labelsGroup = document.createElementNS(SVG_NS, 'g');
-      this.labelsGroup.setAttribute('class', 'tm-layer-labels');
-
       this.viewportGroup.appendChild(this.connectionsGroup);
       this.viewportGroup.appendChild(this.corridorsGroup);
       this.viewportGroup.appendChild(this.stationsGroup);
-      this.viewportGroup.appendChild(this.labelsGroup);
       this.svg.appendChild(this.viewportGroup);
 
       this.container.appendChild(this.svg);
@@ -168,7 +185,22 @@
       this.tooltip.className = 'tm-schematic-tooltip';
       this.tooltip.setAttribute('role', 'tooltip');
       this.tooltip.setAttribute('aria-hidden', 'true');
-      this.container.appendChild(this.tooltip);
+      this.tooltip.id = 'tm-station-tooltip';
+      Object.assign(this.tooltip.style, {
+        position: 'fixed',
+        pointerEvents: 'none',
+        zIndex: '2147483000',
+        opacity: '1',
+        filter: 'none',
+        backdropFilter: 'none',
+        mixBlendMode: 'normal',
+        transform: 'none',
+        transition: 'none',
+        animation: 'none',
+        backgroundColor: '#111927',
+        color: '#f1f5f9'
+      });
+      document.body.appendChild(this.tooltip);
 
       // Botones flotantes de Pan & Zoom
       this._createZoomControls();
@@ -207,78 +239,160 @@
     }
 
     _bindEvents() {
+      const svgPoint = (clientX, clientY) => {
+        const point = this.svg.createSVGPoint();
+        point.x = clientX;
+        point.y = clientY;
+        return point.matrixTransform(this.svg.getScreenCTM().inverse());
+      };
+      const stationNode = (target) => {
+        const node = target && target.closest ? target.closest('.tm-station-node') : null;
+        return node && this.stationsGroup.contains(node) ? node : null;
+      };
+      this.stationsGroup.addEventListener('pointerover', (event) => {
+        if (event.pointerType === 'touch') return;
+        this.inputMode = 'mouse';
+        const node = stationNode(event.target);
+        if (node) this._showTooltip(node.dataset.code, node);
+      });
+      this.stationsGroup.addEventListener('pointerout', (event) => {
+        const node = stationNode(event.target);
+        if (!node || node !== this.hoveredNode) return;
+        if (stationNode(event.relatedTarget)) return;
+        this._hideTooltip();
+      });
+      this.stationsGroup.addEventListener('pointerdown', (event) => {
+        if (event.pointerType === 'touch') {
+          this.inputMode = 'touch';
+          this._hideTooltip();
+        }
+      });
+      this.stationsGroup.addEventListener('focusin', (event) => {
+        if (this.inputMode === 'touch') return;
+        const node = stationNode(event.target);
+        if (node) this._showTooltip(node.dataset.code, node);
+      });
+      this.stationsGroup.addEventListener('focusout', (event) => {
+        if (!stationNode(event.relatedTarget)) this._hideTooltip();
+      });
+      this.stationsGroup.addEventListener('click', (event) => {
+        const node = stationNode(event.target);
+        if (!node) return;
+        event.stopPropagation();
+        this.selectStation(node.dataset.code);
+      });
+      this.stationsGroup.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        const node = stationNode(event.target);
+        if (!node) return;
+        event.preventDefault();
+        this.selectStation(node.dataset.code);
+      });
+      this._onWindowKeyDown = () => { this.inputMode = 'keyboard'; };
+      window.addEventListener('keydown', this._onWindowKeyDown);
       // Pan con mouse
       this.svg.addEventListener('mousedown', (e) => {
         if (e.target.closest('.tm-station-node') || e.target.closest('.tm-zoom-btn')) return;
-        this.isPanning = true;
-        this.startX = e.clientX - this.panX;
-        this.startY = e.clientY - this.panY;
-        this.svg.style.cursor = 'grabbing';
+        const point = svgPoint(e.clientX, e.clientY);
+        this._mousePanStart = {
+          clientX: e.clientX, clientY: e.clientY,
+          pointX: point.x, pointY: point.y,
+          panX: this.panX, panY: this.panY
+        };
       });
 
-      window.addEventListener('mousemove', (e) => {
-        if (!this.isPanning) return;
-        this.panX = e.clientX - this.startX;
-        this.panY = e.clientY - this.startY;
-        this._updateTransform();
-      });
-
-      window.addEventListener('mouseup', () => {
-        if (this.isPanning) {
-          this.isPanning = false;
-          this.svg.style.cursor = 'grab';
+      this._onWindowMouseMove = (e) => {
+        if (!this._mousePanStart) return;
+        const start = this._mousePanStart;
+        if (!this.isPanning &&
+            Math.hypot(e.clientX - start.clientX, e.clientY - start.clientY) < 5) return;
+        if (!this.isPanning) {
+          this.isPanning = true;
+          this._hideTooltip();
+          this.svg.style.cursor = 'grabbing';
         }
-      });
+        const point = svgPoint(e.clientX, e.clientY);
+        this.panX = start.panX + point.x - start.pointX;
+        this.panY = start.panY + point.y - start.pointY;
+        this._updateTransform();
+      };
+      window.addEventListener('mousemove', this._onWindowMouseMove);
+
+      this._onWindowMouseUp = () => {
+        this._mousePanStart = null;
+        this.isPanning = false;
+        this.svg.style.cursor = 'grab';
+      };
+      window.addEventListener('mouseup', this._onWindowMouseUp);
 
       // Zoom con rueda de ratón (centrado en el cursor)
       this.svg.addEventListener('wheel', (e) => {
         e.preventDefault();
-        const rect = this.container.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
-
+        const point = svgPoint(e.clientX, e.clientY);
         const factor = e.deltaY < 0 ? 1.15 : 0.85;
-        this.zoomAtPoint(factor, mouseX, mouseY);
+        this.zoomAtPoint(factor, point.x, point.y);
       }, { passive: false });
 
       // Soporte Touch para móviles y tablets
-      let initialPinchDist = 0;
-      let initialScale = 1;
+      let previousPinchDist = 0;
+      let touchStart = null;
 
       this.svg.addEventListener('touchstart', (e) => {
+        this.inputMode = 'touch';
+        this._hideTooltip();
         if (e.touches.length === 1) {
-          this.isPanning = true;
-          this.startX = e.touches[0].clientX - this.panX;
-          this.startY = e.touches[0].clientY - this.panY;
+          const point = svgPoint(e.touches[0].clientX, e.touches[0].clientY);
+          this.isPanning = false;
+          touchStart = {
+            clientX: e.touches[0].clientX, clientY: e.touches[0].clientY,
+            pointX: point.x, pointY: point.y,
+            panX: this.panX, panY: this.panY
+          };
         } else if (e.touches.length === 2) {
           this.isPanning = false;
-          initialPinchDist = Math.hypot(
+          touchStart = null;
+          previousPinchDist = Math.hypot(
             e.touches[0].clientX - e.touches[1].clientX,
             e.touches[0].clientY - e.touches[1].clientY
           );
-          initialScale = this.scale;
         }
       }, { passive: true });
 
       this.svg.addEventListener('touchmove', (e) => {
-        if (e.touches.length === 1 && this.isPanning) {
-          this.panX = e.touches[0].clientX - this.startX;
-          this.panY = e.touches[0].clientY - this.startY;
+        if (e.touches.length === 1 && touchStart) {
+          if (!this.isPanning &&
+              Math.hypot(e.touches[0].clientX - touchStart.clientX,
+                e.touches[0].clientY - touchStart.clientY) < 8) return;
+          e.preventDefault();
+          this.isPanning = true;
+          const point = svgPoint(e.touches[0].clientX, e.touches[0].clientY);
+          this.panX = touchStart.panX + point.x - touchStart.pointX;
+          this.panY = touchStart.panY + point.y - touchStart.pointY;
           this._updateTransform();
-        } else if (e.touches.length === 2 && initialPinchDist > 0) {
+        } else if (e.touches.length === 2 && previousPinchDist > 0) {
+          e.preventDefault();
           const currentDist = Math.hypot(
             e.touches[0].clientX - e.touches[1].clientX,
             e.touches[0].clientY - e.touches[1].clientY
           );
-          const factor = currentDist / initialPinchDist;
-          this.scale = Math.min(Math.max(initialScale * factor, 0.4), 4.5);
-          this._updateTransform();
+          const midpoint = svgPoint(
+            (e.touches[0].clientX + e.touches[1].clientX) / 2,
+            (e.touches[0].clientY + e.touches[1].clientY) / 2
+          );
+          this.zoomAtPoint(currentDist / previousPinchDist, midpoint.x, midpoint.y);
+          previousPinchDist = currentDist;
         }
-      }, { passive: true });
+      }, { passive: false });
 
       this.svg.addEventListener('touchend', () => {
         this.isPanning = false;
-        initialPinchDist = 0;
+        touchStart = null;
+        previousPinchDist = 0;
+      });
+      this.svg.addEventListener('touchcancel', () => {
+        this.isPanning = false;
+        touchStart = null;
+        previousPinchDist = 0;
       });
 
       // Accesibilidad de teclado en el contenedor
@@ -300,13 +414,12 @@
         'transform',
         `matrix(${this.scale} 0 0 ${this.scale} ${this.panX} ${this.panY})`
       );
+      if (this.hoveredNode) this._positionTooltip(this.hoveredNode);
     }
 
     zoom(factor) {
-      const rect = this.container.getBoundingClientRect();
-      const cx = rect.width / 2;
-      const cy = rect.height / 2;
-      this.zoomAtPoint(factor, cx, cy);
+      const vb = this.layout.viewBox || { width: 1750, height: 1050 };
+      this.zoomAtPoint(factor, vb.width / 2, vb.height / 2);
     }
 
     zoomAtPoint(factor, px, py) {
@@ -322,15 +435,10 @@
     }
 
     resetView() {
-      const rect = this.container.getBoundingClientRect();
       const vb = this.layout.viewBox || { width: 1750, height: 1050 };
-      
-      const scaleX = rect.width / vb.width;
-      const scaleY = rect.height / vb.height;
-      this.scale = Math.min(scaleX, scaleY) * 0.94 || 0.75;
-
-      this.panX = (rect.width - vb.width * this.scale) / 2;
-      this.panY = (rect.height - vb.height * this.scale) / 2;
+      this.scale = 0.94;
+      this.panX = vb.width * (1 - this.scale) / 2;
+      this.panY = vb.height * (1 - this.scale) / 2;
       this._updateTransform();
     }
 
@@ -338,11 +446,16 @@
       const stLayout = (this.layout.stations || {})[codigo];
       if (!stLayout) return;
 
-      const rect = this.container.getBoundingClientRect();
+      const vb = this.layout.viewBox || { width: 1750, height: 1050 };
       this.scale = Math.max(this.scale, 1.4);
-      this.panX = (rect.width / 2) - (stLayout.x * this.scale);
-      this.panY = (rect.height / 2) - (stLayout.y * this.scale);
+      this.panX = vb.width / 2 - stLayout.x * this.scale;
+      this.panY = vb.height / 2 - stLayout.y * this.scale;
       this._updateTransform();
+    }
+
+    hasStationPosition(codigo) {
+      const code = String(codigo || '').toUpperCase();
+      return Boolean((this.layout.stations || {})[code]);
     }
 
     updateData(estaciones, troncales) {
@@ -360,6 +473,7 @@
     }
 
     render() {
+      this._hideTooltip();
       this._renderCorridors();
       this._renderConnections();
       this._renderStations();
@@ -404,12 +518,11 @@
 
     _renderStations() {
       this.stationsGroup.innerHTML = '';
-      this.labelsGroup.innerHTML = '';
 
       const layoutStations = this.layout.stations || {};
+      const stationEntries = Object.entries(layoutStations);
 
-      Object.keys(layoutStations).forEach(codigo => {
-        const stPos = layoutStations[codigo];
+      stationEntries.forEach(([codigo, stPos]) => {
         const apiData = this.estacionesMap.get(codigo);
 
         // Si no existe en layout, ignorar con advertencia interna
@@ -427,12 +540,12 @@
 
         let matchesBusqueda = true;
         if (this.busqueda) {
-          const nom = apiData ? apiData.nombre.toLowerCase() : '';
-          const cod = codigo.toLowerCase();
-          matchesBusqueda = nom.includes(this.busqueda) || cod.includes(this.busqueda);
+          const consulta = normalizarBusqueda(this.busqueda);
+          const nombres = apiData ? [apiData.nombre, ...(apiData.aliases || [])] : [];
+          const cod = normalizarBusqueda(codigo);
+          matchesBusqueda = nombres.some(nombre => normalizarBusqueda(nombre).includes(consulta)) || cod.includes(consulta);
         }
 
-        const isVisible = matchesTroncal && matchesEstado && matchesBusqueda;
         const isDimmed = !matchesTroncal || !matchesEstado || (this.busqueda && !matchesBusqueda);
 
         // Grupo de la estación (interactivo y accesible)
@@ -441,6 +554,7 @@
         g.setAttribute('transform', `translate(${stPos.x}, ${stPos.y})`);
         g.setAttribute('role', 'button');
         g.setAttribute('tabindex', '0');
+        g.dataset.code = codigo;
 
         const nombreEst = apiData ? apiData.nombre : codigo;
         g.setAttribute('aria-label', `Estación ${nombreEst} (${codigo})`);
@@ -451,8 +565,6 @@
         // Estado semántico de riesgo y cámaras
         const riesgo = apiData ? (apiData.riesgo || 'normal') : 'normal';
         const tieneCamaras = apiData && apiData.camaras && apiData.camaras.total > 0;
-        const totalEv = apiData && apiData.eventos_hoy ? apiData.eventos_hoy.total_hoy : 0;
-
         // Asignar clase de estado
         if (riesgo === 'critico') {
           g.classList.add('tm-status-critical');
@@ -467,6 +579,16 @@
         // Tipo visual de estación
         const isPortal = stPos.tipo === 'portal' || (apiData && apiData.tipo === 'portal');
         const isInterchange = stPos.interchange || stPos.tipo === 'intermedio';
+        const nearest = stationEntries.reduce((minimum, [otherCode, other]) => {
+          if (otherCode === codigo) return minimum;
+          return Math.min(minimum, Math.hypot(stPos.x - other.x, stPos.y - other.y));
+        }, Infinity);
+        const hit = document.createElementNS(SVG_NS, 'circle');
+        hit.setAttribute('r', String(Math.min(11, Math.max(4.5, nearest / 2 - 0.75))));
+        hit.setAttribute('class', 'tm-station-hit');
+        hit.setAttribute('fill', 'transparent');
+        hit.setAttribute('pointer-events', 'all');
+        g.appendChild(hit);
 
         if (isPortal) {
           // Portales: Nodo mayor con doble contorno cuadrado o hexágono
@@ -502,53 +624,12 @@
           g.appendChild(circle);
         }
 
-        // Eventos interactivos en la estación
-        g.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.selectStation(codigo);
-        });
-
-        g.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            this.selectStation(codigo);
-          }
-        });
-
-        g.addEventListener('mouseenter', (e) => this._showTooltip(e, codigo));
-        g.addEventListener('mousemove', (e) => this._moveTooltip(e));
-        g.addEventListener('mouseleave', () => this._hideTooltip());
-        g.addEventListener('focus', (e) => this._showTooltip(e, codigo));
-        g.addEventListener('blur', () => this._hideTooltip());
-
         this.stationsGroup.appendChild(g);
-
-        // Renderizar Etiqueta de texto (limpia y sin overlap)
-        if (isVisible) {
-          const textEl = document.createElementNS(SVG_NS, 'text');
-          textEl.setAttribute('x', String(stPos.x + (stPos.labelOffsetX || 8)));
-          textEl.setAttribute('y', String(stPos.y + (stPos.labelOffsetY || 3)));
-          textEl.setAttribute('class', 'tm-station-label');
-          
-          if (stPos.labelPosition === 'left') {
-            textEl.setAttribute('text-anchor', 'end');
-          } else if (stPos.labelPosition === 'top' || stPos.labelPosition === 'bottom') {
-            textEl.setAttribute('text-anchor', 'middle');
-          } else {
-            textEl.setAttribute('text-anchor', 'start');
-          }
-
-          if (isPortal) textEl.classList.add('tm-label-portal');
-          if (this.estacionSeleccionada === codigo) textEl.classList.add('tm-label--selected');
-
-          // Uso seguro de textContent
-          textEl.textContent = nombreEst;
-          this.labelsGroup.appendChild(textEl);
-        }
       });
     }
 
     selectStation(codigo) {
+      this._hideTooltip();
       this.estacionSeleccionada = codigo;
       this.render();
       if (this.onSelectStation) {
@@ -556,66 +637,79 @@
       }
     }
 
-    _showTooltip(e, codigo) {
-      if (!this.tooltip) return;
-      const apiData = this.estacionesMap.get(codigo);
-      const stPos = (this.layout.stations || {})[codigo];
-
-      const nombre = apiData ? apiData.nombre : codigo;
-      const troncal = apiData ? apiData.troncal : (stPos ? `Troncal ${stPos.troncalId}` : '');
-      const totalCam = apiData && apiData.camaras ? apiData.camaras.total : 0;
-      const camAct = apiData && apiData.camaras ? apiData.camaras.activas : 0;
-      const evHoy = apiData && apiData.eventos_hoy ? apiData.eventos_hoy.total_hoy : 0;
-      const riesgo = apiData ? (apiData.riesgo || 'normal') : 'normal';
-
-      let riesgoBadge = '<span class="tm-tip-badge tm-badge-normal">Operación Normal</span>';
-      if (riesgo === 'critico') {
-        riesgoBadge = '<span class="tm-tip-badge tm-badge-critical">Alerta Crítica</span>';
-      } else if (riesgo === 'alerta') {
-        riesgoBadge = '<span class="tm-tip-badge tm-badge-warning">Alerta Moderada</span>';
+    _showTooltip(codigo, node) {
+      if (!this.tooltip || !node) return;
+      if (this.hoveredCode === codigo && this.hoveredNode === node) {
+        this._positionTooltip(node);
+        return;
       }
-
+      this._hideTooltip();
+      const data = this.estacionesMap.get(codigo);
+      const position = (this.layout.stations || {})[codigo];
+      const name = data && data.nombre ? data.nombre : codigo;
+      const trunkId = data && data.troncal_id ? data.troncal_id : position && position.troncalId;
+      const trunkName = data && data.troncal
+        ? data.troncal : this.troncalesMap.get(trunkId)?.nombre;
+      const trunkText = trunkName
+        ? `${trunkId ? trunkId + ' - ' : ''}${trunkName}` : trunkId || '';
+      const state = data && data.estado_operativo
+        ? ESTADOS_OPERATIVOS_LABELS[data.estado_operativo] || 'No disponible' : null;
+      const cameras = data && data.camaras;
+      const cameraTotal = cameras && Number.isFinite(cameras.total) ? cameras.total : null;
+      const cameraActive = cameras && Number.isFinite(cameras.activas) ? cameras.activas : null;
+      const events = data && data.eventos_hoy;
+      const eventsToday = events && Number.isFinite(events.total_hoy) ? events.total_hoy : null;
+      const risk = data && data.riesgo;
+      const cameraText = cameraTotal === null ? '' : cameraActive === null
+        ? `${cameraTotal} asociadas - activas sin dato`
+        : `${cameraActive} / ${cameraTotal} activas`;
+      const riskText = risk === 'critico' ? 'Riesgo crítico'
+        : risk === 'alerta' ? 'Riesgo de alerta' : '';
       this.tooltip.innerHTML = `
         <div class="tm-tip-header">
-          <strong class="tm-tip-title">${this._escapeHTML(nombre)}</strong>
+          <strong class="tm-tip-title">${this._escapeHTML(name)}</strong>
           <span class="tm-tip-code">${this._escapeHTML(codigo)}</span>
         </div>
-        <div class="tm-tip-meta">${this._escapeHTML(troncal)}</div>
-        <div class="tm-tip-body">
-          <div class="tm-tip-row">
-            <span>📹 Cámaras:</span>
-            <strong>${camAct} / ${totalCam} activas</strong>
-          </div>
-          <div class="tm-tip-row">
-            <span>🚨 Evasiones hoy:</span>
-            <strong class="${evHoy > 0 ? 'tm-text-alert' : ''}">${evHoy}</strong>
-          </div>
-          <div class="tm-tip-footer">
-            ${riesgoBadge}
-          </div>
-        </div>
+        ${trunkText ? `<div class="tm-tip-meta">${this._escapeHTML(trunkText)}</div>` : ''}
+        ${state ? `<div class="tm-tip-row"><span>Estado</span><strong>${this._escapeHTML(state)}</strong></div>` : ''}
+        ${cameraTotal !== null ? `<div class="tm-tip-row"><span>Cámaras</span><strong>${this._escapeHTML(cameraText)}</strong></div>` : ''}
+        ${eventsToday !== null ? `<div class="tm-tip-row"><span>Evasiones hoy</span><strong>${eventsToday}</strong></div>` : ''}
+        ${riskText ? `<div class="tm-tip-footer">${this._escapeHTML(riskText)}</div>` : ''}
       `;
-
+      this.hoveredCode = codigo;
+      this.hoveredNode = node;
+      node.classList.add('tm-station--hovered');
+      node.setAttribute('aria-describedby', this.tooltip.id);
+      this._positionTooltip(node);
       this.tooltip.classList.add('is-visible');
       this.tooltip.setAttribute('aria-hidden', 'false');
-      this._moveTooltip(e);
     }
 
-    _moveTooltip(e) {
-      if (!this.tooltip || !this.tooltip.classList.contains('is-visible')) return;
-      const rect = this.container.getBoundingClientRect();
-      const clientX = e.clientX || (e.target && e.target.getBoundingClientRect ? e.target.getBoundingClientRect().left + 10 : 0);
-      const clientY = e.clientY || (e.target && e.target.getBoundingClientRect ? e.target.getBoundingClientRect().top - 10 : 0);
-
-      const x = clientX - rect.left + 12;
-      const y = clientY - rect.top - 10;
-
-      this.tooltip.style.left = `${Math.min(x, rect.width - 240)}px`;
-      this.tooltip.style.top = `${Math.max(10, Math.min(y, rect.height - 130))}px`;
+    _positionTooltip(node) {
+      if (!this.tooltip || !node) return;
+      const box = node.getBoundingClientRect();
+      const width = this.tooltip.offsetWidth;
+      const height = this.tooltip.offsetHeight;
+      const margin = 8;
+      const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+      const viewportHeight = document.documentElement.clientHeight || window.innerHeight;
+      let left = box.right + 12;
+      if (left + width + margin > viewportWidth) left = box.left - width - 12;
+      let top = box.top + box.height / 2 - height / 2;
+      left = Math.max(margin, Math.min(left, viewportWidth - width - margin));
+      top = Math.max(margin, Math.min(top, viewportHeight - height - margin));
+      this.tooltip.style.left = `${left}px`;
+      this.tooltip.style.top = `${top}px`;
     }
 
     _hideTooltip() {
       if (!this.tooltip) return;
+      if (this.hoveredNode) {
+        this.hoveredNode.classList.remove('tm-station--hovered');
+        this.hoveredNode.removeAttribute('aria-describedby');
+      }
+      this.hoveredCode = null;
+      this.hoveredNode = null;
       this.tooltip.classList.remove('is-visible');
       this.tooltip.setAttribute('aria-hidden', 'true');
     }
@@ -629,6 +723,11 @@
     }
 
     destroy() {
+      this._hideTooltip();
+      if (this.tooltip) this.tooltip.remove();
+      window.removeEventListener('mousemove', this._onWindowMouseMove);
+      window.removeEventListener('mouseup', this._onWindowMouseUp);
+      window.removeEventListener('keydown', this._onWindowKeyDown);
       this.container.innerHTML = '';
       this.estacionesMap.clear();
       this.troncalesMap.clear();
