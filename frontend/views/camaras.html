@@ -1543,7 +1543,7 @@
 
     try {
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', '/api/camaras/video/upload');
+      xhr.open('POST', '/api/camaras/upload-video');
       xhr.setRequestHeader('X-Token', TOKEN());
 
       xhr.upload.onprogress = e => {
@@ -1584,8 +1584,8 @@
 
   async function loadVideoList() {
     try {
-      const data = await api('GET', '/api/camaras/video/list');
-      const files = data.files || [];
+      const data = await api('GET', '/api/camaras/videos');
+      const files = data.videos || [];
       if (!files.length) {
         $videoList.innerHTML = '<div class="text-[10px] font-mono text-[color:var(--dim)] text-center py-3">Sin videos subidos en el servidor.</div>';
         return;
@@ -1594,9 +1594,9 @@
         <div class="p-2 rounded bg-bg/50 border border-white/5 flex items-center justify-between text-xs font-mono">
           <div class="truncate flex items-center gap-2">
             <span>🎬</span>
-            <span class="text-[color:var(--texto)] truncate">${f.name || f}</span>
+            <span class="text-[color:var(--texto)] truncate">${f.nombre || f}</span>
           </div>
-          <button class="btn-use-video text-[10px] text-azul hover:underline px-2 py-0.5" data-filename="${f.name || f}">Usar como Cámara</button>
+          <button class="btn-use-video text-[10px] text-azul hover:underline px-2 py-0.5" data-filename="${f.nombre || f}">Usar como Cámara</button>
         </div>
       `).join('');
 
@@ -1605,7 +1605,7 @@
           const filename = btn.dataset.filename;
           closeModalVideo();
           openModalCreate();
-          $modalIp.value = `video:${filename}`;
+          $modalIp.value = filename;
           $modalCodigo.value = `VID-${filename.substring(0, 8).toUpperCase()}`;
           $modalEstac.value = 'Estación de Pruebas';
           $modalUbic.value = 'Simulación Offline';
